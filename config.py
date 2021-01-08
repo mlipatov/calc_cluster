@@ -15,10 +15,11 @@ std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
 # 	2: vsini. 
 # The region of interest (ROI) will then be the intersection of the observables grid
 # with the closed cube defined here.
-ROI = np.array( [[19.5, 22.], [0.4, 1.0], [0., 260.]] )
+ROI = np.array( [[19.5, 22.], [0.4, 1.0], [0., 310.]] )
 # region of normalization, the same as ROI, except the lower vsini boundary is negative infinity
 RON = np.copy(ROI)
 RON[-1][0] = -np.inf
+RON[-1][1] = np.inf
 
 # the number of standard deviations to alot for each of the two convolutions on each side
 # of the ROI; the actual Gaussian kernels to be truncated at one less standard deviation on each side 

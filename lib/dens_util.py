@@ -1,68 +1,48 @@
 # Utilities needed to convolve, downsample, normalize and evaluate probability densities on grids
 # of observables
 import config as cf
+from lib import plot_util as plt
 import numpy as np
 import time
-from matplotlib import pyplot as plt
 from scipy.interpolate import interp1d
+
+dims = ['mag', 'col', 'vsini']
+dimensions = ['magnitude', 'color', r'$v\,\sin{i}$']
 
 # obtain the dependence of probability leakage on standard deviations of the Gaussian kernels
 # convolve the prior with a number of Gaussian kernels on the grid of observables without downsampling
 # Inputs:
-# 	prior density on a grid of observables
+# 	probability density on a grid of observables
 # 	number of standard deviations to extend Gaussian kernels
-#	prefix and suffix of the plot filepath, age and metallicity for plots
 # Output:
 #	a list of two-element lists specifying the slope and y-intercept of log-log fits for each observable
-def dP_sigma(prior, nsig, prefix, suffix, age, Z):
+def dP_sigma(density, nsig, prefix, suffix, age, Z):
 	start = time.time()
 	# standard deviations in units of fine grid step size, from one step size to the size
 	# that can have half a kernel fit at an edge of the ROI 
-	sigma = np.linspace(1, 8, 5)
-	kernels = [Kernel(sigma[j], nsig) for j in range(sigma.shape[0])]
-	x = np.log10(np.outer(prior.step, sigma)) # log sigma, in units of the observable
+	s = np.linspace(0.5, 3, 6)
+	kernels = [Kernel(s[j], nsig) for j in range(s.shape[0])]
+	sigma = np.outer(density.step, s)	
 	dP = [] # a list of total probability change within the RON vs sigma, one for each observable
-	nms = ['mag', 'col', 'vsini']
-	names = ['magnitude', 'color', r'$v\,\sin{i}$']
-	for i in range(len(prior.obs)): # for each observable dimension
+	for i in range(len(density.obs)): # for each observable dimension except vsini
 		dp = []
 		for j in range(len(kernels)): # for each kernel width
 			kernel = kernels[j]
-			density = prior.copy()
+			d = density.copy()
 			# check that the kernel, evaluated at the ROI boundaries, fits within the grid
-			if density.check(i, kernel, cf.ROI[i]): 
-				density.convolve(i, kernel)
-				dp.append(density.integrate(cf.RON) - 1)
-		dp = np.array(dp)
+			if d.check(i, kernel, cf.ROI[i]): 
+				d.convolve(i, kernel)
+				dp.append(d.integrate(cf.RON) - 1)
 		# the dependence of log probability change on log sigma, in units of the observable
-		y = np.log10(np.abs(dp))
-		fit = np.polyfit(x[i], y, 1)
+		dp = np.array(dp)
+		# if the order of the probability change is comparable with precision
+		if -np.log10(np.abs(dp).max()) > np.finfo(float).precision / 2:  
+			fit = None
+		else:
+			x = sigma[i][:dp.shape[0]]
+			fit = interp1d(x, dp, kind='cubic', fill_value='extrapolate')
 		dP.append( fit )
-		# plot
-		fig, ax = plt.subplots()
-		neg = (dp < 0)
-		ax.scatter(x[i][neg], y[neg], facecolors='none', edgecolors='k', label=r'$\Delta P < 0$')
-		ax.scatter(x[i][~neg], y[~neg], facecolors='k', edgecolors='k', label=r'$\Delta P \geq 0$')
-		ax.plot(x[i], fit[0] * x[i] + fit[1] )
-		ax.set_ylabel(r'$\log_{10}{\|\Delta P\|}$')
-		ax.set_xlabel(r'$\log_{10}{\sigma}$')
-		ax.legend(loc='lower right')
-		ax.spines["top"].set_visible(False)
-		ax.spines["right"].set_visible(False)
-		# text box
-		if (fit[1] < 0): sign = '-'
-		else: sign = '+' 
-		textstr = '\n'.join((
-		    r'$log_{10}{t}=' + str(age)[:4] + '$',
-		    r'$[M/H]_{MIST}=' + str(Z) + '$',
-		    r'$A_V=%.2f$' % (cf.A_V, ),
-			r'Dimension: ' + names[i],
-		    r'Fit: %.2f * $\log_{10}{\sigma}$ ' % (fit[0],) + sign + ' %.2f' % (np.abs(fit[1]),) ))
-		ax.text(0.05, 1.05, textstr, fontsize=12, transform=ax.transAxes, horizontalalignment='left',
-		        verticalalignment='top', bbox=dict(facecolor='w', alpha=0.0, edgecolor='w'))
-		# write plot file
-		plt.savefig(prefix + nms[i] + '_' + suffix + '.png', dpi=300)
-		plt.close()
+		plt.dP_sigma(x, y, fit, prefix, suffix, age, Z, dimensions[i], dims[i])
 	print( str(time.time() - start) + ' seconds.' )
 	return dP
 
@@ -185,7 +165,6 @@ class Grid:
 	# normalize on a region and scale for plotting or probability calculation
 	def normalize(self, region):
 		self.dens /= self.integrate(region)
-		self.scale()
 
 	# divide by the product of grid steps to get properly scaled probability
 	def scale(self):

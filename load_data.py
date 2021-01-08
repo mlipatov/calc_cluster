@@ -78,8 +78,8 @@ margin = cf.nsig * cf.std * (1 + np.sqrt(resvar))
 obmax = np.nanmax(obs + margin, axis=0)
 obmin = np.nanmin(obs - margin, axis=0)
 # minimum boundaries needed for the initial convolution and probability leakage checks
-obmax_conv = cf.ROI[:, 1] + 2 * cf.nsig * cf.std
-obmin_conv = cf.ROI[:, 0] - 2 * cf.nsig * cf.std
+obmax_conv = cf.ROI[:, 1] + 4 * cf.nsig * cf.std
+obmin_conv = cf.ROI[:, 0] - 4 * cf.nsig * cf.std
 # boundaries that determine which models are computed;
 # these are the minimum needed for individual stars, initial convolution and probability checks
 obmax = np.maximum(obmax, obmax_conv)
@@ -87,9 +87,6 @@ obmin = np.minimum(obmin, obmin_conv)
 # plotting boundaries - these are just inside the area where the minimum-error density is defined
 obmax_plot = cf.ROI[:, 1] + 1 * cf.nsig * cf.std
 obmin_plot = cf.ROI[:, 0] - 1 * cf.nsig * cf.std
-
-# # convert to the same format as ROI, ROM = region of models
-# ROM = np.stack( (obmin, obmax), axis=-1 )
 
 # max_margin = np.nanmax(margin, axis=0)
 # obmin = np.array(cf.ROI)[:,0] - max_margin

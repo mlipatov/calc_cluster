@@ -39,11 +39,13 @@ for filepath in filelist: # for each combination of age and metallicity
 	density_cmd.marginalize(2)
 	ron = np.delete(cf.RON, 2, axis=0)
 	density_cmd.normalize(ron)
+	density_cmd.scale()
 
 	density_vsini = density.copy()
 	density_vsini.marginalize(1)
 	ron = np.delete(cf.RON, 1, axis=0)
 	density_vsini.normalize(ron)
+	density_vsini.scale()
 
 	# color map
 	cmapBig = mpl.cm.get_cmap('afmhot_r', 512)

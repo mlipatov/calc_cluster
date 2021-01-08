@@ -68,28 +68,26 @@ for filepath in filelist: # for each combination of age and metallicity
 	# normalize it
 	prior.normalize(cf.RON)
 
-	### DO NOT ERASE BELOW ###
-
-	# calculate and plot the dependence of probability change on sigma : 6 minutes
-	suffix = os.path.basename(filepath).split('.')[0][5:]
-	prefix = 'data/normalization/dP_'
-	dP = du.dP_sigma(prior, nsig, prefix, suffix, grid.age, grid.Z)
-	# probability within the RON change at minimum sigma
-
-	# # convolve the prior with the minimum-error Gaussians in each observable dimension
-	# start = time.time()
-	# density = prior.copy()
-	# kernels = [ du.Kernel(cf.std[i]/prior.step[i], nsig, ds=cf.downsample) for i in range(len(cf.std)) ]
-	# for i in range(len(prior.obs)): # for each observable dimension
-	# 	kernel = kernels[i]
-	# 	# check that the kernel, evaluated at the ROI boundaries, fits within the grid
-	# 	if density.check(i, kernel, cf.ROI[i]): 
-	# 		density.convolve(i, kernel, ds=cf.downsample)
-	# density.normalize(cf.RON)
+	# convolve the prior with the minimum-error Gaussians in each observable dimension
+	start = time.time()
+	density = prior.copy()
+	kernels = [ du.Kernel(cf.std[i]/density.step[i], nsig, ds=cf.downsample) for i in range(len(cf.std)) ]
+	for i in range(len(density.obs)): # for each observable dimension
+		kernel = kernels[i]
+		# check that the kernel, evaluated at the ROI boundaries, fits within the grid
+		if density.check(i, kernel, cf.ROI[i]): 
+			density.convolve(i, kernel, ds=cf.downsample)
+	density.normalize(cf.RON)
 	# with open('data/densities/pkl/density_' + str(grid.age).replace('.','p')[:4] + '_' + \
 	# 	str(grid.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'wb') as f:
 	# 	    pickle.dump(density, f)
-	# print('first convolution: ' + str(time.time() - start) + ' seconds.')
+	print('first convolution: ' + str(time.time() - start) + ' seconds.')
+
+	# calculate and plot the dependence of probability change on sigma
+	suffix = os.path.basename(filepath).split('.')[0][5:]
+	prefix = 'data/normalization/dP_'
+	dP = du.dP_sigma(density, nsig, prefix, suffix, grid.age, grid.Z)
+	# probability within the RON change at minimum sigma
 
 	# # a version of the probability density only on the CMD, for situations when vsini is not known
 	# density_cmd = density.copy()
