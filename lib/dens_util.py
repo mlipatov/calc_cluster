@@ -20,7 +20,7 @@ def dP_sigma(density, nsig, prefix, suffix, age, Z):
 	start = time.time()
 	# standard deviations in units of fine grid step size, from one step size to the size
 	# that can have half a kernel fit at an edge of the ROI 
-	s = np.linspace(0.5, 3, 6)
+	s = np.linspace(0.5, 9, 9)
 	kernels = [Kernel(s[j], nsig) for j in range(s.shape[0])]
 	sigma = np.outer(density.step, s)	
 	dP = [] # a list of total probability change within the RON vs sigma, one for each observable
@@ -35,14 +35,14 @@ def dP_sigma(density, nsig, prefix, suffix, age, Z):
 				dp.append(d.integrate(cf.RON) - 1)
 		# the dependence of log probability change on log sigma, in units of the observable
 		dp = np.array(dp)
+		x = sigma[i][:dp.shape[0]]
+		fit = interp1d(x, dp, kind='cubic', fill_value='extrapolate')
 		# if the order of the probability change is comparable with precision
 		if -np.log10(np.abs(dp).max()) > np.finfo(float).precision / 2:  
-			fit = None
+			dP.append( None )
 		else:
-			x = sigma[i][:dp.shape[0]]
-			fit = interp1d(x, dp, kind='cubic', fill_value='extrapolate')
-		dP.append( fit )
-		plt.dP_sigma(x, y, fit, prefix, suffix, age, Z, dimensions[i], dims[i])
+			dP.append( fit )
+		plt.dP_sigma(x, dp, fit, prefix, suffix, age, Z, dimensions[i], dims[i])
 	print( str(time.time() - start) + ' seconds.' )
 	return dP
 

@@ -107,6 +107,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	# 		res = ld.err[i, j]**2 - cf.std[j]**2 # residual variance, sigma^2 - sigma_0^2
 	# 		if res < 0: res = 0 # correct for round-off
 	# 		sigma = np.sqrt(res) # residual standard deviation in observable units
+	#		# --> check that the kernel fits within the available observable grid
 	# 		density1.integrate_kernel(j, sigma, nsig, ld.obs[i, j])
 	# 		j -= 1 # decrement focal dimension
 	# 	# print(np.log(density1.dens))

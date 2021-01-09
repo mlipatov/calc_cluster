@@ -10,7 +10,7 @@ def dP_sigma(x, y, fit, prefix, suffix, age, Z, dimension, dim):
 	fig, ax = plt.subplots()
 	ax.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
 	ax.plot(xplot, fit(xplot), c='g')
-	ax.scatter(x, y, facecolors='w', edgecolors='k', fillstyle='full')
+	ax.scatter(x, y, facecolors='w', edgecolors='k')
 	ax.set_ylabel(r'$\Delta P$')
 	ax.set_xlabel(r'$\sigma$')
 	ax.spines["top"].set_visible(False)
