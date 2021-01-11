@@ -67,6 +67,15 @@ for filepath in filelist: # for each combination of age and metallicity
 	prior = du.Grid(prior, obs, grid.age, grid.Z)
 	# normalize it
 	prior.normalize(cf.RON)
+	# check that the prior is negligible beyond the ROI
+	prior_vsini = prior.copy()
+	prior_vsini.marginalize(0); prior_vsini.marginalize(0);
+	prior_vsini.normalize(np.delete(cf.RON, [0, 1], axis=0))
+	prior_vsini.scale()
+	i = np.searchsorted(prior_vsini.obs[0], cf.ROI[-1][-1])
+	# product of the density at the right bound of the vsini ROI and the ROI's extent
+	prob = prior_vsini.dens[i] * (cf.ROI[-1][-1] - cf.ROI[-1][0]) 
+	print('Estimate upper bound on the prior probability beyond the vsini ROI: ' + str(prob))
 
 	# convolve the prior with the minimum-error Gaussians in each observable dimension
 	start = time.time()
@@ -81,7 +90,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	# with open('data/densities/pkl/density_' + str(grid.age).replace('.','p')[:4] + '_' + \
 	# 	str(grid.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'wb') as f:
 	# 	    pickle.dump(density, f)
-	print('first convolution: ' + str(time.time() - start) + ' seconds.')
+	print('First convolution: ' + str(time.time() - start) + ' seconds.')
 
 	# calculate and plot the dependence of probability change on sigma
 	suffix = os.path.basename(filepath).split('.')[0][5:]

@@ -24,7 +24,7 @@ def dP_sigma(density, nsig, prefix, suffix, age, Z):
 	kernels = [Kernel(s[j], nsig) for j in range(s.shape[0])]
 	sigma = np.outer(density.step, s)	
 	dP = [] # a list of total probability change within the RON vs sigma, one for each observable
-	for i in range(len(density.obs)): # for each observable dimension except vsini
+	for i in range(len(density.obs) - 1): # for each observable dimension except vsini
 		dp = []
 		for j in range(len(kernels)): # for each kernel width
 			kernel = kernels[j]
@@ -40,9 +40,11 @@ def dP_sigma(density, nsig, prefix, suffix, age, Z):
 		# if the order of the probability change is comparable with precision
 		if -np.log10(np.abs(dp).max()) > np.finfo(float).precision / 2:  
 			dP.append( None )
+			use = 'no'
 		else:
 			dP.append( fit )
-		plt.dP_sigma(x, dp, fit, prefix, suffix, age, Z, dimensions[i], dims[i])
+			use = 'yes'
+		plt.dP_sigma(x, dp, fit, prefix, suffix, age, Z, dimensions[i], dims[i], use)
 	print( str(time.time() - start) + ' seconds.' )
 	return dP
 
@@ -70,6 +72,7 @@ class Grid:
 	# Inputs:
 	# 	density on a grid of observables, an n-dimensional array
 	# 	1D grids of observables, a list of n arrays
+	# 	age, metallicity
 	def __init__(self, dens, obs, age, Z):
 		self.dens = dens 
 		self.obs = obs 
