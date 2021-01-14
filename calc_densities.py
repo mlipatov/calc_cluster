@@ -64,7 +64,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	prior = np.zeros(nobs) 
 	np.add.at(prior, tuple(ind), pr.flatten()[m])
 	# package the prior density with the grids of observables 
-	prior = du.Grid(prior, obs, grid.age, grid.Z)
+	prior = du.Grid(prior, obs, grid.age, grid.Z, cf.RON, cf.ROI)
 	# normalize it
 	prior.normalize(cf.RON)
 
