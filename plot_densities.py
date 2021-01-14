@@ -56,8 +56,8 @@ for filepath in filelist: # for each combination of age and metallicity
 	# text box
 	textstr = '\n'.join((
 	    r'$log_{10}{t}=' + base.split('_')[-2].replace('p','.') + '$',
-	    r'$[M/H]_{MIST}=' + base.split('_')[-1].replace('p','.').replace('m','-') + '$',
-	    r'$A_V=%.2f$' % (cf.A_V, )))
+	    r'$[M/H]_{MIST}=' + base.split('_')[-1].replace('p','.').replace('m','-') + '$' ))
+	    # r'$A_V=%.2f$' % (cf.A_V, )))
 	    # r'$\sigma_0=%.2f$' % (cf.std, )))
 
 	print('Plotting...')

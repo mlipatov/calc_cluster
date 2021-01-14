@@ -94,8 +94,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	# calculate and plot the dependence of probability change on sigma
 	suffix = os.path.basename(filepath).split('.')[0][5:]
 	prefix = 'data/normalization/'
-	
-	density.dP = du.dP_sigma(density, nsig, prefix, suffix, grid.age, grid.Z)
+	density.dP_sigma(nsig, prefix, suffix, grid.age, grid.Z)
 
 	with open('data/densities/pkl/density_' + str(grid.age).replace('.','p')[:4] + '_' + \
 		str(grid.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'wb') as f:

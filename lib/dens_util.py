@@ -1,57 +1,13 @@
 # Utilities needed to convolve, downsample, normalize and evaluate probability densities on grids
 # of observables
 import config as cf
-from lib import plot_util as plt
 import numpy as np
 import time
 from scipy.interpolate import interp1d
-
-dims = ['mag', 'col', 'vsini']
-dimensions = ['magnitude', 'color', r'$v\,\sin{i}$']
+from copy import deepcopy
 
 class ConvolutionException(Exception):
     pass
-
-# obtain the dependence of probability leakage on standard deviations of the Gaussian kernels
-# convolve the prior with a number of Gaussian kernels on the grid of observables without downsampling
-# Inputs:
-# 	probability density on a grid of observables
-# 	number of standard deviations to extend Gaussian kernels
-# Output:
-#	a list of two-element lists specifying the slope and y-intercept of log-log fits for each observable
-# Notes:
-#	operates on normalized, un-scaled probability density
-def dP_sigma(density, nsig, prefix, suffix, age, Z):
-	start = time.time()
-	# standard deviations in units of fine grid step size, from one step size to the size
-	# that can have half a kernel fit at an edge of the ROI 
-	s = np.linspace(0.5, 9, 9)
-	kernels = [Kernel(s[j], nsig) for j in range(s.shape[0])]
-	sigma = np.outer(density.step, s)	
-	dP = [] # a list of total probability change within the RON vs sigma, one for each observable
-	for i in range(len(density.obs) - 1): # for each observable dimension except vsini
-		dp = []
-		for j in range(len(kernels)): # for each kernel width
-			kernel = kernels[j]
-			d = density.copy()
-			# check that the kernel, evaluated at the ROI boundaries, fits within the grid
-			if d.check(i, kernel, cf.ROI[i]): 
-				d.convolve(i, kernel)
-				dp.append(d.integrate(cf.RON) - 1)
-		# the dependence of log probability change on log sigma, in units of the observable
-		dp = np.array(dp)
-		x = sigma[i][:dp.shape[0]]
-		fit = interp1d(x, dp, kind='cubic', fill_value='extrapolate')
-		# if maximum probability change less than the cube root of precision (< 10^-5 for regular floats)
-		if -np.log10(np.abs(dp).max()) > np.finfo(float).precision / 3:  
-			dP.append( None )
-			use = 'no'
-		else:
-			dP.append( fit )
-			use = 'yes'
-		plt.dP_sigma(x, dp, fit, prefix, suffix, age, Z, dimensions[i], dims[i], use)
-	print( 'Estimation of de-normalization: ' + str(time.time() - start) + ' seconds.' )
-	return dP
 
 # a finite symmetric Gaussian probability density kernel on a discrete, evenly spaced grid
 class Kernel:
@@ -89,13 +45,54 @@ class Grid:
 		self.step = np.array(step)
 		self.age = age
 		self.Z = Z
+		self.dP = [None] * len(obs)
 
 	def copy(self):
 		dens = np.copy(self.dens) 
 		obs = []
 		for o in self.obs:
 			obs.append(np.copy(o))
-		return Grid(dens, obs, self.age, self.Z)
+		density = Grid(dens, obs, self.age, self.Z)
+		density.dP = deepcopy(self.dP)
+		return density
+
+	# obtain the dependence of probability leakage on standard deviations of the Gaussian kernels
+	# convolve the density with a number of Gaussian kernels on the grid of observables without downsampling
+	# Inputs:
+	# 	number of standard deviations to extend Gaussian kernels
+	# Output:
+	#	a list of two-element lists specifying the slope and y-intercept of log-log fits for each observable
+	# Notes:
+	#	operates on normalized, un-scaled probability density
+	def dP_sigma(self, nsig, prefix, suffix, age, Z):
+		start = time.time()
+		# standard deviations in units of fine grid step size, from one step size to the size
+		# that can have half a kernel fit at an edge of the ROI 
+		s = np.linspace(0.5, 9, 9)
+		kernels = [Kernel(s[j], nsig) for j in range(s.shape[0])]
+		sigma = np.outer(self.step, s)	
+		dP = [] # a list of total probability change within the RON vs sigma, one for each observable
+		for i in range(len(self.obs) - 1): # for each observable dimension except vsini
+			dp = []
+			for j in range(len(kernels)): # for each kernel width
+				kernel = kernels[j]
+				d = self.copy()
+				# check that the kernel, evaluated at the ROI boundaries, fits within the grid
+				if d.check(i, kernel, cf.ROI[i]): 
+					d.convolve(i, kernel)
+					dp.append(d.integrate(cf.RON) - 1)
+			# the dependence of log probability change on log sigma, in units of the observable
+			dp = np.array(dp)
+			x = sigma[i][:dp.shape[0]]
+			fit = interp1d(x, dp, kind='cubic', fill_value='extrapolate')
+			# if maximum probability change less than the cube root of precision (< 10^-5 for regular floats)
+			if -np.log10(np.abs(dp).max()) > np.finfo(float).precision / 3:  
+				dP.append( None )
+			else:
+				dP.append( fit )
+		dP.append( None ) # append a null object for the vsini dimension
+		print( 'Estimation of de-normalization: ' + str(time.time() - start) + ' seconds.' )
+		self.dP = dP
 
 	# check if the density can be convolved in some dimension with a symmetric kernel
 	# so that the calculated points cover some region
@@ -148,6 +145,7 @@ class Grid:
 		self.obs.pop(axis)
 		self.step = np.delete(self.step, axis)
 		self.dim -= 1
+		self.dP.pop(axis)
 
 	# weights for integrating on an n-dimensional region within this n-dimensional grid
 	# Inputs:
@@ -217,3 +215,4 @@ class Grid:
 		self.obs.pop(axis)
 		self.step = np.delete(self.step, axis)
 		self.dim -= 1
+		self.dP.pop(axis)

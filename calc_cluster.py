@@ -21,8 +21,6 @@ for filepath in filelist: # for each combination of age and metallicity
 	with open(filepath, 'rb') as f:
 		density = pickle.load(f)
 
-	dP = density.dP
-
 	print('Age: ' + str(density.age)[:5])
 	print('Metallicity: ' + str(density.Z))
 
@@ -43,26 +41,25 @@ for filepath in filelist: # for each combination of age and metallicity
 			density1 = density_cmd.copy() # initialize probability density in color-magnitude space only 
 		else:
 			density1 = density.copy() # initialize probability density of one star
-		j = density1.dim - 1 # initialize the focal dimension
+		j = density1.dim - 1 # initialize the focal dimension to the last
 		norm = 1. # initialize the re-normalization factor
 		while density1.dim > 0: # while probability is on a grid with more than one entry
 			res = ld.err[i, j]**2 - cf.std[j]**2 # residual variance, sigma^2 - sigma_0^2
 			if res < 0: res = 0 # correct for round-off
 			sigma = np.sqrt(res) # residual standard deviation in observable units
-			# update the normalization correction 
-			if j < density.dim - 1: # this is not the vsini dimension
-				dP_spline = dP[j] 
-				if dP_spline is not None: # the spline function exists 
-					if (sigma <= dP_spline.x[-1]): # if not above the range of the spline
-						dp = float( dP_spline(sigma) ) # evaluate the spline
-					else: # extrapolate linearly from the last two points
-						x0 = dP_spline.x[-1]; y0 = dP_spline.y[-1]
-						x1 = dP_spline.x[-2]; y1 = dP_spline.y[-2]
-						dp = y0 + (sigma - x0) * (y1 - y0) / (x1 - x0)
-					norm *= 1 / (1 + dp)
-					if max_dp < np.abs(dp): max_dp = np.abs(dp) 
+			# update the normalization correction for the last dimension in the current density grid
+			dP_spline = density1.dP[-1] 
+			if dP_spline is not None: # the spline function exists 
+				if (sigma <= dP_spline.x[-1]): # if not above the range of the spline
+					dp = float( dP_spline(sigma) ) # evaluate the spline
+				else: # extrapolate linearly from the last two points
+					x0 = dP_spline.x[-1]; y0 = dP_spline.y[-1]
+					x1 = dP_spline.x[-2]; y1 = dP_spline.y[-2]
+					dp = y0 + (sigma - x0) * (y1 - y0) / (x1 - x0)
+				norm *= 1 / (1 + dp) # update the re-normalization factor
+				if max_dp < np.abs(dp): max_dp = np.abs(dp)
 			try:
-				density1.integrate_kernel(j, sigma, nsig, ld.obs[i, j])
+				density1.integrate_kernel(-1, sigma, nsig, ld.obs[i, j])
 			except du.ConvolutionException as err:
 			    print('Convolution Error: ' + err.message)
 			j -= 1 # decrement the focal dimension
