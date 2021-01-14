@@ -1,6 +1,8 @@
 import config as cf
 import numpy as np
 from matplotlib import pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['font.size'] = 12
 
 # plot denormalization versus sigma
 # Inputs:
@@ -26,5 +28,5 @@ def dP_sigma(x, y, fit, prefix, suffix, age, Z, dimension, dim, use='yes'):
 	ax.text(txt_x, 1.05, textstr, fontsize=12, transform=ax.transAxes, horizontalalignment='left',
 	        verticalalignment='top', bbox=dict(facecolor='w', alpha=0.0, edgecolor='w'))
 	# write plot file
-	plt.savefig(prefix + dim + '_' + suffix + '.png', dpi=300)
+	plt.savefig(prefix + dim + '/dP_' + suffix + '.png', dpi=300)
 	plt.close()

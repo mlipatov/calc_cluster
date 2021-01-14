@@ -16,6 +16,7 @@ std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
 # The region of interest (ROI) will then be the intersection of the observables grid
 # with the closed cube defined here.
 ROI = np.array( [[19.5, 22.], [0.4, 1.0], [0., 310.]] )
+volume = np.prod(np.diff(ROI, axis=-1)[:, 0]) # volume of the ROI
 # region of normalization, the same as ROI, except the lower vsini boundary is negative infinity
 RON = np.copy(ROI)
 RON[-1][0] = -np.inf

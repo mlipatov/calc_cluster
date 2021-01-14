@@ -8,18 +8,20 @@ from matplotlib import ticker
 import pickle, glob, os
 
 mpl.rcParams['font.size'] = 12
+RON_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
+ROI_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1, 'linestyle':'dashed'}
 
 # patches to plot for a 2D region
-def plot_region(ax, region, xind, yind):
+def plot_region(ax, region, xind, yind, region_kwargs):
 	xmina, xmaxa = ax.get_xlim()
 	ymina, ymaxa = ax.get_ylim()
-	y = region[yind]; ymin = y[0]; ymax = y[1] 
-	x = region[xind]; xmin = x[0]; xmax = x[1]
-	if xmin == -np.inf: xmin = xmina; x = np.delete(x, 0)
-	if xmax == np.inf: xmax = xmaxa; x = np.delete(x, 1)
-	if ymin == -np.inf: ymin = ymina; y = np.delete(y, 0)
-	if ymax == np.inf: ymax = ymaxa; y = np.delete(y, 1)
-	kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
+	y = list(region[yind]); ymin = y[0]; ymax = y[1] 
+	x = list(region[xind]); xmin = x[0]; xmax = x[1]
+	if xmin == -np.inf: xmin = xmina; x.remove(-np.inf)
+	if xmax == np.inf: xmax = xmaxa; x.remove(np.inf)
+	if ymin == -np.inf: ymin = ymina; y.remove(-np.inf)
+	if ymax == np.inf: ymax = ymaxa; y.remove(np.inf)
+	kwargs = region_kwargs
 	ax.hlines(y, xmin, xmax, **kwargs)
 	ax.vlines(x, ymin, ymax, **kwargs)
 
@@ -81,7 +83,8 @@ for filepath in filelist: # for each combination of age and metallicity
 		ax.set_ylabel('m = F555W')
 		ax.set_xlabel(xlab)
 		ax.scatter(xp, ld.f555w, s=1, c='k', alpha=0.25, lw=0, marker=',')
-		plot_region(ax, cf.RON, xi, 0)
+		plot_region(ax, cf.ROI, xi, 0, ROI_kwargs)
+		plot_region(ax, cf.RON, xi, 0, RON_kwargs)
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 		

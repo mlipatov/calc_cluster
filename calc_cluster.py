@@ -6,120 +6,74 @@ import load_data as ld
 
 import numpy as np
 import glob
-from matplotlib import pyplot as plt
-import matplotlib as mpl
+from scipy.optimize import minimize
 
-mpl.rcParams['font.size'] = 12
-
-# calculate the factors of each discrete ordinate
-# for the trapezoidal rule with variable differentials
-# Input: abscissae
-def trap(x):
-	if len(x) > 1:
-		# calculate the differences between initial masses
-		diff = np.diff(x)
-		# array of averaged differentials for the trapezoidal rule
-		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
-	else:
-		d = np.array([1])
-	return d
-
-# number of entries needed by data space grids with ranges that will allow 
-# probability leakage checks, the initial convolution and calculations for individual stars;
-# with coarse steps at least as small as the minimum standard deviations
-nobs = cf.downsample * ( np.ceil((ld.obmax - ld.obmin) / cf.std + 1).astype(int) )
-obs = [] # observable grids
-for i in range(len(nobs)):
-	ogrid = np.linspace(ld.obmin[i], ld.obmax[i], nobs[i]) # grid for this observable
-	obs.append(ogrid)
+# minus the log likelihood of data for a given q
+def minus_ll(q, prob, volume):
+	return -1 * np.sum(np.log(q * prob + (1 - q) / volume))
 
 nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
 
-filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
+# filelist = list(np.sort(glob.glob('data/densities/pkl/*.pkl')))
+filelist = list(np.sort(glob.glob('data/densities/pkl/density_9p15_m0p45.pkl')))
 for filepath in filelist: # for each combination of age and metallicity
-	# load the pre-computed observables on a grid of model parameters
+	# load the pre-computed density on a grid of observables
 	with open(filepath, 'rb') as f:
-		grid = pickle.load(f)
+		density = pickle.load(f)
 
-	# arrays of ordinate multipliers (weights) for the numerical integration in model space;
-	# these include the varying discrete distances between adjacent abscissas
-	w_Mini = trap(grid.Mini)[:, np.newaxis, np.newaxis]
-	w_otilde = trap(grid.otilde0)[np.newaxis, :, np.newaxis]
-	w_inc = trap(grid.inc)[np.newaxis, np.newaxis, :]
-	# meshgrid of model parameters
-	Mv, ov, iv = np.meshgrid(grid.Mini, grid.otilde0, grid.inc, sparse=True, indexing='ij')
-	# priors on the model grid, weighted according to the integration numerical approximation
-	pr = ( Mv**-2.35 * 1 * np.sin(iv) ) * w_Mini * w_otilde * w_inc
+	dP = density.dP
 
-	# distribute the prior times the model space differential element over the data space grid
-	ind = [] # index of each model in the data space grid
-	for i in range(len(nobs)): # searchsorted only works on one array at a time
-		ind.append( np.searchsorted(obs[i], grid.obs[..., i], side='right').flatten() - 1 )
-	ind = np.array(ind) # make a list into a numpy array
-	# choose models that are not NAN and not -1 or len(observable grid dimension) - 1, i.e. outside the grid	
-	m = np.all( (ind != nobs[:, np.newaxis] - 1) & (ind != -1), axis=0 ) & \
-		np.all( ~np.isnan(grid.obs), axis=-1 ).flatten()
-	ind = ind[:, m]
-	# transfer the prior from the model grid to the grid of observables
-	prior = np.zeros(nobs) 
-	np.add.at(prior, tuple(ind), pr.flatten()[m])
-	# package the prior density with the grids of observables 
-	prior = du.Grid(prior, obs, grid.age, grid.Z)
-	# normalize it
-	prior.normalize(cf.RON)
-	# check that the prior is negligible beyond the ROI
-	prior_vsini = prior.copy()
-	prior_vsini.marginalize(0); prior_vsini.marginalize(0);
-	prior_vsini.normalize(np.delete(cf.RON, [0, 1], axis=0))
-	prior_vsini.scale()
-	i = np.searchsorted(prior_vsini.obs[0], cf.ROI[-1][-1])
-	# product of the density at the right bound of the vsini ROI and the ROI's extent
-	prob = prior_vsini.dens[i] * (cf.ROI[-1][-1] - cf.ROI[-1][0]) 
-	print('Estimate upper bound on the prior probability beyond the vsini ROI: ' + str(prob))
+	print('Age: ' + str(density.age)[:5])
+	print('Metallicity: ' + str(density.Z))
 
-	# convolve the prior with the minimum-error Gaussians in each observable dimension
-	start = time.time()
-	density = prior.copy()
-	kernels = [ du.Kernel(cf.std[i]/density.step[i], nsig, ds=cf.downsample) for i in range(len(cf.std)) ]
-	for i in range(len(density.obs)): # for each observable dimension
-		kernel = kernels[i]
-		# check that the kernel, evaluated at the ROI boundaries, fits within the grid
-		if density.check(i, kernel, cf.ROI[i]): 
-			density.convolve(i, kernel, ds=cf.downsample)
-	density.normalize(cf.RON)
-	# with open('data/densities/pkl/density_' + str(grid.age).replace('.','p')[:4] + '_' + \
-	# 	str(grid.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'wb') as f:
-	# 	    pickle.dump(density, f)
-	print('First convolution: ' + str(time.time() - start) + ' seconds.')
-
-	# calculate and plot the dependence of probability change on sigma
-	suffix = os.path.basename(filepath).split('.')[0][5:]
-	prefix = 'data/normalization/dP_'
-	dP = du.dP_sigma(density, nsig, prefix, suffix, grid.age, grid.Z)
-	# probability within the RON change at minimum sigma
-
-	# # a version of the probability density only on the CMD, for situations when vsini is not known
-	# density_cmd = density.copy()
-	# density_cmd.marginalize(2)
-	# ron = np.delete(cf.RON, 2, axis=0)
-	# density_cmd.normalize(ron)
+	density.scale()
+	# a version of the probability density only on the CMD, for situations when vsini is not known
+	density_cmd = density.copy()
+	density_cmd.marginalize(2)
+	density_cmd.normalize(np.delete(cf.RON, 2, axis=0))
+	density_cmd.scale()
 	
-	# ## compute the probabilities of individual stars
-	# start = time.time()
-	# for i in range(ld.obs.shape[0]): # for each star
-	# 	if np.isnan(ld.obs[i, -1]): # if vsini is not known
-	# 		density1 = density_cmd.copy() # initialize probability to color-magnitude space only 
-	# 	else:
-	# 		density1 = density.copy() # initialize the probability of one star
-	# 	j = density1.dim - 1 # initialize the focal dimension
-	# 	while density1.dim > 0: # while probability is on a grid with more than one entry
-	# 		res = ld.err[i, j]**2 - cf.std[j]**2 # residual variance, sigma^2 - sigma_0^2
-	# 		if res < 0: res = 0 # correct for round-off
-	# 		sigma = np.sqrt(res) # residual standard deviation in observable units
-	#		# --> check that the kernel fits within the available observable grid
-	# 		density1.integrate_kernel(j, sigma, nsig, ld.obs[i, j])
-	# 		j -= 1 # decrement focal dimension
-	# 	# print(np.log(density1.dens))
-	# print('computation of ' + str(ld.obs.shape[0]) + ' stars: ' + str(time.time() - start) + ' seconds.')
-	# move the probability at vsini < 0 over to the vsini = 0 bin
+	start = time.time()
+	# probabilities of individual data points under the cluster model
+	prob = [] 
+	# maximum absolute de-normalization
+	max_dp = 0
+	for i in range(ld.obs.shape[0]): # for each star
+		if np.isnan(ld.obs[i, -1]): # if vsini is not known
+			density1 = density_cmd.copy() # initialize probability density in color-magnitude space only 
+		else:
+			density1 = density.copy() # initialize probability density of one star
+		j = density1.dim - 1 # initialize the focal dimension
+		norm = 1. # initialize the re-normalization factor
+		while density1.dim > 0: # while probability is on a grid with more than one entry
+			res = ld.err[i, j]**2 - cf.std[j]**2 # residual variance, sigma^2 - sigma_0^2
+			if res < 0: res = 0 # correct for round-off
+			sigma = np.sqrt(res) # residual standard deviation in observable units
+			# update the normalization correction 
+			if j < density.dim - 1: # this is not the vsini dimension
+				dP_spline = dP[j] 
+				if dP_spline is not None: # the spline function exists 
+					if (sigma <= dP_spline.x[-1]): # if not above the range of the spline
+						dp = float( dP_spline(sigma) ) # evaluate the spline
+					else: # extrapolate linearly from the last two points
+						x0 = dP_spline.x[-1]; y0 = dP_spline.y[-1]
+						x1 = dP_spline.x[-2]; y1 = dP_spline.y[-2]
+						dp = y0 + (sigma - x0) * (y1 - y0) / (x1 - x0)
+					norm *= 1 / (1 + dp)
+					if max_dp < np.abs(dp): max_dp = np.abs(dp) 
+			try:
+				density1.integrate_kernel(j, sigma, nsig, ld.obs[i, j])
+			except du.ConvolutionException as err:
+			    print('Convolution Error: ' + err.message)
+			j -= 1 # decrement the focal dimension
+		# apply the normalization correction to get the probability density of one star 
+		# at the star's data space location when it is part of the set described by the cluster model
+		p1 = density1.dens * norm 
+		prob.append(p1)
+	prob = np.array(prob)
+	print('computation of ' + str(ld.obs.shape[0]) + ' stars: ' + str(time.time() - start) + ' seconds.')
+	print('maximum absolute de-normalization: ' + str(max_dp))
+
 	# calculate maximum-likelihood q
+	q = minimize(minus_ll, 0.5, args=(prob, cf.volume), bounds=[(0., 1.)]).x
+	print('proportion of stars in the ROI described by the cluster model: ' + str(q))

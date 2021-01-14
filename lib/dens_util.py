@@ -9,6 +9,9 @@ from scipy.interpolate import interp1d
 dims = ['mag', 'col', 'vsini']
 dimensions = ['magnitude', 'color', r'$v\,\sin{i}$']
 
+class ConvolutionException(Exception):
+    pass
+
 # obtain the dependence of probability leakage on standard deviations of the Gaussian kernels
 # convolve the prior with a number of Gaussian kernels on the grid of observables without downsampling
 # Inputs:
@@ -16,6 +19,8 @@ dimensions = ['magnitude', 'color', r'$v\,\sin{i}$']
 # 	number of standard deviations to extend Gaussian kernels
 # Output:
 #	a list of two-element lists specifying the slope and y-intercept of log-log fits for each observable
+# Notes:
+#	operates on normalized, un-scaled probability density
 def dP_sigma(density, nsig, prefix, suffix, age, Z):
 	start = time.time()
 	# standard deviations in units of fine grid step size, from one step size to the size
@@ -37,15 +42,15 @@ def dP_sigma(density, nsig, prefix, suffix, age, Z):
 		dp = np.array(dp)
 		x = sigma[i][:dp.shape[0]]
 		fit = interp1d(x, dp, kind='cubic', fill_value='extrapolate')
-		# if the order of the probability change is comparable with precision
-		if -np.log10(np.abs(dp).max()) > np.finfo(float).precision / 2:  
+		# if maximum probability change less than the cube root of precision (< 10^-5 for regular floats)
+		if -np.log10(np.abs(dp).max()) > np.finfo(float).precision / 3:  
 			dP.append( None )
 			use = 'no'
 		else:
 			dP.append( fit )
 			use = 'yes'
 		plt.dP_sigma(x, dp, fit, prefix, suffix, age, Z, dimensions[i], dims[i], use)
-	print( str(time.time() - start) + ' seconds.' )
+	print( 'Estimation of de-normalization: ' + str(time.time() - start) + ' seconds.' )
 	return dP
 
 # a finite symmetric Gaussian probability density kernel on a discrete, evenly spaced grid
@@ -198,7 +203,14 @@ class Grid:
 			# compute the kernel around the data point
 			x = (obs - point) / sigma
 			kernel = np.exp(-x**2 / 2.)
-			kernel[np.abs(x) > nsig] = 0 # sigma cutoff for symmetry
+			m = np.abs(x) > nsig # observable grid outside sigma cutoff for symmetry and consistency
+			# check that the kernel fits within the available observable grid
+			if ~(m[0] & m[-1]): # if either grid boundary is inside the kernel
+				raise ConvolutionException(\
+					'One of the grid boundaries (' + str(obs[0]) + ', ' + str(obs[-1]) + \
+					') is inside the kernel that extends to ' + str(nsig) + ' sigmas (' + str(sigma) + \
+					') from its center at ' + str(point) )
+			kernel[m] = 0 
 			kernel /= np.sum(kernel) # normalize the kernel
 			# convolve
 			self.dens = np.sum(w * kernel * dens, axis=-1)
