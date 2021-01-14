@@ -4,7 +4,7 @@ import config as cf
 import numpy as np
 import time
 from scipy.interpolate import interp1d
-from copy import deepcopy
+import copy
 
 class ConvolutionException(Exception):
     pass
@@ -34,7 +34,7 @@ class Grid:
 	# 	density on a grid of observables, an n-dimensional array
 	# 	1D grids of observables, a list of n arrays
 	# 	age, metallicity
-	def __init__(self, dens, obs, age, Z):
+	def __init__(self, dens, obs, age, Z, RON, ROI):
 		self.dens = dens 
 		self.obs = obs 
 		self.dim = len(obs) # number of dimensions, e.g. 3
@@ -46,14 +46,16 @@ class Grid:
 		self.age = age
 		self.Z = Z
 		self.dP = [None] * len(obs)
+		self.RON = RON
+		self.ROI = ROI
 
 	def copy(self):
 		dens = np.copy(self.dens) 
 		obs = []
 		for o in self.obs:
 			obs.append(np.copy(o))
-		density = Grid(dens, obs, self.age, self.Z)
-		density.dP = deepcopy(self.dP)
+		density = Grid(dens, obs, self.age, self.Z, copy.copy(self.RON), copy.copy(self.ROI))
+		density.dP = copy.deepcopy(self.dP)
 		return density
 
 	# obtain the dependence of probability leakage on standard deviations of the Gaussian kernels
@@ -146,6 +148,8 @@ class Grid:
 		self.step = np.delete(self.step, axis)
 		self.dim -= 1
 		self.dP.pop(axis)
+		self.RON = np.delete(self.RON, axis, axis=0)
+		self.ROI = np.delete(self.ROI, axis, axis=0)
 
 	# weights for integrating on an n-dimensional region within this n-dimensional grid
 	# Inputs:
@@ -216,3 +220,5 @@ class Grid:
 		self.step = np.delete(self.step, axis)
 		self.dim -= 1
 		self.dP.pop(axis)
+		self.RON = np.delete(self.RON, axis, axis=0)
+		self.ROI = np.delete(self.ROI, axis, axis=0)
