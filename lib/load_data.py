@@ -9,7 +9,7 @@ from scipy import special
 from scipy import optimize
 
 # load data on stars with vsini
-file = '../data/ngc1846_vsini.txt'
+file = 'data/ngc1846_vsini.txt'
 data0 = np.loadtxt(file).T
 data0 = data0[0:12] # select fields
 # record the range of these stars in RA and dec; this should be close to the MUSE field of view (FOV)
@@ -38,7 +38,7 @@ vsini_loerr = data0[9]
 vsini_err = (vsini_loerr + vsini_uperr) / 2
 
 # load data on low-vsini stars
-file = '../data/ngc1846_lowvsini.txt'
+file = 'data/ngc1846_lowvsini.txt'
 data1 = np.loadtxt(file).T
 data1 = data1[0:12] # select fields
 # delete the entries without valid IDs, observables or sky coordinates, 
@@ -66,7 +66,7 @@ vsini = np.concatenate( (vsini, np.zeros_like(data1[7], dtype=float)) )
 vsini_err = np.concatenate( (vsini_err, np.full_like(data1[8], cf.berrs[-1][0] * cf.std[-1])) )
 
 # load data on stars without vsini in the MUSE FOV
-file = '../data/ngc1846_full.txt'
+file = 'data/ngc1846_full.txt'
 data2 = np.loadtxt(file).T
 data2 = data2[0:9] # select fields
 # delete the entries without valid IDs, observables or sky coordinates, 
