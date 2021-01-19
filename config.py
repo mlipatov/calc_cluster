@@ -15,15 +15,23 @@ std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
 # 	2: vsini. 
 # The region of interest (ROI) will then be the intersection of the observables grid
 # with the closed cube defined here.
-ROI = np.array( [[19.5, 22.], [0.4, 1.0], [0., 310.]] )
+ROI = np.array( [[19.5, 22.], [0.4, 1.0], [0., 280.]] )
 volume = np.prod(np.diff(ROI, axis=-1)[:, 0]) # volume of the ROI
-# region of normalization, the same as ROI, except the lower vsini boundary is negative infinity
-RON = np.copy(ROI)
-RON[-1][0] = -np.inf
-RON[-1][1] = np.inf
+# whether each dimension is normalized (or if its collected)
+norm = [True, True, False] 
+# boundary bin sizes for collected dimensions
+bbins = [[], [], [10, 10]] 
+# residual standard deviations at boundaries for collected dimensions
+berrs = [[], [], [np.sqrt(i**2 - 1) * std[-1] for i in [5, 3]]] 
 
-# the number of standard deviations to alot for each of the two convolutions on each side
-# of the ROI; the actual Gaussian kernels to be truncated at one less standard deviation on each side 
-nsig = 4
 # refinement factor for the grid over which the first convolution is performed
 downsample = 3
+# the number of standard deviations to assume for the truncation of Gaussian kernels in 
+# alotting data space for all convolutions and plotting; 
+# actual Gaussian kernels will be truncated at one less deviation 
+nsig = 4
+# number of coarse vsini grid steps (approximately the minimum vsini errors) in the standard deviation 
+# of kernels alotted for the initial convolution and subsequent de-normalization tests
+conv_err = 9
+# number of coarse vsini grid steps in the standard deviation of kernels assumed for plotting
+plot_err = 1

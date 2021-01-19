@@ -4,7 +4,7 @@ from pa.lib import surface as sf
 
 from lib import mist_util as mu
 import config as cf
-import load_data as ld
+from lib import load_data as ld
 
 import numpy as np
 

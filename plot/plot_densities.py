@@ -1,5 +1,6 @@
-import config as cf
-import load_data as ld
+import sys
+sys.path.append('..')
+from lib import load_data as ld
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,14 +10,16 @@ import pickle, glob, os
 
 mpl.rcParams['font.size'] = 12
 RON_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
-ROI_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1, 'linestyle':'dashed'}
+ROI_kwargs = {'facecolor':'none', 'edgecolor':'blue', 'alpha':0.5, 'lw':1, 'linestyle':'dashed'}
 
 # patches to plot for a 2D region
-def plot_region(ax, region, xind, yind, region_kwargs):
+# x index = 1
+# y index = 0
+def plot_region(ax, region, region_kwargs):
 	xmina, xmaxa = ax.get_xlim()
 	ymina, ymaxa = ax.get_ylim()
-	y = list(region[yind]); ymin = y[0]; ymax = y[1] 
-	x = list(region[xind]); xmin = x[0]; xmax = x[1]
+	y = list(region[0]); ymin = y[0]; ymax = y[1] 
+	x = list(region[1]); xmin = x[0]; xmax = x[1]
 	if xmin == -np.inf: xmin = xmina; x.remove(-np.inf)
 	if xmax == np.inf: xmax = xmaxa; x.remove(np.inf)
 	if ymin == -np.inf: ymin = ymina; y.remove(-np.inf)
@@ -25,7 +28,7 @@ def plot_region(ax, region, xind, yind, region_kwargs):
 	ax.hlines(y, xmin, xmax, **kwargs)
 	ax.vlines(x, ymin, ymax, **kwargs)
 
-filelist = list(np.sort(glob.glob('data/densities/pkl/*.pkl')))
+filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
 for filepath in filelist: # for each combination of age and metallicity
 	# load the density file
 	with open(filepath, 'rb') as f:
@@ -39,14 +42,12 @@ for filepath in filelist: # for each combination of age and metallicity
 	# marginalized probabilities
 	density_cmd = density.copy()
 	density_cmd.marginalize(2)
-	ron = np.delete(cf.RON, 2, axis=0)
-	density_cmd.normalize(ron)
+	density_cmd.normalize()
 	density_cmd.scale()
 
 	density_vsini = density.copy()
 	density_vsini.marginalize(1)
-	ron = np.delete(cf.RON, 1, axis=0)
-	density_vsini.normalize(ron)
+	density_vsini.normalize()
 	density_vsini.scale()
 
 	# color map
@@ -83,8 +84,8 @@ for filepath in filelist: # for each combination of age and metallicity
 		ax.set_ylabel('m = F555W')
 		ax.set_xlabel(xlab)
 		ax.scatter(xp, ld.f555w, s=1, c='k', alpha=0.25, lw=0, marker=',')
-		plot_region(ax, cf.ROI, xi, 0, ROI_kwargs)
-		plot_region(ax, cf.RON, xi, 0, RON_kwargs)
+		plot_region(ax, density_plot.ROI, ROI_kwargs)
+		# plot_region(ax, density_plot.RON, RON_kwargs)
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 		
@@ -101,5 +102,5 @@ for filepath in filelist: # for each combination of age and metallicity
 		ax.text(0.95, 0.9, textstr, transform=ax.transAxes, fontsize=14,
 		        verticalalignment='top', bbox=dict(facecolor='w', alpha=1.0, edgecolor='w'))
 
-		plt.savefig('data/densities/' + plot + '/' + base + '.png', dpi=300)
+		plt.savefig('../data/densities/' + plot + '/' + base + '.png', dpi=300)
 		plt.close()

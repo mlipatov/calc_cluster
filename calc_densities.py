@@ -3,7 +3,7 @@ import sys, os, time, pickle
 
 from lib import dens_util as du
 import config as cf
-import load_data as ld
+from lib import load_data as ld
 
 import numpy as np
 import glob
@@ -64,19 +64,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	prior = np.zeros(nobs) 
 	np.add.at(prior, tuple(ind), pr.flatten()[m])
 	# package the prior density with the grids of observables 
-	prior = du.Grid(prior, obs, grid.age, grid.Z, cf.RON, cf.ROI)
-	# normalize it
-	prior.normalize(cf.RON)
-
-	# # check that the prior is negligible beyond the ROI ---> Tim says I don't need this
-	# prior_vsini = prior.copy()
-	# prior_vsini.marginalize(0); prior_vsini.marginalize(0);
-	# prior_vsini.normalize(np.delete(cf.RON, [0, 1], axis=0))
-	# prior_vsini.scale()
-	# i = np.searchsorted(prior_vsini.obs[0], cf.ROI[-1][-1])
-	# # product of the density at the right bound of the vsini ROI and the ROI's extent
-	# prob = prior_vsini.dens[i] * (cf.ROI[-1][-1] - cf.ROI[-1][0]) 
-	# print('Estimate upper bound on the prior probability beyond the vsini ROI: ' + str(prob))
+	prior = du.Grid(prior, obs, cf.ROI, cf.norm, cf.bbins, cf.berrs, grid.age, grid.Z)
 
 	# convolve the prior with the minimum-error Gaussians in each observable dimension
 	start = time.time()
@@ -85,16 +73,23 @@ for filepath in filelist: # for each combination of age and metallicity
 	for i in range(len(density.obs)): # for each observable dimension
 		kernel = kernels[i]
 		# check that the kernel, evaluated at the ROI boundaries, fits within the grid
-		if density.check(i, kernel, cf.ROI[i]): 
+		if density.check_roi(i, kernel): 
 			density.convolve(i, kernel, ds=cf.downsample)
-	density.normalize(cf.RON)
-
 	print('First convolution: ' + str(time.time() - start) + ' seconds.')
 
-	# calculate and plot the dependence of probability change on sigma
-	suffix = os.path.basename(filepath).split('.')[0][5:]
-	prefix = 'data/normalization/'
-	density.dP_sigma(nsig, prefix, suffix, grid.age, grid.Z)
+	# calculate the probability beyond the region of interest in the vsini dimension
+	start = time.time()
+	density.P_collected(nsig)
+	density.P_collected(nsig)
+	print('Boundary probability collection: ' + str(time.time() - start) + ' seconds.')
+
+	# normalize
+	density.normalize() 
+
+	# calculate the dependence of probability change on standard deviation of further convolving kernel
+	start = time.time()
+	density.dP_sigma(nsig)
+	print( 'Estimation of de-normalization: ' + str(time.time() - start) + ' seconds.' )
 
 	with open('data/densities/pkl/density_' + str(grid.age).replace('.','p')[:4] + '_' + \
 		str(grid.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'wb') as f:

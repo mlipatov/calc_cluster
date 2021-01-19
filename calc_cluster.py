@@ -2,7 +2,7 @@ import sys, os, time, pickle
 
 from lib import dens_util as du
 import config as cf
-import load_data as ld
+from lib import load_data as ld
 
 import numpy as np
 import glob
@@ -21,6 +21,12 @@ for filepath in filelist: # for each combination of age and metallicity
 	with open(filepath, 'rb') as f:
 		density = pickle.load(f)
 
+	# calculate the probability beyond the region of interest in the vsini dimension
+	## --> delete this after doing this calculation with the rest of the densities
+	density.Pvsini = [None] * 2
+	density.P_collected(nsig, -1, 0, np.sqrt(cf.v0_err**2 - 1) * cf.std[-1])
+	density.P_collected(nsig, -1, 1, np.sqrt(cf.vmax_err**2 - 1) * cf.std[-1])
+
 	print('Age: ' + str(density.age)[:5])
 	print('Metallicity: ' + str(density.Z))
 
@@ -28,7 +34,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	# a version of the probability density only on the CMD, for situations when vsini is not known
 	density_cmd = density.copy()
 	density_cmd.marginalize(2)
-	density_cmd.normalize(np.delete(cf.RON, 2, axis=0))
+	density_cmd.normalize()
 	density_cmd.scale()
 	
 	start = time.time()
@@ -57,7 +63,8 @@ for filepath in filelist: # for each combination of age and metallicity
 					x1 = dP_spline.x[-2]; y1 = dP_spline.y[-2]
 					dp = y0 + (sigma - x0) * (y1 - y0) / (x1 - x0)
 				norm *= 1 / (1 + dp) # update the re-normalization factor
-				if max_dp < np.abs(dp): max_dp = np.abs(dp)
+				if max_dp < np.abs(dp): max_dp = np.abs(dp) # update maximum de-normalization
+			# integrate to find the probability density at the data point
 			try:
 				density1.integrate_kernel(-1, sigma, nsig, ld.obs[i, j])
 			except du.ConvolutionException as err:
@@ -66,8 +73,8 @@ for filepath in filelist: # for each combination of age and metallicity
 		# apply the normalization correction to get the probability density of one star 
 		# at the star's data space location when it is part of the set described by the cluster model
 		p1 = density1.dens * norm 
-		prob.append(p1)
-	prob = np.array(prob)
+		prob.append(float(p1))
+	prob = np.array(prob, dtype=float)
 	print('computation of ' + str(ld.obs.shape[0]) + ' stars: ' + str(time.time() - start) + ' seconds.')
 	print('maximum absolute de-normalization: ' + str(max_dp))
 
