@@ -23,12 +23,13 @@ class Kernel:
 		self.n = n
 
 # probability density on a discrete, evenly spaced grid of observables;
-# all integration (including marginalization, convolution and normalization) 
+# all integration (including marginalization, normalization and convolution at one or all points) 
 #	assumes unit discrete steps;
+# after all such integration, and before evaluation at a specific point, 
 # scale (divide) by the product of grid steps to get meaningful probability densities;
-# two types of dimensions
-# 	1. normalized over a finite region of interest (ROI)
-#	2. normalized over all reals, then collected at the boundaries of an ROI
+# two types of dimensions:
+# 	1. normalized over the finite region of interest (ROI),
+#	2. normalized over all reals.
 class Grid:
 	# Inputs:
 	# 	density on a grid of observables, an n-dimensional array
@@ -36,9 +37,8 @@ class Grid:
 	# 	finite region of interest, a list of two-element lists
 	#	list of the kind of each observable: 
 	#		True for normalized over ROI, False for collected at the ROI boundaries
-	#	list of two-element lists - boundary bin sizes for each dimension
 	# 	age, metallicity
-	def __init__(self, dens, obs, ROI, normalized, boundary_bins, boundary_errs, age, Z):
+	def __init__(self, dens, obs, ROI, norm, age, Z):
 		self.dens = dens 
 		self.obs = obs 
 		self.dim = len(obs) # number of dimensions, e.g. 3
@@ -48,29 +48,11 @@ class Grid:
 			step.append( obs[i][1] - obs[i][0] )
 		self.step = np.array(step)
 		self.ROI = ROI
-		self.normalized = normalized
-		self.boundary_bins = boundary_bins
-		self.boundary_errs = boundary_errs
+		self.norm = norm
 		# a list of objects for each dimension:
 		#	when a dimension is finite-normalized, the object is the dependence of de-normalization on
-		#		the standard deviation of the convolving kernel (a spline function);
-		# 	when a dimension is collected at finite boundaries, the object is a two-element list of 
-		#		probability densities over the remaining dimensions, one for each boundary.
-		correction = []
-		for n in normalized:
-			if n: correction.append(None)
-			else: correction.append([None] * 2)
-		self.correction = correction
-		# # dependence of probability change within the ROI vs sigma for each dimension
-		# self.dP = [None] * len(obs) 
-		# # probabilities beyond each boundary of the ROI in vsini dimension across the non-vsini dimensions,
-		# # for a fixed sigma at each boundary; whenever the density is normalized in non-vsini dimensions,
-		# # these should be normalized by the same factor; whenever the density is marginalized in a 
-		# # non-vsini dimension, this should also be marginalized; same with the scaling of density;
-		# # a correction due to these probabilities will only be applied when a data point falls on the 
-		# # corresponding boundary. 
-		# self.Pvsini = [None] * 2
-
+		#		the standard deviation of the convolving kernel (a spline function)
+		self.correction = [None] * len(obs)
 		self.age = age
 		self.Z = Z
 
@@ -80,20 +62,14 @@ class Grid:
 		for o in self.obs:
 			obs.append(np.copy(o))
 		ROI = copy.deepcopy(self.ROI)
-		normalized = copy.deepcopy(self.normalized)
-		boundary_bins = copy.deepcopy(self.boundary_bins)
-		boundary_errs = copy.deepcopy(self.boundary_errs)
-		density = Grid(dens, obs, ROI, normalized, boundary_bins, boundary_errs, self.age, self.Z)
+		norm = copy.deepcopy(self.norm)
+		density = Grid(dens, obs, ROI, norm, self.age, self.Z)
 		density.correction = copy.deepcopy(self.correction)
-		# density.dP = copy.deepcopy(self.dP)
-		# density.Pvsini = copy.deepcopy(self.Pvsini)
 		return density
 
 	def remove_axis(self, axis):
 		self.obs.pop(axis)
-		self.normalized.pop(axis)
-		self.boundary_bins.pop(axis)
-		self.boundary_errs.pop(axis)
+		self.norm.pop(axis)
 		self.correction.pop(axis)
 		self.ROI = np.delete(self.ROI, axis, axis=0)
 		self.step = np.delete(self.step, axis)
@@ -114,7 +90,7 @@ class Grid:
 		kernels = [Kernel(s[j], nsig) for j in range(s.shape[0])]
 		sigma = np.outer(self.step, s)	
 		for i in range(len(self.obs)): # for each observable dimension
-			if self.normalized[i]:
+			if self.norm[i]:
 				dp = []
 				for j in range(len(kernels)): # for each kernel width
 					kernel = kernels[j]
@@ -122,7 +98,7 @@ class Grid:
 					# check that the kernel, evaluated at the ROI boundaries, fits within the grid
 					if d.check_roi(i, kernel): 
 						d.convolve(i, kernel)
-						d.integrate_all()
+						d.integrate_ron()
 						dp.append(d.dens - 1)
 				# the dependence of log probability change on log sigma, in units of the observable
 				dp = np.array(dp)
@@ -133,32 +109,6 @@ class Grid:
 					self.correction[i] = None
 				else:
 					self.correction[i] = fit
-
-	# obtain the total probability beyond a boundary of the ROI
-	# after convolution with an error kernel
-	# Inputs:
-	#	number of standard deviations of error kernel
-	# 	index of the boundary: 0 or 1
-	#	standard deviation of the kernel
-	# Outcome:
-	#	probability density arrays across all but the current dimension are set
-	def P_collected(self, nsig):
-		for axis in range(len(self.normalized)):
-			if not self.normalized[axis]:
-				for bound in [0, 1]:
-					# standard deviation in units of grid step size
-					s = self.boundary_errs[axis][bound] / self.step[axis]
-					kernel = Kernel(s, nsig)
-					d = self.copy()
-					if d.check_roi(axis, kernel):
-						d.convolve(axis, kernel)
-						# integrate on the region beyond the boundary
-						if bound == 0:
-							region = [-np.inf, self.ROI[axis][0]]
-						else:
-							region = [self.ROI[axis][1], np.inf]
-						d.integrate(region, axis)
-						self.correction[axis][bound] = np.expand_dims(d.dens, axis)
 
 	# check if the density can be convolved in some dimension with a symmetric kernel
 	# so that the calculated points cover the region of interest
@@ -203,44 +153,41 @@ class Grid:
 		# multiply step size in the focal dimension by the downsample factor
 		self.step[axis] *= ds
 
-	# weights on a 1D region
+	# weights on a 1D region according to a simple Riemann sum
 	def w(self, region, axis):
-		index = np.nonzero( (self.obs[axis] >= region[0]) & (self.obs[axis] <= region[1]) )[0]
-		w = np.zeros_like( self.obs[axis] )
+		obs = self.obs[axis]
+		index = np.nonzero( (obs >= region[0]) & (obs <= region[1]) )[0]
+		w = np.zeros_like( obs )
 		w[index] = 1.
-		w[index.min()] = w[index.max()] = 1./2
+		# a trapezoidal-like approximation
+		# if region[0] >= obs[0]: w[index.min()] = 1./2
+		# if region[1] <= obs[-1]: w[index.max()] = 1./2
 		return w
 
 	# integral on a 1D region
 	def integrate(self, region, axis):
 		w = self.w(region, axis)
-		# if this is a normalized dimension, 
-		# marginalize it in the probabilities beyond the ROI boundaries for each collected dimension
-		if self.normalized[axis]:
-			for i in range(len(self.normalized)):
-				if not self.normalized[i]:
-					cor = self.correction[i]
-					for j in range(len(cor)):
-						self.correction[i][j] = np.sum(w * np.moveaxis(cor[j], axis, -1), axis=-1)
 		# move the focal axis to the front
 		dens = np.moveaxis(self.dens, axis, -1) 
 		# integrate density
 		self.dens = np.sum(w * dens, axis=-1)
 		self.remove_axis(axis)
 
+	# integrate the density beyond one of the ROI boundaries along a given dimension
+	def integrate_lower(self, axis):
+		self.integrate([-np.inf, self.ROI[axis][0]], axis)
+	def integrate_upper(self, axis):
+		self.integrate([self.ROI[axis][1], np.inf], axis)
+
+	# marginalize in one of the dimensions; 
+	# overall density stays normalized if the dimension is not normalized over the ROI
 	def marginalize(self, axis):
 		self.integrate([-np.inf, np.inf], axis)
 
-	def multiply_collected(self, factor):
-		for i in range(len(self.normalized)):
-			if not self.normalized[i]: 
-				self.correction[i][0] *= factor
-				self.correction[i][0] *= factor		
-
-	def integrate_all(self):
-		# integrate
+	# integrate on the region of normalization
+	def integrate_ron(self):
 		while self.dim > 0:
-			if self.normalized[-1]: region = self.ROI[-1]
+			if self.norm[-1]: region = self.ROI[-1]
 			else: region = [-np.inf, np.inf]
 			self.integrate(region, -1)
 
@@ -248,41 +195,22 @@ class Grid:
 	def normalize(self):
 		d = self.copy()
 		# integrate
-		d.integrate_all()
+		d.integrate_ron()
 		norm = d.dens
 		self.dens /= norm
-		# correct the probabilities beyond the vsini ROI boundaries by the normalization factor
-		self.multiply_collected(1 / norm)
 
-		# for i in range(region.shape[0]):
-		# 	w = self.w(region[i], i)
-		# 	if i == 0:
-		# 		weights = w
-		# 	else:
-		# 		weights = np.multiply.outer(weights, w)
-		# return np.sum(self.dens * self.weights(region))
-
-	# divide by the product of grid steps to get properly scaled probability
-	def scale(self):
-		sc = np.prod(self.step)
-		self.dens /= sc
-		# correct the probabilities beyond the vsini ROI boundaries by the scale factor
-		self.multiply_collected(1 / sc)
-
-	# integrate the product of a Gaussian kernel centered on a data point and 
-	# probability density in some dimension; if the data point is at an ROI boundary
-	# in the focal dimension, add the probability that acummulates at that boundary
+	# evaluate the probability density at a point in some dimension, 
+	# after integrating the density times a Gaussian kernel centered on the point 
 	# Inputs:
 	#	dimension of integration
 	#	standard deviation of the kernel in the units of the focal observable
 	#	center of the kernel, also the value of the observable at the data point
 	# Output: probability density on a grid without the focal dimension
 	# Notes: if both the density and the kernel are normalized, 
-	#		the result is an evaluation of a normalized probability distribution, 
-	#		except for de-normalization due to the implied convolution; 
-	#	additionally, either the input density should be scaled after normalization,
-	#		or the output should be scaled.
-	def integrate_kernel(self, axis, sigma, nsig, point):
+	#		the result is an evaluation of a probability distribution normalized over all space, 
+	#		though de-normalized over the ROI; 
+	#	input (or output) density should be scaled exactly once to get true probability density.
+	def broadened_at_point(self, axis, sigma, nsig, point):
 		dens = np.moveaxis(self.dens, axis, -1) # move the focal axis to the front
 		obs = self.obs[axis] # get the focal observable
 		step = self.step[axis] # the step in the focal dimension
@@ -291,8 +219,8 @@ class Grid:
 			# interpolate
 			dens = interp1d( obs, dens, axis=-1 )(point) 
 		else: 
-			# weights for integrating 
-			w = np.ones_like(obs); w[0] = w[-1] = 1./2 
+			# weights for integrating, corresponding to a Riemann sum 
+			w = np.ones_like(obs) 
 			# the kernel around the data point
 			x = (obs - point) / sigma
 			kernel = np.exp(-x**2 / 2.)
@@ -307,12 +235,9 @@ class Grid:
 			kernel /= np.sum(kernel) # normalize the kernel
 			# integrate
 			dens = np.sum(w * kernel * dens, axis=-1)
-		# if the focal dimension is collected and the point is at a boundary in this dimension,
-		# correct the resulting probability density due to the probability that acummulates
-		# in the boundary bin
-		if not self.normalized[axis]:
-			for j in [0, 1]:
-				if point == self.ROI[axis][j]:
-					dens += np.squeeze(self.correction[axis], axis=axis) / self.boundary_bins[axis][j]	
 		self.dens = dens
-		self.remove_axis(axis)
+		self.obs[axis] = np.array([point])
+
+	# return properly scaled probability density
+	def density(self):
+		return self.dens / np.prod(self.step)

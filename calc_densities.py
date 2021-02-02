@@ -64,9 +64,9 @@ for filepath in filelist: # for each combination of age and metallicity
 	prior = np.zeros(nobs) 
 	np.add.at(prior, tuple(ind), pr.flatten()[m])
 	# package the prior density with the grids of observables 
-	prior = du.Grid(prior, obs, cf.ROI, cf.norm, cf.bbins, cf.berrs, grid.age, grid.Z)
+	prior = du.Grid(prior, obs, cf.ROI, cf.norm, grid.age, grid.Z)
 
-	# convolve the prior with the minimum-error Gaussians in each observable dimension
+	# convolve and normalize the prior with the minimum-error Gaussians in each observable dimension
 	start = time.time()
 	density = prior.copy()
 	kernels = [ du.Kernel(cf.std[i]/density.step[i], nsig, ds=cf.downsample) for i in range(len(cf.std)) ]
@@ -75,22 +75,15 @@ for filepath in filelist: # for each combination of age and metallicity
 		# check that the kernel, evaluated at the ROI boundaries, fits within the grid
 		if density.check_roi(i, kernel): 
 			density.convolve(i, kernel, ds=cf.downsample)
-	print('First convolution: ' + str(time.time() - start) + ' seconds.')
-
-	# calculate the probability beyond the region of interest in the vsini dimension
-	start = time.time()
-	density.P_collected(nsig)
-	density.P_collected(nsig)
-	print('Boundary probability collection: ' + str(time.time() - start) + ' seconds.')
-
-	# normalize
-	density.normalize() 
+	density.normalize()
+	print('First convolution: ' + str(time.time() - start) + ' seconds.') 
 
 	# calculate the dependence of probability change on standard deviation of further convolving kernel
 	start = time.time()
 	density.dP_sigma(nsig)
 	print( 'Estimation of de-normalization: ' + str(time.time() - start) + ' seconds.' )
 
+	# save the density
 	with open('data/densities/pkl/density_' + str(grid.age).replace('.','p')[:4] + '_' + \
 		str(grid.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'wb') as f:
 		    pickle.dump(density, f)

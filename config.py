@@ -8,7 +8,7 @@ modulus = 18.45
 # magnitude F555W, color F435 - F814W and vsini in km/s
 std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
 
-# coordinate limits in color-magnitude-vsini space that select for main sequence stars 
+# coordinate limits in color-magnitude-vsini space that select for real main sequence stars 
 # close to the turn-off; the observables are
 # 	0: magnitude F555W,
 # 	1: color F435W - F814W,
@@ -16,13 +16,10 @@ std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
 # The region of interest (ROI) will then be the intersection of the observables grid
 # with the closed cube defined here.
 ROI = np.array( [[19.5, 22.], [0.4, 1.0], [0., 280.]] )
+norm = [True, True, False] # which dimensions are normalized on the ROI
 volume = np.prod(np.diff(ROI, axis=-1)[:, 0]) # volume of the ROI
-# whether each dimension is normalized (or if its collected)
-norm = [True, True, False] 
-# boundary bin sizes for collected dimensions
-bbins = [[], [], [10, 10]] 
-# residual standard deviations at boundaries for collected dimensions
-berrs = [[], [], [np.sqrt(i**2 - 1) * std[-1] for i in [5, 3]]] 
+volume_cmd = np.prod(np.diff(ROI, axis=-1)[:-1, 0]) # volume of the CMD ROI
+v0err = 5 # standard deviation at the vsini = 0 boundary, in units of minimum standard deviation
 
 # refinement factor for the grid over which the first convolution is performed
 downsample = 3

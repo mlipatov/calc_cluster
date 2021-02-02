@@ -9,8 +9,8 @@ from matplotlib import ticker
 import pickle, glob, os
 
 mpl.rcParams['font.size'] = 12
-RON_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
-ROI_kwargs = {'facecolor':'none', 'edgecolor':'blue', 'alpha':0.5, 'lw':1, 'linestyle':'dashed'}
+ROI_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
+RON_kwargs = {'facecolor':'none', 'edgecolor':'blue', 'alpha':0.5, 'lw':1, 'linestyle':'dashed'}
 
 # patches to plot for a 2D region
 # x index = 1
@@ -43,12 +43,10 @@ for filepath in filelist: # for each combination of age and metallicity
 	density_cmd = density.copy()
 	density_cmd.marginalize(2)
 	density_cmd.normalize()
-	density_cmd.scale()
 
 	density_vsini = density.copy()
 	density_vsini.marginalize(1)
 	density_vsini.normalize()
-	density_vsini.scale()
 
 	# color map
 	cmapBig = mpl.cm.get_cmap('afmhot_r', 512)
@@ -76,7 +74,7 @@ for filepath in filelist: # for each combination of age and metallicity
 			density_plot = density_vsini; xlab = r'$v_r = v\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; 
 			xi = 2; cmap_lab = r'$\frac{dp}{dm\,dv_r}$'; cmap_max = 5e-2; cb_format = '%.0e';
 
-		pcm = ax.pcolormesh(density_plot.obs[1], density_plot.obs[0], density_plot.dens, \
+		pcm = ax.pcolormesh(density_plot.obs[1], density_plot.obs[0], density_plot.density(), \
 			cmap=cmap, vmin=0, vmax=cmap_max) # vmax=prob_plot.max()) #  
 		ax.set_xlim(left=ld.obmin_plot[xi], right=ld.obmax_plot[xi])
 		ax.set_ylim(bottom=ld.obmin_plot[0], top=ld.obmax_plot[0])
@@ -85,7 +83,10 @@ for filepath in filelist: # for each combination of age and metallicity
 		ax.set_xlabel(xlab)
 		ax.scatter(xp, ld.f555w, s=1, c='k', alpha=0.25, lw=0, marker=',')
 		plot_region(ax, density_plot.ROI, ROI_kwargs)
-		# plot_region(ax, density_plot.RON, RON_kwargs)
+		# RON = cf.ROI
+		# RON[-1][0] = -np.inf
+		# RON[-1][1] = np.inf
+		# plot_region(ax, RON, RON_kwargs)
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 		

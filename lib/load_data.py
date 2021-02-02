@@ -1,6 +1,6 @@
 # Load NGC1846 data and filter it
-import sys
-sys.path.append('..')
+import sys, os
+# sys.path.append('..')
 import config as cf
 
 import numpy as np
@@ -8,8 +8,11 @@ from matplotlib import pyplot as plt
 from scipy import special
 from scipy import optimize
 
+dirname = os.path.dirname(__file__)
+datadir = os.path.join(dirname, '../data/')
+
 # load data on stars with vsini
-file = 'data/ngc1846_vsini.txt'
+file = datadir + 'ngc1846_vsini.txt'
 data0 = np.loadtxt(file).T
 data0 = data0[0:12] # select fields
 # record the range of these stars in RA and dec; this should be close to the MUSE field of view (FOV)
@@ -38,7 +41,7 @@ vsini_loerr = data0[9]
 vsini_err = (vsini_loerr + vsini_uperr) / 2
 
 # load data on low-vsini stars
-file = 'data/ngc1846_lowvsini.txt'
+file = datadir + 'ngc1846_lowvsini.txt'
 data1 = np.loadtxt(file).T
 data1 = data1[0:12] # select fields
 # delete the entries without valid IDs, observables or sky coordinates, 
@@ -62,11 +65,12 @@ f814w = np.concatenate( (f814w, data1[3]) )
 f435w_err = np.concatenate( (f435w_err, data1[4]) )
 f555w_err = np.concatenate( (f555w_err, data1[5]) )
 f814w_err = np.concatenate( (f814w_err, data1[6]) )
-vsini = np.concatenate( (vsini, np.zeros_like(data1[7], dtype=float)) )
-vsini_err = np.concatenate( (vsini_err, np.full_like(data1[8], cf.berrs[-1][0] * cf.std[-1])) )
+# -1 in vsini and its error means vsini measurement was either below zero or couldn't be distinguished from zero
+vsini = np.concatenate( (vsini, np.full_like(data1[7], -1, dtype=float)) ) 
+vsini_err = np.concatenate( (vsini_err, np.full_like(data1[8], -1, dtype=float)) )
 
 # load data on stars without vsini in the MUSE FOV
-file = 'data/ngc1846_full.txt'
+file = datadir + 'ngc1846_full.txt'
 data2 = np.loadtxt(file).T
 data2 = data2[0:9] # select fields
 # delete the entries without valid IDs, observables or sky coordinates, 
