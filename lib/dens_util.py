@@ -2,11 +2,20 @@
 # of observables
 import config as cf
 import numpy as np
+import numba as nb
+from scipy.ndimage import convolve1d
 from scipy.interpolate import interp1d
 import copy
 
 class ConvolutionException(Exception):
     pass
+
+# @nb.jit(nopython=True)
+# def convolve_nb(a, v):
+#     return np.convolve(a, v)
+
+# empty = np.array([0])
+# convolve_nb(empty, empty)
 
 # a finite symmetric Gaussian probability density kernel on a discrete, evenly spaced grid
 class Kernel:
@@ -84,17 +93,21 @@ class Grid:
 	# Notes:
 	#	operates on normalized, un-scaled probability density
 	def dP_sigma(self, nsig):
+		dmar = self.copy()
+		for i in range(len(self.obs)): # for each observable dimension
+			if not self.norm[i]: # if the dimension is not normalized in the ROI
+				dmar.marginalize(i) # marginalize it
 		# standard deviations in units of grid step size, up to the size
 		# that can have half a kernel fit at an edge of the ROI 
 		s = np.linspace(0.5, cf.conv_err, 9)
 		kernels = [Kernel(s[j], nsig) for j in range(s.shape[0])]
 		sigma = np.outer(self.step, s)	
 		for i in range(len(self.obs)): # for each observable dimension
-			if self.norm[i]:
+			if self.norm[i]: # if the dimension is normalized in the ROI
 				dp = []
 				for j in range(len(kernels)): # for each kernel width
 					kernel = kernels[j]
-					d = self.copy()
+					d = dmar.copy()
 					# check that the kernel, evaluated at the ROI boundaries, fits within the grid
 					if d.check_roi(i, kernel): 
 						d.convolve(i, kernel)
@@ -103,7 +116,7 @@ class Grid:
 				# the dependence of log probability change on log sigma, in units of the observable
 				dp = np.array(dp)
 				x = sigma[i][:dp.shape[0]]
-				fit = interp1d(x, dp, kind='cubic', fill_value='extrapolate')
+				fit = interp1d(x, dp, kind='cubic', fill_value='extrapolate') # extrapolate for sigma closer to zero
 				# if maximum probability change is less than the cube root of precision (< 10^-5 for regular floats)
 				if -np.log10(np.abs(dp).max()) > np.finfo(float).precision / 3:  
 					self.correction[i] = None
@@ -123,7 +136,9 @@ class Grid:
 		# drops below smallest index (zero) and similarly for the largest index
 		return (index.min() >= kernel.n) & (len(obs) - index.max() > kernel.n) 
 
-	# convolve and downsample at the same time
+	# convolve, then downsample;
+	# uses ndimage library routines for convolution;
+	# ~6 seconds for NGC1846 with downsample = 3.
 	# Inputs: 
 	#	axis along which to convolve
 	# 	a kernel to convolve with
@@ -131,6 +146,51 @@ class Grid:
 	# Notes:
 	# 	number of steps in one half of the kernel must be a multiple of the downsample factor 
 	def convolve(self, axis, kernel, ds:int=1):
+		dens = np.moveaxis(self.dens, axis, -1) # move the focal axis to the front
+		dens = convolve1d(dens, kernel.y, axis=-1, mode='constant')
+		# remove the strip on each side equal to one half of the kernel, where there are edge effects
+		dens = dens[..., kernel.n:-kernel.n]
+		obs = self.obs[axis][kernel.n:-kernel.n]
+		# downsample, move the focal axis back in its place and set
+		self.dens = np.moveaxis(dens[..., ::ds], -1, axis)
+		self.obs[axis] = obs[::ds]
+		# multiply step size in the focal dimension by the downsample factor
+		self.step[axis] *= ds
+
+	# convolve, then downsample;
+	# uses numpy library routines for convolution;
+	# ~13 seconds for NGC1846 with downsample = 3.
+	# Inputs: 
+	#	axis along which to convolve
+	# 	a kernel to convolve with
+	#	downsample factor (an integer)
+	# Notes:
+	# 	number of steps in one half of the kernel must be a multiple of the downsample factor 
+	def convolve_numpy(self, axis, kernel, ds:int=1):
+		dens = np.moveaxis(self.dens, axis, -1) # move the focal axis to the front
+		dens1 = np.zeros_like(dens)
+		for index, d in np.ndenumerate(dens[..., 0]):
+			dens1[index] = np.convolve(dens[index], kernel.y, mode = 'same') # [kernel.n:-kernel.n]
+		# remove the strip on each side equal to one half of the kernel, where there are edge effects
+		dens = dens1[..., kernel.n:-kernel.n]
+		obs = self.obs[axis][kernel.n:-kernel.n]
+		# downsample, move the focal axis back in its place and set
+		self.dens = np.moveaxis(dens[..., ::ds], -1, axis)
+		self.obs[axis] = obs[::ds]
+		# multiply step size in the focal dimension by the downsample factor
+		self.step[axis] *= ds
+
+	# convolve and downsample at the same time; 
+	# use a custom routine that only computes the result at downsampled locations
+	# ~15 seconds for NGC1846 with downsample = 3; 
+	# should be more efficient for larger downsampling factors.
+	# Inputs: 
+	#	axis along which to convolve
+	# 	a kernel to convolve with
+	#	downsample factor (an integer)
+	# Notes:
+	# 	number of steps in one half of the kernel must be a multiple of the downsample factor 
+	def convolve_downsample(self, axis, kernel, ds:int=1):
 		dens = np.moveaxis(self.dens, axis, -1) # move the focal axis to the front
 		# shape of the result grid, downsampled in the focal dimension
 		shape = list(dens.shape)
@@ -159,9 +219,6 @@ class Grid:
 		index = np.nonzero( (obs >= region[0]) & (obs <= region[1]) )[0]
 		w = np.zeros_like( obs )
 		w[index] = 1.
-		# a trapezoidal-like approximation
-		# if region[0] >= obs[0]: w[index.min()] = 1./2
-		# if region[1] <= obs[-1]: w[index.max()] = 1./2
 		return w
 
 	# integral on a 1D region
@@ -198,45 +255,6 @@ class Grid:
 		d.integrate_ron()
 		norm = d.dens
 		self.dens /= norm
-
-	# evaluate the probability density at a point in some dimension, 
-	# after integrating the density times a Gaussian kernel centered on the point 
-	# Inputs:
-	#	dimension of integration
-	#	standard deviation of the kernel in the units of the focal observable
-	#	center of the kernel, also the value of the observable at the data point
-	# Output: probability density on a grid without the focal dimension
-	# Notes: if both the density and the kernel are normalized, 
-	#		the result is an evaluation of a probability distribution normalized over all space, 
-	#		though de-normalized over the ROI; 
-	#	input (or output) density should be scaled exactly once to get true probability density.
-	def broadened_at_point(self, axis, sigma, nsig, point):
-		dens = np.moveaxis(self.dens, axis, -1) # move the focal axis to the front
-		obs = self.obs[axis] # get the focal observable
-		step = self.step[axis] # the step in the focal dimension
-		# if the residual standard deviation is small in comparison with grid step size
-		if (sigma / step < 1./2):
-			# interpolate
-			dens = interp1d( obs, dens, axis=-1 )(point) 
-		else: 
-			# weights for integrating, corresponding to a Riemann sum 
-			w = np.ones_like(obs) 
-			# the kernel around the data point
-			x = (obs - point) / sigma
-			kernel = np.exp(-x**2 / 2.)
-			m = np.abs(x) > nsig # observable grid outside sigma cutoff for symmetry and consistency
-			# check that the kernel fits within the available observable grid
-			if ~(m[0] & m[-1]): # if either grid boundary is inside the kernel
-				raise ConvolutionException(\
-					'One of the grid boundaries (' + str(obs[0]) + ', ' + str(obs[-1]) + \
-					') is inside the kernel that extends to ' + str(nsig) + ' sigmas (' + str(sigma) + \
-					') from its center at ' + str(point) )
-			kernel[m] = 0 
-			kernel /= np.sum(kernel) # normalize the kernel
-			# integrate
-			dens = np.sum(w * kernel * dens, axis=-1)
-		self.dens = dens
-		self.obs[axis] = np.array([point])
 
 	# return properly scaled probability density
 	def density(self):

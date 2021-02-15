@@ -1,6 +1,5 @@
-# Load NGC1846 data and filter it
+# Load NGC1846 data, filter it
 import sys, os
-# sys.path.append('..')
 import config as cf
 
 import numpy as np
@@ -84,12 +83,12 @@ ID2 = data2[0].astype(int)
 m = np.all(data2 != 99, axis=0) & \
 	(mag <= cf.ROI[0][1]) & (mag >= cf.ROI[0][0]) & (col <= cf.ROI[1][1]) & (col >= cf.ROI[1][0]) & \
 	(ra <= ramax) & (ra >= ramin) & (dec <= demax) & (dec >= demin) & \
-	~np.isin(ID2, ID)
+	~np.isin(ID2, ID_vsini)
 data2 = data2[:, m]
 
 # merge all the data; set vsini-related fields appropriately
 vsini_nan = np.full(data2.shape[1], np.nan)
-ID = np.concatenate( (ID, ID2 ) )
+ID = np.concatenate( (ID, ID2) )
 f435w = np.concatenate( (f435w, data2[1]) )
 f555w = np.concatenate( (f555w, data2[2]) )
 f814w = np.concatenate( (f814w, data2[3]) )
@@ -102,10 +101,10 @@ vsini_err = np.concatenate( (vsini_err, np.copy(vsini_nan)) )
 color = f435w - f814w
 color_err = np.sqrt(f435w_err**2 + f814w_err**2)
 
-## boundaries of the color, magnitude and vsini space where we will need model priors
+## compute the boundaries of the color, magnitude and vsini space where we will need model priors
 obs = np.stack( (f555w, color, vsini), axis=1 )
 err = np.stack( (f555w_err, color_err, vsini_err), axis=1 )
-err = np.maximum(err, cf.std[np.newaxis,:]) # minimum bound on error
+err = np.maximum(err, cf.std[np.newaxis,:]) # apply the minimum bound on error
 resvar = (err/cf.std)**2 - 1 # residual relative variance
 resvar[np.less(resvar, 0, where=~np.isnan(resvar))] = 0 # correct for round-off error
 margin = cf.nsig * cf.std * (1 + np.sqrt(resvar))
@@ -122,31 +121,3 @@ obmin = np.minimum(obmin, obmin_conv)
 # plotting boundaries - these are inside the area where minimum-error density is defined
 obmax_plot = cf.ROI[:, 1] + cf.plot_err * cf.nsig * cf.std
 obmin_plot = cf.ROI[:, 0] - cf.plot_err * cf.nsig * cf.std
-
-
-
-# # histogram to obtain approximate standard deviation for the stars that are in the vsini = 0 bin
-# def f(x, A, sigma):
-# 	return (A / 2) * (1 + special.erf(x / (sigma * np.sqrt(2))))
-# v = vsini[~np.isnan(vsini)]
-# bins = np.linspace(10, 150, 15)
-# x = (bins[:-1] + bins[1:])/2
-# y = np.histogram(v, bins=bins)[0]
-# result = optimize.curve_fit(f, x, y, p0=(50, 10), sigma=np.sqrt(y))
-# xplot = np.linspace(-x.max(), x.max(), 100)
-# plt.scatter(x, y)
-# plt.plot(xplot, f(xplot, result[0][0], result[0][1]))
-# plt.ylabel('Number of stars')
-# plt.xlabel('v * sin(i)')
-# plt.show()
-# print('sigma = ' + str(result[0][1]))
-
-# max_margin = np.nanmax(margin, axis=0)
-# obmin = np.array(cf.ROI)[:,0] - max_margin
-# obmax = np.array(cf.ROI)[:,1] + max_margin
-# # record the lower limit in vsini dimension at this point, even if it's negative
-# # we won't calculate the prior at negative vsini, but we'll temporarily place 
-# # convolved probability distribution at such values
-# vsini_low = obmin[-1] 
-# # remove negative vsini from the set at which we need to get the prior
-# obmin[-1] = np.maximum(obmin[-1], 0) 

@@ -75,8 +75,8 @@ for filepath in filelist: # for each combination of age and metallicity
 		# check that the kernel, evaluated at the ROI boundaries, fits within the grid
 		if density.check_roi(i, kernel): 
 			density.convolve(i, kernel, ds=cf.downsample)
-	density.normalize()
 	print('First convolution: ' + str(time.time() - start) + ' seconds.') 
+	density.normalize()
 
 	# calculate the dependence of probability change on standard deviation of further convolving kernel
 	start = time.time()

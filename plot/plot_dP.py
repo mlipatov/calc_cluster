@@ -17,8 +17,8 @@ for filepath in filelist: # for each combination of age and metallicity
 	# load the pre-computed density on a grid of observables
 	with open(filepath, 'rb') as f:
 		density = pickle.load(f)
-	for axis in range(len(density.dP)):
-		dP_spline = density.dP[axis]
+	for axis in range(len(density.correction)):
+		dP_spline = density.correction[axis]
 		if dP_spline is not None:
 			x = dP_spline.x; y = dP_spline.y
 			xplot = np.linspace(x.min(), x.max(), 100)
