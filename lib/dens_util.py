@@ -10,13 +10,6 @@ import copy
 class ConvolutionException(Exception):
     pass
 
-# @nb.jit(nopython=True)
-# def convolve_nb(a, v):
-#     return np.convolve(a, v)
-
-# empty = np.array([0])
-# convolve_nb(empty, empty)
-
 # a finite symmetric Gaussian probability density kernel on a discrete, evenly spaced grid
 class Kernel:
 	# Inputs: 
@@ -58,8 +51,7 @@ class Grid:
 		self.step = np.array(step)
 		self.ROI = ROI
 		self.norm = norm
-		# a list of objects for each dimension:
-		#	when a dimension is finite-normalized, the object is the dependence of de-normalization on
+		# a list of dependences of de-normalization on
 		#		the standard deviation of the convolving kernel (a spline function)
 		self.correction = [None] * len(obs)
 		self.age = age
@@ -170,7 +162,7 @@ class Grid:
 		dens = np.moveaxis(self.dens, axis, -1) # move the focal axis to the front
 		dens1 = np.zeros_like(dens)
 		for index, d in np.ndenumerate(dens[..., 0]):
-			dens1[index] = np.convolve(dens[index], kernel.y, mode = 'same') # [kernel.n:-kernel.n]
+			dens1[index] = np.convolve(dens[index], kernel.y, mode = 'same')
 		# remove the strip on each side equal to one half of the kernel, where there are edge effects
 		dens = dens1[..., kernel.n:-kernel.n]
 		obs = self.obs[axis][kernel.n:-kernel.n]
