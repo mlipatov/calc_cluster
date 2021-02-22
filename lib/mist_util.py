@@ -22,6 +22,7 @@ class Set:
 			# select only the variables of interest
 			self.models = md[:, [0, 1, 2, 3, 4, 5, 6, 7, 9, 13]]
 			self.set_vars()
+			self.omega0 = None
 
 	def copy(self):
 		st = Set()
@@ -29,6 +30,7 @@ class Set:
 		st.age = self.age
 		st.Z = self.Z
 		st.set_vars()
+		st.omega0 = np.copy(self.omega0)
 		return st
 
 	# set model parameter arrays
@@ -43,7 +45,22 @@ class Set:
 		self.logL_div_Ledd = self.models[:, 7] # log of the Eddington ratio
 		self.R = 10**self.models[:, 8] # volume-averaged radius
 		self.oM = self.models[:, 9] # observed Omega / Omega_c
-		self.otc = self.oM * np.sqrt(1 - 10**self.logL_div_Ledd) # Omega / Omega_c, corrected for luminosity
+		self.oMc = self.oM * np.sqrt(1 - 10**self.logL_div_Ledd) # Omega / Omega_c, corrected for luminosity
+
+	# set omega: ignore the correction due to the Eddington limit here; 
+	# it should be ~1% for an intermediate-age cluster
+	def set_omega0(self):
+		oM0 = self.oM0
+		nn = ~np.isnan(oM0)
+		omega0 = np.full_like(oM0, np.nan)
+		omega0[nn] = sf.omega(oM0[nn])
+		self.omega0 = omega0
+
+	# # calculate initial PARS omega by tracing each model (initial mass, initial omega_MESA, metallicity) to ZAMS
+	# def set_omega0(self, st_ZAMS):
+	# 	L0 = griddata( (st_ZAMS.Mini,  st_ZAMS.oM0,  st_ZAMS.logZm ), st_ZAMS.logL_div_Ledd, \
+	# 				   (self.Mini, self.oM0, self.logZm), method='linear', fill_value=np.nan )
+	# 	print('no omega_0 for ' + str(np.count_nonzero(np.isnan(L0))) + ' out of ' + str(L0.shape[0]) + ' models')
 
 	# clear parameter arrays
 	def clear_vars(self):
@@ -57,22 +74,29 @@ class Set:
 		self.logL_div_Ledd = None
 		self.R = None
 		self.oM = None
-		self.otc = None	
+		self.oMc = None	
+		self.omega0 = None
 
 	# select a set of models
 	def select(self, mask):
 		self.models = self.models[mask, :]
+		if self.omega0 is not None:
+			self.omega0 = self.omega0[mask]
 		self.set_vars()
 
 	# select models with valid rotation
 	def select_valid_rotation(self):
-		m = (self.otc >= sf.omin) & (self.otc <= sf.omax) # mask out models with negative or super-critical rotation
+		m = (self.oMc >= sf.omin) & (self.oMc <= sf.omax) # mask out models with negative or super-critical rotation
 		m = m & (self.oM0 < 0.8) # mask out models likely to be super-critical on the pre-main sequence
 		self.select(m)
 
 	def select_MS(self):
 		m = (self.EEP >= 202) & (self.EEP < 454)
 		self.select(m)
+
+	# def select_ZAMS(self):
+	# 	m = (self.EEP == 202)
+	# 	self.select(m)
 
 	def select_mass(self, Mmin=0, Mmax=np.inf):
 		m = (self.Mini >= Mmin) & (self.Mini <= Mmax)
@@ -87,9 +111,9 @@ class Set:
 # a grid of MIST models at some age and metallicity
 class Grid:
 	# independent variables that define the grid, axes of the corresponding array of observables
-	ivars = ['Mini', 'oM0', 'inc']
+	ivars = ['Mini', 'omega0', 'inc']
 	# labels of the independent variables
-	lvars = [r'M_{i}', r'\omega_{M,i}', r'i']
+	lvars = [r'M_0', r'\omega_0', r'i']
 	# standard deviations of the observables
 	std = None
 	# distance modulus of the cluster
@@ -106,27 +130,28 @@ class Grid:
 	# 	initial MESA omegas
 	def interp(self):
 		st = self.st
-		Mogrid = tuple( np.meshgrid( self.Mini, self.oM0, sparse=True, indexing='ij' ) )
+		Mogrid = tuple( np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' ) )
 		# interpolate the model parameters; 
 		# use the linear method because there are small discontinuities at a limited range of masses
-		self.M = griddata( (st.Mini, st.oM0), st.M, Mogrid, method='linear' )
-		self.L = 10**griddata( (st.Mini, st.oM0), st.logL, Mogrid, method='linear' )
-		oM = griddata( (st.Mini, st.oM0), st.oM, Mogrid, method='linear' )
-		logL_div_Ledd = griddata( (st.Mini, st.oM0), st.logL_div_Ledd, Mogrid, method='linear' )
-		R = griddata( (st.Mini, st.oM0), st.R, Mogrid, method='linear' )
+		self.M = griddata( (st.Mini, st.omega0), st.M, Mogrid, method='linear' )
+		self.L = 10**griddata( (st.Mini, st.omega0), st.logL, Mogrid, method='linear' )
+		oM = griddata( (st.Mini, st.omega0), st.oM, Mogrid, method='linear' )
+		logL_div_Ledd = griddata( (st.Mini, st.omega0), st.logL_div_Ledd, Mogrid, method='linear' )
+		R = griddata( (st.Mini, st.omega0), st.R, Mogrid, method='linear' )
 		# present-day omega_MESA, without the Eddington luminosity correction 
-		otc = oM * np.sqrt(1 - 10**logL_div_Ledd)
-		# mitigate round-off error due to interpolation
-		otc[np.less(otc, sf.omin, where=~np.isnan(otc)) & ~np.isnan(otc)] = sf.omin
-		otc[np.greater(otc, sf.omax, where=~np.isnan(otc)) & ~np.isnan(otc)] = sf.omax
+		oMc = oM * np.sqrt(1 - 10**logL_div_Ledd)
+		# mitigate round-off error from interpolation
+		notnan = ~np.isnan(oMc)
+		oMc[np.less(oMc, sf.omin, where=notnan) & notnan] = sf.omin
+		oMc[np.greater(oMc, sf.omax, where=notnan) & notnan] = sf.omax
 		# PARS' omega and equatorial radius
-		sh = otc.shape
+		sh = oMc.shape
 		shf = np.prod(sh)
 		omega = np.full(shf, np.nan)
 		Req = np.full(shf, np.nan)
-		nn = ~np.isnan(otc)
+		nn = ~np.isnan(oMc)
 		nnf = nn.flatten()
-		omega[nnf] = sf.omega(otc[nn])
+		omega[nnf] = sf.omega(oMc[nn])
 		Req[nnf] = R.flatten()[nnf] * np.cbrt((4 * np.pi / 3) / sf.V(omega[nnf]))
 		omega = omega.reshape(sh)
 		Req = Req.reshape(sh)
@@ -141,10 +166,10 @@ class Grid:
 		del self.Req
 
 	def __init__(self, \
-			st=None, Mi=None, oM0=None, inc=None, A_V=None, verbose=False):
-		# independent MIST model parameters
+			st=None, Mi=None, o0=None, inc=None, A_V=None, verbose=False):
+		# independent model parameters
 		self.Mini = Mi
-		self.oM0 = oM0
+		self.omega0 = o0
 		self.inc = inc
 		self.A_V = A_V
 		self.st = st # set of MIST models
@@ -158,7 +183,7 @@ class Grid:
 	# this copy only has the independent star model variables, the observables, and the cluster variables;
 	# it does not have the original MIST models.
 	def pickle(self):
-		grid = Grid(Mi=self.Mini, oM0=self.oM0, inc=self.inc, A_V=self.A_V)
+		grid = Grid(Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
 		grid.obs = np.copy(self.obs).astype(np.float32)
 		grid.age = self.st.age
 		grid.Z = self.st.Z
@@ -168,8 +193,8 @@ class Grid:
 	def calc_obs(self, verbose=False):
 		if verbose:
 			print('Calculating the observables for ' + str(len(self.Mini)) + ' x ' +\
-				str(len(self.oM0)) + ' x ' + str(len(self.inc)) + ' = ' +\
-				'{:,}'.format(len(self.Mini) * len(self.oM0) * len(self.inc)) + ' models...')
+				str(len(self.omega0)) + ' x ' + str(len(self.inc)) + ' = ' +\
+				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc)) + ' models...')
 			start = time.time()
 		self.interp() # calculate the dependent model variables
 		# construct points for interpolating from the PARS grid;

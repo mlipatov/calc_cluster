@@ -12,9 +12,9 @@ import numpy as np
 # where we need model priors
 def Mlim(st, A_V):
 	Mi = np.sort(np.unique(st.Mini)) # original mass grid
-	oM0 = np.array([st.oM0.min(), st.oM0.max()]) # the two extreme inclinations
+	omega0 = np.array([st.omega0.min(), st.omega0.max()]) 
 	inc = np.array([0, np.pi/2]) # the two extreme inclinations
-	grid = mu.Grid(st, Mi, oM0, inc, cf.A_V)
+	grid = mu.Grid(st, Mi, omega0, inc, cf.A_V)
 	notnan = ~np.isnan(grid.obs)
 	m1 = np.full_like(grid.obs, False, dtype=bool)
 	m2 = np.full_like(grid.obs, False, dtype=bool)
@@ -31,9 +31,9 @@ def Mlim(st, A_V):
 
 def rc_mass_omega(st, A_V, dmax):
 	Mi = np.sort(np.unique(st.Mini)) # original mass grid
-	oM0 = np.sort(np.unique(st.oM0)) # original omega grid
+	o0 = np.sort(np.unique(st.omega0)) # original omega grid
 	inc = np.array([0, np.pi/2]) # relatively small inclination grid
-	grid = mu.Grid(st, Mi, oM0, inc, A_V)
+	grid = mu.Grid(st, Mi, o0, inc, A_V)
 
 	omax = np.nanmax(grid.get_maxdiff(1))
 	mmax = np.nanmax(grid.get_maxdiff(0))
@@ -48,15 +48,14 @@ def rc_mass_omega(st, A_V, dmax):
 			mmax = np.nanmax(grid.get_maxdiff(0))
 		grid.coarsen(0, dmax=dmax)
 		omax = np.nanmax(grid.get_maxdiff(1))
-	return [grid.Mini, grid.oM0]
+	return [grid.Mini, grid.omega0]
 
 # refine/coarsen the inclination dimension
 def rc_inc(st, A_V, dmax, dmin):
 	Mi = np.sort(np.unique(st.Mini)) # original mass grid
-	oM0 = np.sort(np.unique(st.oM0)) # original omega grid
+	o0 = np.sort(np.unique(st.omega0)) # original omega grid
 	inc = np.linspace(0, np.pi/2, 20) # larger inclination grid
-	grid = mu.Grid(st, Mi, oM0, inc, A_V)
-	# grid.coarsen(0, dmax=10.0) # coarsen the mass grid
+	grid = mu.Grid(st, Mi, o0, inc, A_V)
 	grid.refine(2, dmin=dmin)
 	grid.coarsen(2, dmax=dmax)
 	return grid.inc 
@@ -69,13 +68,20 @@ sf.calcom()
 # Load and filter MIST models
 print('Loading MIST...')
 start = time.time()
-st = mu.Set('data/mist_grid.npy') # load the MIST models
+st = mu.Set('data/mist_grid.npy') # load
+# valid rotation
 st.select_valid_rotation()
+# on the MS
 st.select_MS()
-print('\t' + str(time.time() - start) + ' seconds.')
-
+# a range of ages and metallicities
 t = np.unique(st.t)[99:99+17] # all ages between 1 and 2 Gyr; index 8 has 9.154
 Z = np.unique(st.logZm)[2:2+6] # all metallicities between -0.75 and 0.0; index 2 has -0.45
+m = np.isin(st.t, t) & np.isin(st.logZm, Z)
+st.select(m)
+st.set_omega0()
+print('\t' + str(time.time() - start) + ' seconds.')
+
+# age and metallicity to use for inclination refinement
 t_inc = t[8]
 z_inc = Z[3]
 
@@ -111,8 +117,8 @@ for t0 in t:
 		# apply mass cut-offs given the boundaries of the observable space region where we need model priors
 		Mmin, Mmax = Mlim(st1, cf.A_V)
 		st1.select_mass(Mmin=Mmin, Mmax=Mmax)
-
 		print(t0, z0)
+
 		start = time.time()
 		Mini, oM0 = rc_mass_omega(st1, cf.A_V, dmax)
 		print('\t' + str(time.time() - start) + ' seconds.')
@@ -122,7 +128,7 @@ for t0 in t:
 		# create a grid that combines the separately obtained model parameter arrays
 		grid = mu.Grid(st1, Mini, oM0, inclination, cf.A_V, verbose=True)
 		grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
-		grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_otilde0_' + tstr + '_' + zstr + '.png')
+		grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
 		grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
 		with open('data/model_grids/grid_' + tstr + '_' + zstr + '.pkl', 'wb') as f:
 		    pickle.dump(grid.pickle(), f)
