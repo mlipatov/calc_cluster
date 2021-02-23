@@ -12,7 +12,7 @@ mpl.rcParams['font.size'] = 12
 ROI_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
 RON_kwargs = {'facecolor':'none', 'edgecolor':'blue', 'alpha':0.5, 'lw':1, 'linestyle':'dashed'}
 rot_pop = ['zero', 'intermediate', 'critical']
-rot_pop.reverse() # undo reverse after re-calculating densities
+# rot_pop.reverse() # undo reverse after re-calculating densities
 
 # patches to plot for a 2D region
 # x index = 1

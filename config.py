@@ -1,7 +1,7 @@
 import numpy as np
 
 cluster = 'NGC1846'
-A_V = 0.26 
+A_V = 0.26315789 # one of the A_V values on the PARS grid 
 modulus = 18.45
 
 # minimum standard deviations of the observables:

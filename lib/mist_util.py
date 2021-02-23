@@ -94,10 +94,6 @@ class Set:
 		m = (self.EEP >= 202) & (self.EEP < 454)
 		self.select(m)
 
-	# def select_ZAMS(self):
-	# 	m = (self.EEP == 202)
-	# 	self.select(m)
-
 	def select_mass(self, Mmin=0, Mmax=np.inf):
 		m = (self.Mini >= Mmin) & (self.Mini <= Mmax)
 		self.select(m)
@@ -198,27 +194,31 @@ class Grid:
 			start = time.time()
 		self.interp() # calculate the dependent model variables
 		# construct points for interpolating from the PARS grid;
-		# 	each point is a set of values used by the PARS grid
-		#	(e.g. [tau, omega, inclination, gamma, logZp, AV] 
-		#	- all the dimensions of a PARS grid except the bands)
-		# these points are on a grid of the independent variables 
-		# 	(e.g. initial mass, initial omega_MESA),
+		# 	each point is a set of values used by the PARS grid in which we interpolate
+		#	(e.g. [tau, omega, inclination, gamma] 
+		#	- all the dimensions of a PARS grid except metallicity, reddening and the bands)
+		# these points are on a grid of MESA independent variables 
+		# 	(e.g. initial mass, initial omega),
 		#	plus additional parameters for PARS that MESA models don't have 
 		#	(e.g. inclination)
-		tau = ut.tau(self.L, self.Req) # dimensions of the grid of MESA independent variables
-		gamma = ut.gamma(self.M, self.Req) # dimensions of the grid of MESA independent variables
-		points = np.full(self.M.shape + ( len(self.inc), len(self.pars.dims) - 1 ), np.nan)
+		tau = ut.tau(self.L, self.Req) # has dimensions of the grid of MESA independent variables
+		gamma = ut.gamma(self.M, self.Req) # has dimensions of the grid of MESA independent variables
+		pars_dims = len(self.pars.dims) - 3 # number of interpolated PARS dimensions
+		# start with arrays of PARS interpolated variables on a grid of 
+		# MESA independent variables and inclination
+		points = np.full(self.M.shape + ( len(self.inc), pars_dims ), np.nan)
 		points[..., 0] = tau[..., np.newaxis] # add axes for non-MESA independent variables
 		points[..., 1] = self.omega[..., np.newaxis] # add axes for non-MESA independent variables
 		points[..., 2] = self.inc # if this is the only MESA-independent variable, no new axes necessary here
 		points[..., 3] = gamma[..., np.newaxis] # add axes for non-MESA independent variables
-		points[..., 4] = ut.logZp_from_logZm(self.st.Z) # same metallicity for each point
-		points[..., 5] = self.A_V # same AV for each point
-		sh = points.shape[:-1] # record the shape of all dimensions except last
-		points = points.reshape( (-1, len(self.pars.dims) - 1) ) # flatten all dimensions except last
+		# points[..., 4] = ut.logZp_from_logZm(self.st.Z) # same metallicity for each point
+		# points[..., 5] = self.A_V # same AV for each point
+		# record the shape of the grid and flatten it, keeping the arrays of PARS variables intact
+		sh = points.shape[:-1] 
+		points = points.reshape( (-1, pars_dims) )
 		# interpolate from the PARS grid;
 		# the result is an an array of magnitudes, e.g. [F435W, F555W, F814W]
-		mag = gd.interp(self.pars, points)
+		mag = gd.interp4d(self.pars, points, ut.logZp_from_logZm(self.st.Z), self.A_V)
 		# reshape magnitudes back to the grid of evolutionary model parameters
 		mag = mag.reshape(sh + (len(self.pars.bands), ))
 		# correct for radius and distance;

@@ -69,6 +69,11 @@ sf.calcom()
 print('Loading MIST...')
 start = time.time()
 st = mu.Set('data/mist_grid.npy') # load
+
+# recalculate the PARS grid in the metallicities we have in the MIST models
+# from pa.lib import util as ut
+# np.unique(ut.logZp_from_logZm(st.logZm))
+
 # valid rotation
 st.select_valid_rotation()
 # on the MS
@@ -87,12 +92,8 @@ z_inc = Z[3]
 
 print('Loading PARS...')
 start = time.time()
-with open('data/pars_grid.pkl', 'rb') as f: pars = pickle.load(f)
+with open('data/pars_grid_2.pkl', 'rb') as f: pars = pickle.load(f)
 print('\t' + str(time.time() - start) + ' seconds.\n')
-
-# recalculate the PARS grid in the metallicities we have in the MIST models
-# from pa.lib import util as ut
-# np.unique(ut.logZp_from_logZm(st.logZm))
 
 # set the parameters of the grid class
 mu.Grid.std = cf.std # standard deviations of observables
