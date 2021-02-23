@@ -97,7 +97,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	with open(filepath, 'rb') as f:
 		# the densities should be normalized; their de-normalization functions should be computed
 		densities = pickle.load(f)
-		densities.reverse() # remove the reversal after re-calculating the densities
+		# densities.reverse() # remove the reversal after re-calculating the densities
 	age = densities[0][0].age
 	met = densities[0][0].Z
 	nrot = len(densities) # number of rotational populations

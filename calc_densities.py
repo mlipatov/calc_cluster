@@ -44,19 +44,19 @@ for filepath in filelist: # for each combination of age and metallicity
 	# arrays of ordinate multipliers (weights) for the numerical integration in model space;
 	# these include the varying discrete distances between adjacent abscissas
 	w_Mini = trap(grid.Mini)[:, np.newaxis, np.newaxis]
-	w_oM = trap(grid.oM0)[np.newaxis, :, np.newaxis]
+	w_omega0 = trap(grid.omega0)[np.newaxis, :, np.newaxis]
 	w_inc = trap(grid.inc)[np.newaxis, np.newaxis, :]
 	# meshgrid of model parameters
-	Mv, ov, iv = np.meshgrid(grid.Mini, grid.oM0, grid.inc, sparse=True, indexing='ij')
+	Mv, ov, iv = np.meshgrid(grid.Mini, grid.omega0, grid.inc, sparse=True, indexing='ij')
 	# omega prior parameters
-	om_max = grid.oM0.max() # = 0.7
+	om_max = grid.omega0.max() # about 0.83 for omega_MESA_max = 0.7
 	om_mean = [0, om_max/2., om_max]
 	om_sigma = [om_max/7., 3*om_max/7., om_max/7.]
 	# densities for different omega distributions
 	densities = []
 	for j in range(len(om_mean)):
 		# priors on the model grid, weighted according to the integration numerical approximation
-		pr = ( Mv**-2.35 * ((ov - om_mean[j])**2 / (2 * om_sigma[j]**2)) * np.sin(iv) ) * w_Mini * w_oM * w_inc
+		pr = ( Mv**-2.35 * ((ov - om_mean[j])**2 / (2 * om_sigma[j]**2)) * np.sin(iv) ) * w_Mini * w_omega0 * w_inc
 		# distribute the prior over the data space grid
 		ind = [] # index of each model in the data space grid
 		for i in range(len(nobs)): # searchsorted only works on one array at a time
