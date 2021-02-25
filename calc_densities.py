@@ -5,6 +5,7 @@ from lib import dens_util as du
 import config as cf
 from lib import load_data as ld
 
+from scipy.interpolate import interp1d
 import numpy as np
 import glob
 
@@ -56,7 +57,8 @@ for filepath in filelist: # for each combination of age and metallicity
 	densities = []
 	for j in range(len(om_mean)):
 		# priors on the model grid, weighted according to the integration numerical approximation
-		pr = ( Mv**-2.35 * ((ov - om_mean[j])**2 / (2 * om_sigma[j]**2)) * np.sin(iv) ) * w_Mini * w_omega0 * w_inc
+		pr = ( Mv**-2.35 * ((ov - om_mean[j])**2 / (2 * om_sigma[j]**2)) * np.sin(iv) ) * \
+			   w_Mini * w_omega0 * w_inc
 		# distribute the prior over the data space grid
 		ind = [] # index of each model in the data space grid
 		for i in range(len(nobs)): # searchsorted only works on one array at a time

@@ -56,12 +56,6 @@ class Set:
 		omega0[nn] = sf.omega(oM0[nn])
 		self.omega0 = omega0
 
-	# # calculate initial PARS omega by tracing each model (initial mass, initial omega_MESA, metallicity) to ZAMS
-	# def set_omega0(self, st_ZAMS):
-	# 	L0 = griddata( (st_ZAMS.Mini,  st_ZAMS.oM0,  st_ZAMS.logZm ), st_ZAMS.logL_div_Ledd, \
-	# 				   (self.Mini, self.oM0, self.logZm), method='linear', fill_value=np.nan )
-	# 	print('no omega_0 for ' + str(np.count_nonzero(np.isnan(L0))) + ' out of ' + str(L0.shape[0]) + ' models')
-
 	# clear parameter arrays
 	def clear_vars(self):
 		self.logZm = None
@@ -117,13 +111,13 @@ class Grid:
 	# PARS grid
 	pars = None
 
-	# Interpolates between MIST models in initial mass and MESA omega
-	#	to find other model parameters; computes PARS omega and equatorial radii;
+	# Interpolates between MIST models in initial mass and omega
+	#	to find other model parameters; computes omega and equatorial radii;
 	# 	records a set of inclinations as well
-	# Inputs:
+	# Makes use of the following:
 	#	MIST model set at some age and metallicity
 	#	initial masses
-	# 	initial MESA omegas
+	# 	initial omegas
 	def interp(self):
 		st = self.st
 		Mogrid = tuple( np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' ) )
@@ -177,7 +171,7 @@ class Grid:
 
 	# return a version of the object for pickling;
 	# this copy only has the independent star model variables, the observables, and the cluster variables;
-	# it does not have the original MIST models.
+	# it does not have the original MIST models or the PARS grid.
 	def pickle(self):
 		grid = Grid(Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
 		grid.obs = np.copy(self.obs).astype(np.float32)
@@ -268,20 +262,6 @@ class Grid:
 		setattr(self, self.ivars[axis], var) # set the model parameter list
 		self.calc_obs() # calculate the observables
 
-	def plot_diff(self, axis, filename):
-		label = self.lvars[axis]
-		varname = self.ivars[axis]
-		var = getattr(self, varname) # get the model parameter list
-		# set it to midpoints between models
-		var = (var[1:] + var[:-1]) / 2
-		# difference with maximum modulus in sigmas along the axis
-		maxdiff = self.get_maxdiff(axis)
-		plt.scatter(var, maxdiff, s=2)
-		plt.xlabel(r'$' + label + r'$')
-		plt.ylabel(r'$\max{\left|\,\Delta x\left(' + label + r'\right) / \sigma_x\,\right|}$')
-		plt.savefig(filename, dpi=200)
-		plt.close()
-
 	# Coarsen the model grid in a given focal dimension 
 	def coarsen(self, axis, dmax=1.0):
 		# print('Coarsening the model grid...')
@@ -370,4 +350,18 @@ class Grid:
 		setattr(self, self.ivars[axis], var) # set the model parameter list
 		
 		# print('\t' + str(time.time() - start) + ' seconds.')
+
+	def plot_diff(self, axis, filename):
+		label = self.lvars[axis]
+		varname = self.ivars[axis]
+		var = getattr(self, varname) # get the model parameter list
+		# set it to midpoints between models
+		var = (var[1:] + var[:-1]) / 2
+		# difference with maximum modulus in sigmas along the axis
+		maxdiff = self.get_maxdiff(axis)
+		plt.scatter(var, maxdiff, s=2)
+		plt.xlabel(r'$' + label + r'$')
+		plt.ylabel(r'$\max{\left|\,\Delta x\left(' + label + r'\right) / \sigma_x\,\right|}$')
+		plt.savefig(filename, dpi=200)
+		plt.close()
 				

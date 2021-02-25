@@ -124,10 +124,11 @@ for t0 in t:
 		Mini, oM0 = rc_mass_omega(st1, cf.A_V, dmax)
 		print('\t' + str(time.time() - start) + ' seconds.')
 
-		zstr = str(z0).replace('-', 'm').replace('.', 'p')
-		tstr = str(t0)[:4].replace('.', 'p')
 		# create a grid that combines the separately obtained model parameter arrays
 		grid = mu.Grid(st1, Mini, oM0, inclination, cf.A_V, verbose=True)
+
+		zstr = str(z0).replace('-', 'm').replace('.', 'p')
+		tstr = str(t0)[:4].replace('.', 'p')
 		grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
 		grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
 		grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
