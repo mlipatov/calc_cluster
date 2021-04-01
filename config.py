@@ -1,11 +1,11 @@
 import numpy as np
 
 cluster = 'NGC1846'
-A_V = 0.26315789 # one of the A_V values on the PARS grid 
+A_V = 0.26315789 # should be one of the A_V values on the PARS grid 
 modulus = 18.45
 
 # minimum standard deviations of the observables:
-# magnitude F555W, color F435 - F814W and vsini in km/s
+# magnitude F555W, color F435W - F814W and vsini in km/s
 std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
 
 # coordinate limits in color-magnitude-vsini space that select for real main sequence stars 
@@ -21,6 +21,14 @@ volume = np.prod(np.diff(ROI, axis=-1)[:, 0]) # volume of the ROI
 volume_cmd = np.prod(np.diff(ROI, axis=-1)[:-1, 0]) # volume of the CMD ROI
 v0err = 5 # standard deviation at the vsini = 0 boundary, in units of minimum standard deviation
 
+
+# s, such that magnitude = s * (-2.5 * log_10(initial mass)) for a given metallicity
+s = 4.6 
+# maximum number of smallest observable space standard deviations in between models in each model dimension
+dmax = 2.
+# number of steps in the binary mass ratio r that ensures that magnitude differences between 
+# adjacent values of r are mostly less than the maximum allowed number of smallest magnitude standard deviations
+num_r = int((2.5 / np.log(10)) * (1 / (dmax * std[0]))) + 30 # adjust the additive term as necessary
 # refinement factor for the grid over which the first convolution is performed
 downsample = 3
 # the number of standard deviations to assume for the truncation of Gaussian kernels in 

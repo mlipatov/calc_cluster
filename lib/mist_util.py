@@ -8,6 +8,11 @@ import numpy as np
 from scipy.interpolate import griddata
 from matplotlib import pyplot as plt
 
+# combine magnitude arrays that can be broadcast to the same shape;
+# this takes a while because we have to evaluate logarithms
+def combine_mags(mag1, mag2):
+	return -2.5 * np.log10( 10**(-mag1/2.5) + 10**(-mag2/2.5) )
+
 # a set of MIST models
 class Set:
 
@@ -22,7 +27,7 @@ class Set:
 			# select only the variables of interest
 			self.models = md[:, [0, 1, 2, 3, 4, 5, 6, 7, 9, 13]]
 			self.set_vars()
-			self.omega0 = None
+		self.omega0 = None
 
 	def copy(self):
 		st = Set()
@@ -30,7 +35,8 @@ class Set:
 		st.age = self.age
 		st.Z = self.Z
 		st.set_vars()
-		st.omega0 = np.copy(self.omega0)
+		if self.omega0 is not None:
+			st.omega0 = np.copy(self.omega0)
 		return st
 
 	# set model parameter arrays
@@ -92,24 +98,63 @@ class Set:
 		m = (self.Mini >= Mmin) & (self.Mini <= Mmax)
 		self.select(m)
 
-	def select_tZ(self, age, Z):
-		m = (self.t == age) & (self.logZm == Z)
+	def select_age(self, age):
+		m = (self.t == age)
 		self.select(m)
 		self.age = age
+
+	def select_Z(self, Z):
+		m = (self.logZm == Z)
+		self.select(m)
 		self.Z = Z
 
 # a grid of MIST models at some age and metallicity
 class Grid:
 	# independent variables that define the grid, axes of the corresponding array of observables
-	ivars = ['Mini', 'omega0', 'inc']
+	ivars = ['Mini', 'omega0', 'inc', 'r']
 	# labels of the independent variables
-	lvars = [r'M_0', r'\omega_0', r'i']
+	lvars = [r'M_0', r'\omega_0', r'i', 'r']
 	# standard deviations of the observables
 	std = None
 	# distance modulus of the cluster
 	modulus = None
 	# PARS grid
 	pars = None
+
+	def __init__(self, \
+			st=None, Mi=None, o0=None, inc=None, A_V=None, verbose=False):
+		# independent model parameters
+		self.Mini = Mi
+		self.omega0 = o0
+		self.inc = inc
+		self.A_V = A_V
+		self.st = st # set of MIST models
+		# interpolate to set the dependent parameters
+		if st is not None:
+			self.calc_obs(verbose=verbose)
+		else:
+			self.mag = None
+			self.vsini = None
+			self.obs = None
+
+	# clear the dependent model variables that are used for calculations
+	def clear_vars(self):
+		del self.M
+		del self.L
+		del self.omega
+		del self.Req
+
+	# return a version of the object for pickling;
+	# this copy only has the independent star model variables, the observables, and the cluster variables;
+	# it does not have the original MIST models or the PARS grid.
+	def pickle(self):
+		grid = Grid(Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
+		grid.mag = np.copy(self.mag).astype(np.float32)
+		grid.vsini = np.copy(self.vsini).astype(np.float32)
+		grid.age = self.st.age
+		grid.Z = self.st.Z
+		del grid.st
+		return grid
 
 	# Interpolates between MIST models in initial mass and omega
 	#	to find other model parameters; computes omega and equatorial radii;
@@ -147,38 +192,6 @@ class Grid:
 		Req = Req.reshape(sh)
 		self.omega = omega
 		self.Req = Req
-
-	# clear the dependent model variables that are used for calculations
-	def clear_vars(self):
-		del self.M
-		del self.L
-		del self.omega
-		del self.Req
-
-	def __init__(self, \
-			st=None, Mi=None, o0=None, inc=None, A_V=None, verbose=False):
-		# independent model parameters
-		self.Mini = Mi
-		self.omega0 = o0
-		self.inc = inc
-		self.A_V = A_V
-		self.st = st # set of MIST models
-		# interpolate to set the dependent parameters
-		if st is not None:
-			self.calc_obs(verbose=verbose)
-		else:
-			self.obs = None
-
-	# return a version of the object for pickling;
-	# this copy only has the independent star model variables, the observables, and the cluster variables;
-	# it does not have the original MIST models or the PARS grid.
-	def pickle(self):
-		grid = Grid(Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
-		grid.obs = np.copy(self.obs).astype(np.float32)
-		grid.age = self.st.age
-		grid.Z = self.st.Z
-		del grid.st
-		return grid
 
 	def calc_obs(self, verbose=False):
 		if verbose:
@@ -218,10 +231,10 @@ class Grid:
 		# correct for radius and distance;
 		# the radius array needs extra dimensions due to bands and PARS parameters
 		# that evolutionary models don't have (e.g. inclination)
-		mag = gd.correct(mag, self.Req[..., np.newaxis, np.newaxis], self.modulus)
-		vsini = ut.vsini1(self.M[..., np.newaxis], self.Req[..., np.newaxis], \
+		self.mag = gd.correct(mag, self.Req[..., np.newaxis, np.newaxis], self.modulus)
+		self.vsini = ut.vsini1(self.M[..., np.newaxis], self.Req[..., np.newaxis], \
 			self.omega[..., np.newaxis], self.inc[np.newaxis, np.newaxis, :]) / 1e5
-		self.obs = np.stack( (mag[..., 1], mag[..., 0] - mag[..., 2], vsini), axis=-1 )
+		self.obs = np.stack( (self.mag[..., 1], self.mag[..., 0] - self.mag[..., 2], self.vsini), axis=-1 )
 		self.clear_vars() # clear the dependent model variables
 		if verbose:
 			print('\t' + str(time.time() - start) + ' seconds.')
@@ -234,12 +247,12 @@ class Grid:
 		diff = np.moveaxis(diff, axis, 0) 
 		# flatten all but the focal axis
 		diff = diff.reshape(diff.shape[0], -1)
-		# suppress the error for all-NAN slices
-		warnings.filterwarnings('ignore') 
+		# # suppress the error for all-NAN slices
+		# warnings.filterwarnings('ignore') 
 		# maximum difference across observables and non-focal model dimensions
 		maxdiff = np.nanmax(diff, axis=1)
-		# go back to default error reports
-		warnings.filterwarnings('default')
+		# # go back to default error reports
+		# warnings.filterwarnings('default')
 		return maxdiff
 
 	# Subdivide each interval into n subintervals, where n is the ceiling of the largest 
@@ -364,4 +377,46 @@ class Grid:
 		plt.ylabel(r'$\max{\left|\,\Delta x\left(' + label + r'\right) / \sigma_x\,\right|}$')
 		plt.savefig(filename, dpi=200)
 		plt.close()
-				
+
+# companion magnitudes on a grid of initial mass of the primary and binary mass ratio
+# Inputs:
+#	mass ratio grid
+#	primary mass grid
+#	set of models
+# 	PARS grid of observables
+#	reddening
+#	distance modulus
+def companion_grid(r, Mini, st, pars, A_V, modulus):
+	## compute all three magnitudes of non-rotating companions 
+	## on a grid of primary initial mass and binary mass ratio;
+	## about half of the values won't exist because companion mass doesn't go low enough in the model grids
+	Mc = Mini[:, np.newaxis] * r[np.newaxis, :] # companion mass
+	# MIST model dependent variables
+	M = griddata( (st.Mini,), st.M, Mc, method='linear' )
+	L = 10**griddata( (st.Mini, ), st.logL, Mc, method='linear' )
+	logL_div_Ledd = griddata( (st.Mini, ), st.logL_div_Ledd, Mc, method='linear' )
+	R = griddata( (st.Mini, ), st.R, Mc, method='linear' )
+	# PARS grid variables
+	tau = ut.tau(L, R) 
+	gamma = ut.gamma(M, R) 
+	pars_dims = len(pars.dims) - 3 # number of interpolated PARS dimensions
+	# start with arrays of PARS interpolated variables on a grid of 
+	# MESA independent variables and inclination
+	points = np.full(M.shape + (pars_dims, ), np.nan)
+	points[..., 0] = tau
+	points[..., 1] = 0 # omega is zero
+	points[..., 2] = 0 # inclination can be zero
+	points[..., 3] = gamma 
+	# record the shape of the grid and flatten the grid almost completely,
+	# keeping the arrays of PARS variables intact
+	sh = points.shape[:-1] 
+	points = points.reshape( (-1, pars_dims) )
+	# interpolate from the PARS grid;
+	# the result is an an array of magnitudes, e.g. [F435W, F555W, F814W]
+	mag = gd.interp4d(pars, points, ut.logZp_from_logZm(st.Z), A_V)
+	# reshape magnitudes back to the grid of evolutionary model parameters
+	mag = mag.reshape(sh + (len(pars.bands), ))
+	# correct for radius and distance;
+	# the radius array needs extra dimensions due to bands
+	mag = gd.correct(mag, R[..., np.newaxis], modulus)
+	return mag
