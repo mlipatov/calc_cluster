@@ -52,8 +52,8 @@ om_sigma = np.array([s_slow, s_middle, s_fast])
 print('omega means: ' + str(om_mean))
 print('omega standard deviations: '+ str(om_sigma))
 
-# filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
-filelist = list(np.sort(glob.glob('data/model_grids/*_9p13_m0p45.pkl')))
+filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
+# filelist = list(np.sort(glob.glob('data/model_grids/*_9p19_m0p45.pkl')))
 for filepath in filelist: # for each combination of age and metallicity
 	# load the pre-computed observables on a grid of model parameters
 	with open(filepath, 'rb') as f:

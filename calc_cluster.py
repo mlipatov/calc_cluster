@@ -183,7 +183,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	print('marginalization in q on a grid of w_0, w_1 and b: ' + str(time.time() - start) + ' seconds.')
 	i0, i1, i2 = np.unravel_index(np.nanargmax(ll),ll.shape)
 	print('max ln likelihood: ' + str(np.nanmax(ll)) + ' at w_0 = ' + str(w0[i0])[:4] + \
-		', 1 - w_0 - w_1 = ' + str(1 - w0[i0] - w1[i1])[:4] + ', w_1 = ' + str(w1[i1])[:4] +\
+		', 1 - w_0 - w_1 = ' + str(1 - w0[i0] - w1[i1]) + ', w_1 = ' + str(w1[i1])[:4] +\
 		' and b = ' + str(b[i2])[:4])
 	print('min ln likelihood: ' + str(np.nanmin(ll)))
 

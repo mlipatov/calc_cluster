@@ -27,6 +27,8 @@ class Set:
 			# select only the variables of interest
 			self.models = md[:, [0, 1, 2, 3, 4, 5, 6, 7, 9, 13]]
 			self.set_vars()
+		else:
+			self.clear_vars()
 		self.omega0 = None
 
 	def copy(self):
@@ -54,7 +56,7 @@ class Set:
 		self.oMc = self.oM * np.sqrt(1 - 10**self.logL_div_Ledd) # Omega / Omega_c, corrected for luminosity
 
 	# set omega: ignore the correction due to the Eddington limit here; 
-	# it should be ~1% for an intermediate-age cluster
+	# it should be less than ~1% for an intermediate-age cluster
 	def set_omega0(self):
 		oM0 = self.oM0
 		nn = ~np.isnan(oM0)
@@ -64,18 +66,18 @@ class Set:
 
 	# clear parameter arrays
 	def clear_vars(self):
-		self.logZm = None
-		self.oM0 = None
-		self.EEP = None
-		self.t = None
-		self.Mini = None
-		self.M = None
-		self.logL = None
-		self.logL_div_Ledd = None
-		self.R = None
-		self.oM = None
-		self.oMc = None	
-		self.omega0 = None
+		self.logZm = np.empty((0,))
+		self.oM0 = np.empty((0,))
+		self.EEP = np.empty((0,))
+		self.t = np.empty((0,))
+		self.Mini = np.empty((0,))
+		self.M = np.empty((0,))
+		self.logL = np.empty((0,))
+		self.logL_div_Ledd = np.empty((0,))
+		self.R = np.empty((0,))
+		self.oM = np.empty((0,))
+		self.oMc = np.empty((0,))
+		self.omega0 = np.empty((0,))
 
 	# select a set of models
 	def select(self, mask):
@@ -98,15 +100,44 @@ class Set:
 		m = (self.Mini >= Mmin) & (self.Mini <= Mmax)
 		self.select(m)
 
+	def select_Z(self, Z):
+		m = (self.logZm == Z)
+		self.select(m)
+		self.Z = Z
+
 	def select_age(self, age):
 		m = (self.t == age)
 		self.select(m)
 		self.age = age
 
-	def select_Z(self, Z):
-		m = (self.logZm == Z)
-		self.select(m)
-		self.Z = Z
+# assuming constant metallicity, select MS at a given age under enhanced mixing
+def select_MS_age_enhanced_mixing(st1, age, a):
+	# destination model set
+	st2 = st1.copy() # set of models adjusted according to more rotational mixing
+	st2.select_MS() # these will be on the MS
+	st2.select_age(age) # these will be only at a particular age
+
+	eep2_orig = (st2.EEP - 202) / (454 - 202) # original dimensionless EEP in the destination set
+	eep2 = eep2_orig / (1 + a * st2.omega0 * eep2_orig) # earlier dimensionless EEP for the destination set
+	EEP2 = eep2 * (454 - 202) + 202 # earlier EEP for the destination set
+
+	for o in np.sort(np.unique(st1.oM0)):
+		# masks that pick out this rotation rate
+		m1 = (st1.oM0 == o)
+		m2 = (st2.oM0 == o)
+		# points from which to interpolate, for this rotation rate
+		points = (st1.EEP[m1], st1.Mini[m1])
+		# points at which to interpolate, for this rotation rate
+		xi = (EEP2[m2], st2.Mini[m2])
+		# interpolate all dependent parameters in EEP to get them at the earlier EEP
+		st2.models[:, 3][m2] = griddata( points, st1.models[:, 3][m1], xi, method='linear' ) # age
+		st2.models[:, 5][m2] = griddata( points, st1.models[:, 5][m1], xi, method='linear' ) # mass in M_sun
+		st2.models[:, 6][m2] = griddata( points, st1.models[:, 6][m1], xi, method='linear' ) # logL in L_sun
+		st2.models[:, 7][m2] = griddata( points, st1.models[:, 7][m1], xi, method='linear' ) # logL_div_Ledd
+		st2.models[:, 8][m2] = griddata( points, st1.models[:, 8][m1], xi, method='linear' ) # radius
+		st2.models[:, 9][m2] = griddata( points, st1.models[:, 9][m1], xi, method='linear' ) # Omega / Omega_c
+	st2.set_vars()
+	return st2
 
 # a grid of MIST models at some age and metallicity
 class Grid:
