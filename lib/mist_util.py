@@ -110,34 +110,35 @@ class Set:
 		self.select(m)
 		self.age = age
 
-# assuming constant metallicity, select MS at a given age under enhanced mixing
-def select_MS_age_enhanced_mixing(st1, age, a):
-	# destination model set
-	st2 = st1.copy() # set of models adjusted according to more rotational mixing
-	st2.select_MS() # these will be on the MS
-	st2.select_age(age) # these will be only at a particular age
+# # assuming constant metallicity, select MS at a given age under enhanced mixing
+# def select_MS_age_enhanced_mixing(st1, age, a):
+# 	# destination model set
+# 	st2 = st1.copy() # set of models adjusted according to more rotational mixing
+# 	st2.select_age(age) # these will be only at a particular age
 
-	eep2_orig = (st2.EEP - 202) / (454 - 202) # original dimensionless EEP in the destination set
-	eep2 = eep2_orig / (1 + a * st2.omega0 * eep2_orig) # earlier dimensionless EEP for the destination set
-	EEP2 = eep2 * (454 - 202) + 202 # earlier EEP for the destination set
+# 	eep2_orig = (st2.EEP - 202) / (454 - 202) # original dimensionless EEP in the destination set
+# 	eep2 = eep2_orig / (1 + a * st2.omega0 * eep2_orig) # earlier dimensionless EEP for the destination set
+# 	EEP2 = eep2 * (454 - 202) + 202 # earlier EEP for the destination set
 
-	for o in np.sort(np.unique(st1.oM0)):
-		# masks that pick out this rotation rate
-		m1 = (st1.oM0 == o)
-		m2 = (st2.oM0 == o)
-		# points from which to interpolate, for this rotation rate
-		points = (st1.EEP[m1], st1.Mini[m1])
-		# points at which to interpolate, for this rotation rate
-		xi = (EEP2[m2], st2.Mini[m2])
-		# interpolate all dependent parameters in EEP to get them at the earlier EEP
-		st2.models[:, 3][m2] = griddata( points, st1.models[:, 3][m1], xi, method='linear' ) # age
-		st2.models[:, 5][m2] = griddata( points, st1.models[:, 5][m1], xi, method='linear' ) # mass in M_sun
-		st2.models[:, 6][m2] = griddata( points, st1.models[:, 6][m1], xi, method='linear' ) # logL in L_sun
-		st2.models[:, 7][m2] = griddata( points, st1.models[:, 7][m1], xi, method='linear' ) # logL_div_Ledd
-		st2.models[:, 8][m2] = griddata( points, st1.models[:, 8][m1], xi, method='linear' ) # radius
-		st2.models[:, 9][m2] = griddata( points, st1.models[:, 9][m1], xi, method='linear' ) # Omega / Omega_c
-	st2.set_vars()
-	return st2
+# 	for o in np.sort(np.unique(st1.oM0)):
+# 		# masks that pick out this rotation rate
+# 		m1 = (st1.oM0 == o)
+# 		m2 = (st2.oM0 == o)
+# 		# points from which to interpolate, for this rotation rate
+# 		points = (st1.EEP[m1], st1.Mini[m1])
+# 		# points at which to interpolate, for this rotation rate
+# 		xi = (EEP2[m2], st2.Mini[m2])
+# 		# interpolate all dependent parameters in EEP to get them at the earlier EEP
+# 		# st2.models[:, 3][m2] = griddata( points, st1.models[:, 3][m1], xi, method='linear' ) # age
+# 		st2.models[:, 2][m2] = griddata( points, st1.models[:, 2][m1], xi, method='linear' ) # EEP
+# 		st2.models[:, 5][m2] = griddata( points, st1.models[:, 5][m1], xi, method='linear' ) # mass in M_sun
+# 		st2.models[:, 6][m2] = griddata( points, st1.models[:, 6][m1], xi, method='linear' ) # logL in L_sun
+# 		st2.models[:, 7][m2] = griddata( points, st1.models[:, 7][m1], xi, method='linear' ) # logL_div_Ledd
+# 		st2.models[:, 8][m2] = griddata( points, st1.models[:, 8][m1], xi, method='linear' ) # radius
+# 		st2.models[:, 9][m2] = griddata( points, st1.models[:, 9][m1], xi, method='linear' ) # Omega / Omega_c
+# 	st2.set_vars()
+# 	st2.select_MS() # these will be on the MS
+# 	return st2
 
 # a grid of MIST models at some age and metallicity
 class Grid:
@@ -196,14 +197,15 @@ class Grid:
 	# 	initial omegas
 	def interp(self):
 		st = self.st
-		Mogrid = tuple( np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' ) )
+		points = ( st.Mini, st.omega0 )
+		xi = tuple( np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' ) )
 		# interpolate the model parameters; 
 		# use the linear method because there are small discontinuities at a limited range of masses
-		self.M = griddata( (st.Mini, st.omega0), st.M, Mogrid, method='linear' )
-		self.L = 10**griddata( (st.Mini, st.omega0), st.logL, Mogrid, method='linear' )
-		oM = griddata( (st.Mini, st.omega0), st.oM, Mogrid, method='linear' )
-		logL_div_Ledd = griddata( (st.Mini, st.omega0), st.logL_div_Ledd, Mogrid, method='linear' )
-		R = griddata( (st.Mini, st.omega0), st.R, Mogrid, method='linear' )
+		self.M = griddata( points, st.M, xi, method='linear' )
+		self.L = 10**griddata( points, st.logL, xi, method='linear' )
+		oM = griddata( points, st.oM, xi, method='linear' )
+		logL_div_Ledd = griddata( points, st.logL_div_Ledd, xi, method='linear' )
+		R = griddata( points, st.R, xi, method='linear' )
 		# present-day omega_MESA, without the Eddington luminosity correction 
 		oMc = oM * np.sqrt(1 - 10**logL_div_Ledd)
 		# mitigate round-off error from interpolation

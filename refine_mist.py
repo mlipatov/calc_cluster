@@ -72,16 +72,6 @@ def rc_mass_omega_inc(st, A_V, dmax):
 		imax = np.nanmax(grid.get_maxdiff(2))
 	return [grid.Mini, grid.omega0, grid.inc]
 
-# # refine/coarsen the inclination dimension
-# def rc_inc(st, A_V, dmax, dmin):
-# 	Mi = np.sort(np.unique(st.Mini)) # original mass grid
-# 	o0 = np.sort(np.unique(st.omega0)) # original omega grid
-# 	inc = np.linspace(0, np.pi/2, 20) # larger inclination grid
-# 	grid = mu.Grid(st, Mi, o0, inc, A_V)
-# 	grid.refine(2, dmin=dmin)
-# 	grid.coarsen(2, dmax=dmax)
-# 	return grid.inc 
-
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
 sf.calcVA()
@@ -94,19 +84,8 @@ st = mu.Set('data/mist_grid.npy') # load
 
 # valid rotation
 st.select_valid_rotation()
-# a range of ages and metallicities
-# t = np.unique(st.t)[99:99+17]
-t = np.unique(st.t)[106:106+4] # target ages; index 1 has 9.154
-# Z = np.unique(st.logZm)[3:3+4] # target metallicities between -0.75 and 0.0; index 1 has -0.45
-Z = np.unique(st.logZm)[4:4+1] # Z = -0.45
-# m = np.isin(st.t, t) & np.isin(st.logZm, Z)
-# st.select(m)
 st.set_omega0()
 print('\t' + str(time.time() - start) + ' seconds.')
-
-# # age and metallicity to use for inclination refinement
-# t_inc = t[1]
-# z_inc = Z[1]
 
 print('Loading PARS...')
 start = time.time()
@@ -118,17 +97,11 @@ mu.Grid.std = cf.std # standard deviations of observables
 mu.Grid.modulus = cf.modulus # distance modulus of the cluster
 mu.Grid.pars = pars # PARS grid
 
-# # compute the inclination once
-# start = time.time()
-# st1 = st.copy() # copy the model set
-# st1.select_age(t_inc)
-# st1.select_Z(z_inc)
-# # apply mass cut-offs given the boundaries of the observable space region where we need model priors
-# Mmin, Mmax = Mlim(st1, cf.A_V)
-# st1.select_mass(Mmin=Mmin, Mmax=Mmax)
-# inclination = rc_inc(st1, cf.A_V, cf.dmax, cf.dmax)
-# print('inclination: ' + str(time.time() - start) + ' seconds.')
-
+# a range of ages and metallicities
+# t = np.unique(st.t)[99:99+17]
+t = np.unique(st.t)[106:106+4] # target ages; index 1 has 9.154
+# Z = np.unique(st.logZm)[3:3+4] # target metallicities between -0.75 and 0.0; index 1 has -0.45
+Z = np.unique(st.logZm)[4:4+1] # Z = -0.45
 for z0 in np.flip(Z):
 	for t0 in t:
 		print(t0, z0)
@@ -136,11 +109,11 @@ for z0 in np.flip(Z):
 		st1.select_Z(z0) # select metallicity
 
 		start = time.time()
-		print('Computing parameters of models under enhanced mixing... ', end='')
-		st1 = mu.select_MS_age_enhanced_mixing(st1, t0, 0.125) # select an age, under enhanced mixing
-		print(str(time.time() - start) + ' seconds.')
-		# st1.select_MS() # select main sequence
-		# st1.select_age(t0) # select age
+		# print('Computing parameters of models under enhanced mixing... ', end='')
+		# st1 = mu.select_MS_age_enhanced_mixing(st1, t0, 0.125) # select an age, under enhanced mixing
+		# print(str(time.time() - start) + ' seconds.')
+		st1.select_MS() # select main sequence
+		st1.select_age(t0) # select age
 
 		# non-rotating models at this age and this metallicity
 		stc = st1.copy()

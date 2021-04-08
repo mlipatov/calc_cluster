@@ -52,8 +52,9 @@ om_sigma = np.array([s_slow, s_middle, s_fast])
 print('omega means: ' + str(om_mean))
 print('omega standard deviations: '+ str(om_sigma))
 
-filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
-# filelist = list(np.sort(glob.glob('data/model_grids/*_9p19_m0p45.pkl')))
+obs_allages = []
+# filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
+filelist = list(np.sort(glob.glob('data/model_grids/*_9p19_m0p45.pkl')))
 for filepath in filelist: # for each combination of age and metallicity
 	# load the pre-computed observables on a grid of model parameters
 	with open(filepath, 'rb') as f:
@@ -76,6 +77,8 @@ for filepath in filelist: # for each combination of age and metallicity
 	start = time.time()
 	mag_binary = \
 		mu.combine_mags(mag[..., np.newaxis, np.newaxis, :], grid.mag[:, np.newaxis, ...])
+	# insert the unary magnitudes, which evaluated to NAN above
+	mag_binary[:, 0, ...] = grid.mag
 	print('Combining primary and companion magnitudes: ' + str(time.time() - start) + ' seconds.') 
 	# observables of binary models;
 	# dimensions: initial primary mass, binary mass ratio, initial omega, inclination, mag / color / vsini;
@@ -84,6 +87,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	obs_binary[..., 0] = mag_binary[..., 1] # F555W magnitude
 	obs_binary[..., 1] = mag_binary[..., 0] - mag_binary[..., 2] # F435W - F814W color
 	obs_binary[..., 2] = grid.vsini[:, np.newaxis, ...] # vsini
+
 	# differences in F555W magnitude along the r dimension
 	diff = np.abs(np.diff(obs_binary[..., 0], axis=1))
 	# mask along the r dimension where the differences are not all NaN
@@ -106,20 +110,27 @@ for filepath in filelist: # for each combination of age and metallicity
 		raise ValueError('intervals with excessive magnitude differences in r dimension do \
 			not form a contiguous set that ends at r = 1 for t = ' + str(t0)[:5] + ' and Z = ' + str(z0))
 
+	obs_allages.append([obs_binary, grid.Mini, r, grid.omega0, grid.inc, grid.age, grid.Z])
+
+print('-------- Priors and convolutions ----------')
+for obs_binary, Mini, r, omega0, inc, age, Z in obs_allages:
+	print('Age: ' + str(grid.age)[:5])
+	print('Metallicity: ' + str(grid.Z))
+
 	# arrays of ordinate multipliers (weights) for the numerical integration in model space;
 	# these include the varying discrete distances between adjacent abscissas;
 	# dimensions: initial mass, binary mass ratio, omega, inclination
-	w_Mini = trap(grid.Mini)[:, np.newaxis, np.newaxis, np.newaxis]
+	w_Mini = trap(Mini)[:, np.newaxis, np.newaxis, np.newaxis]
 	w_r = trap(r)[np.newaxis, :, np.newaxis, np.newaxis]
-	w_omega0 = trap(grid.omega0)[np.newaxis, np.newaxis, :, np.newaxis]
-	w_inc = trap(grid.inc)[np.newaxis, np.newaxis, np.newaxis, :]
+	w_omega0 = trap(omega0)[np.newaxis, np.newaxis, :, np.newaxis]
+	w_inc = trap(inc)[np.newaxis, np.newaxis, np.newaxis, :]
 	# non-uniform priors in non-omega model dimensions
-	pr_Mini = (grid.Mini**-2.35)[:, np.newaxis, np.newaxis, np.newaxis]
-	pr_inc = np.sin(grid.inc)[np.newaxis, np.newaxis, np.newaxis, :]
+	pr_Mini = (Mini**-2.35)[:, np.newaxis, np.newaxis, np.newaxis]
+	pr_inc = np.sin(inc)[np.newaxis, np.newaxis, np.newaxis, :]
 	# prior without the omega distribution
 	pr0 = pr_Mini * pr_inc * w_Mini * w_r * w_omega0 * w_inc	
 	# omega distribution prior; first dimension is the rotational population
-	pr_om = np.exp(-0.5*((grid.omega0[np.newaxis, :] - om_mean[:, np.newaxis]) / om_sigma[:, np.newaxis])**2)
+	pr_om = np.exp(-0.5*((omega0[np.newaxis, :] - om_mean[:, np.newaxis]) / om_sigma[:, np.newaxis])**2)
 	pr_om = pr_om[:, np.newaxis, np.newaxis, :, np.newaxis]
 
 	# densities for different omega distributions of unary and binary models
@@ -133,7 +144,7 @@ for filepath in filelist: # for each combination of age and metallicity
 			if (mult == 'unary'):
 				print('\tUnaries ')
 				pr = pr_binary[:, 0, ...]
-				obs_models = obs_unary
+				obs_models = obs_binary[:, 0, ...]
 			else:
 				print('\tBinaries ')
 				pr = pr_binary
@@ -153,7 +164,7 @@ for filepath in filelist: # for each combination of age and metallicity
 			np.add.at(prior, tuple(ind), pr.flatten()[m])
 			print('\tPlacing the prior on a fine grid: ' + str(time.time() - start) + ' seconds.') 
 			# package the prior density with the grids of observables 
-			prior = du.Grid(prior, obs, cf.ROI, cf.norm, grid.age, grid.Z)
+			prior = du.Grid(prior, obs, cf.ROI, cf.norm, age, Z)
 			# normalized the prior for plotting
 			prior.normalize()
 			prior_cmd = prior.copy()
@@ -172,9 +183,7 @@ for filepath in filelist: # for each combination of age and metallicity
 			density.normalize()
 
 			# calculate the dependence of probability change on standard deviation of further convolving kernel
-			# start = time.time()
 			density.dP_sigma(nsig)
-			# print( '\tEstimation of de-normalization: ' + str(time.time() - start) + ' seconds.' )
 
 			# for data points where vsini is not known, a version of the probability density only on the CMD;
 			# marginalize and re-normalize in the vsini dimension; shouldn't need to re-normalize since marginalization
@@ -200,8 +209,8 @@ for filepath in filelist: # for each combination of age and metallicity
 	densities.append(om_sigma) # tack on the standard deviations of the rotational population distributions
 
 	# save the densities
-	with open('data/densities/pkl/density_' + str(grid.age).replace('.','p')[:4] + '_' + \
-		str(grid.Z).replace('-', 'm').replace('.', 'p') + \
+	with open('data/densities/pkl/density_' + str(age).replace('.','p')[:4] + '_' + \
+		str(Z).replace('-', 'm').replace('.', 'p') + \
 		'_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma]) + \
 		'.pkl', 'wb') as f:
 		    pickle.dump(densities, f)
