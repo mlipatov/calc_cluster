@@ -110,42 +110,12 @@ class Set:
 		self.select(m)
 		self.age = age
 
-# # assuming constant metallicity, select MS at a given age under enhanced mixing
-# def select_MS_age_enhanced_mixing(st1, age, a):
-# 	# destination model set
-# 	st2 = st1.copy() # set of models adjusted according to more rotational mixing
-# 	st2.select_age(age) # these will be only at a particular age
-
-# 	eep2_orig = (st2.EEP - 202) / (454 - 202) # original dimensionless EEP in the destination set
-# 	eep2 = eep2_orig / (1 + a * st2.omega0 * eep2_orig) # earlier dimensionless EEP for the destination set
-# 	EEP2 = eep2 * (454 - 202) + 202 # earlier EEP for the destination set
-
-# 	for o in np.sort(np.unique(st1.oM0)):
-# 		# masks that pick out this rotation rate
-# 		m1 = (st1.oM0 == o)
-# 		m2 = (st2.oM0 == o)
-# 		# points from which to interpolate, for this rotation rate
-# 		points = (st1.EEP[m1], st1.Mini[m1])
-# 		# points at which to interpolate, for this rotation rate
-# 		xi = (EEP2[m2], st2.Mini[m2])
-# 		# interpolate all dependent parameters in EEP to get them at the earlier EEP
-# 		# st2.models[:, 3][m2] = griddata( points, st1.models[:, 3][m1], xi, method='linear' ) # age
-# 		st2.models[:, 2][m2] = griddata( points, st1.models[:, 2][m1], xi, method='linear' ) # EEP
-# 		st2.models[:, 5][m2] = griddata( points, st1.models[:, 5][m1], xi, method='linear' ) # mass in M_sun
-# 		st2.models[:, 6][m2] = griddata( points, st1.models[:, 6][m1], xi, method='linear' ) # logL in L_sun
-# 		st2.models[:, 7][m2] = griddata( points, st1.models[:, 7][m1], xi, method='linear' ) # logL_div_Ledd
-# 		st2.models[:, 8][m2] = griddata( points, st1.models[:, 8][m1], xi, method='linear' ) # radius
-# 		st2.models[:, 9][m2] = griddata( points, st1.models[:, 9][m1], xi, method='linear' ) # Omega / Omega_c
-# 	st2.set_vars()
-# 	st2.select_MS() # these will be on the MS
-# 	return st2
-
 # a grid of MIST models at some age and metallicity
 class Grid:
 	# independent variables that define the grid, axes of the corresponding array of observables
-	ivars = ['Mini', 'omega0', 'inc', 'r']
+	ivars = ['Mini', 'omega0', 't', 'inc']
 	# labels of the independent variables
-	lvars = [r'M_0', r'\omega_0', r'i', 'r']
+	lvars = [r'M_0', r'\omega_0', r'\log_{10}{t}', r'i']
 	# standard deviations of the observables
 	std = None
 	# distance modulus of the cluster
@@ -154,10 +124,11 @@ class Grid:
 	pars = None
 
 	def __init__(self, \
-			st=None, Mi=None, o0=None, inc=None, A_V=None, verbose=False):
+			st=None, Mi=None, o0=None, t=None, inc=None, A_V=None, verbose=False):
 		# independent model parameters
 		self.Mini = Mi
 		self.omega0 = o0
+		self.t = t
 		self.inc = inc
 		self.A_V = A_V
 		self.st = st # set of MIST models
@@ -180,7 +151,7 @@ class Grid:
 	# this copy only has the independent star model variables, the observables, and the cluster variables;
 	# it does not have the original MIST models or the PARS grid.
 	def pickle(self):
-		grid = Grid(Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
+		grid = Grid(Mi=self.Mini, o0=self.omega0, t=self.t, inc=self.inc, A_V=self.A_V)
 		grid.mag = np.copy(self.mag).astype(np.float32)
 		grid.vsini = np.copy(self.vsini).astype(np.float32)
 		grid.age = self.st.age
@@ -195,17 +166,24 @@ class Grid:
 	#	MIST model set at some age and metallicity
 	#	initial masses
 	# 	initial omegas
+	# 	ages
 	def interp(self):
 		st = self.st
-		points = ( st.Mini, st.omega0 )
-		xi = tuple( np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' ) )
+		# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
+		points = [ st.Mini, st.omega0, st.t ]
+		values = st.EEP
+		xi = np.meshgrid( self.Mini, self.omega0, self.t, sparse=True, indexing='ij' )
+		EEP = griddata( tuple(points), values, tuple(xi), method='linear')
+		# # replace the ages with the EEPs and calculate the dependent variables 
+		points[-1] = st.EEP
+		xi[-1] = EEP 
 		# interpolate the model parameters; 
 		# use the linear method because there are small discontinuities at a limited range of masses
-		self.M = griddata( points, st.M, xi, method='linear' )
-		self.L = 10**griddata( points, st.logL, xi, method='linear' )
-		oM = griddata( points, st.oM, xi, method='linear' )
-		logL_div_Ledd = griddata( points, st.logL_div_Ledd, xi, method='linear' )
-		R = griddata( points, st.R, xi, method='linear' )
+		self.M = griddata( tuple(points), st.M, tuple(xi), method='linear' )
+		self.L = 10**griddata( tuple(points), st.logL, tuple(xi), method='linear' )
+		oM = griddata( tuple(points), st.oM, tuple(xi), method='linear' )
+		logL_div_Ledd = griddata( tuple(points), st.logL_div_Ledd, tuple(xi), method='linear' )
+		R = griddata( tuple(points), st.R, tuple(xi), method='linear' )
 		# present-day omega_MESA, without the Eddington luminosity correction 
 		oMc = oM * np.sqrt(1 - 10**logL_div_Ledd)
 		# mitigate round-off error from interpolation
@@ -229,8 +207,8 @@ class Grid:
 	def calc_obs(self, verbose=False):
 		if verbose:
 			print('Calculating the observables for ' + str(len(self.Mini)) + ' x ' +\
-				str(len(self.omega0)) + ' x ' + str(len(self.inc)) + ' = ' +\
-				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc)) + ' models...')
+				str(len(self.omega0)) + ' x ' + str(len(self.t)) + ' x ' + str(len(self.inc)) + ' = ' +\
+				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc) * len(self.t)) + ' models...')
 			start = time.time()
 		self.interp() # calculate the dependent model variables
 		# construct points for interpolating from the PARS grid;
@@ -287,6 +265,32 @@ class Grid:
 		# # go back to default error reports
 		# warnings.filterwarnings('default')
 		return maxdiff
+
+	# calculate the fraction of grid-dimension neighbors of each point 
+	# within a certain number of standard deviations; 
+	# if n is the dimension of the grid, each interior point has 2*n such neighbors,
+	# each of the 2*n vertices has n such neighbors, edge and face points have between n and 2*n neighbors
+	def calc_neighbors(self, threshold=1.0):
+		neighbors = np.zeros_like(self.obs)
+		max_neighbors = np.zeros_like(self.obs)
+		shape = self.obs.shape[:-1] # do not include the dimension that goes through the observables
+		isnan = np.isnan(self.obs) # entries that are NaN
+		for i in range(len(shape)):
+			# number of close enough neighbors
+			nb = ( (np.abs(np.diff(self.obs, axis=i)) / self.std) <= threshold ).astype(int)
+			# maximum number of close neighbors that are possible
+			max_nb = np.ones_like(nb)
+			# locations on the interior possibly get the left and right close neighbor checks,
+			# locations at the endpoints can only get one close neighbor check
+			nb = np.insert(nb, 0, 0, axis=i) + np.insert(nb, -1, 0, axis=i)
+			max_nb = np.insert(max_nb, 0, 0, axis=i) + np.insert(max_nb, -1, 0, axis=i)
+			# add neighbors
+			neighbors += nb
+			max_neighbors += max_nb
+		ratio = neighbors / max_neighbors
+		ratio[isnan] = np.nan 
+		# points on the grid where the fraction of neighbors that are close is sufficiently high
+		return ratio
 
 	# Subdivide each interval into n subintervals, where n is the ceiling of the largest 
 	# 	(observable difference / (std * dmin)), where dmin is a class variable
