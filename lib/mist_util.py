@@ -110,42 +110,12 @@ class Set:
 		self.select(m)
 		self.age = age
 
-# # assuming constant metallicity, select MS at a given age under enhanced mixing
-# def select_MS_age_enhanced_mixing(st1, age, a):
-# 	# destination model set
-# 	st2 = st1.copy() # set of models adjusted according to more rotational mixing
-# 	st2.select_age(age) # these will be only at a particular age
-
-# 	eep2_orig = (st2.EEP - 202) / (454 - 202) # original dimensionless EEP in the destination set
-# 	eep2 = eep2_orig / (1 + a * st2.omega0 * eep2_orig) # earlier dimensionless EEP for the destination set
-# 	EEP2 = eep2 * (454 - 202) + 202 # earlier EEP for the destination set
-
-# 	for o in np.sort(np.unique(st1.oM0)):
-# 		# masks that pick out this rotation rate
-# 		m1 = (st1.oM0 == o)
-# 		m2 = (st2.oM0 == o)
-# 		# points from which to interpolate, for this rotation rate
-# 		points = (st1.EEP[m1], st1.Mini[m1])
-# 		# points at which to interpolate, for this rotation rate
-# 		xi = (EEP2[m2], st2.Mini[m2])
-# 		# interpolate all dependent parameters in EEP to get them at the earlier EEP
-# 		# st2.models[:, 3][m2] = griddata( points, st1.models[:, 3][m1], xi, method='linear' ) # age
-# 		st2.models[:, 2][m2] = griddata( points, st1.models[:, 2][m1], xi, method='linear' ) # EEP
-# 		st2.models[:, 5][m2] = griddata( points, st1.models[:, 5][m1], xi, method='linear' ) # mass in M_sun
-# 		st2.models[:, 6][m2] = griddata( points, st1.models[:, 6][m1], xi, method='linear' ) # logL in L_sun
-# 		st2.models[:, 7][m2] = griddata( points, st1.models[:, 7][m1], xi, method='linear' ) # logL_div_Ledd
-# 		st2.models[:, 8][m2] = griddata( points, st1.models[:, 8][m1], xi, method='linear' ) # radius
-# 		st2.models[:, 9][m2] = griddata( points, st1.models[:, 9][m1], xi, method='linear' ) # Omega / Omega_c
-# 	st2.set_vars()
-# 	st2.select_MS() # these will be on the MS
-# 	return st2
-
 # a grid of MIST models at some age and metallicity
 class Grid:
 	# independent variables that define the grid, axes of the corresponding array of observables
-	ivars = ['Mini', 'omega0', 'inc', 'r']
+	ivars = ['Mini', 'omega0', 'inc']
 	# labels of the independent variables
-	lvars = [r'M_0', r'\omega_0', r'i', 'r']
+	lvars = [r'M_0', r'\omega_0', r'i']
 	# standard deviations of the observables
 	std = None
 	# distance modulus of the cluster
@@ -154,15 +124,22 @@ class Grid:
 	pars = None
 
 	def __init__(self, \
-			st=None, Mi=None, o0=None, inc=None, A_V=None, verbose=False):
+			st=None, age=None, Z=None, Mi=None, o0=None, inc=None, A_V=None, verbose=False):
 		# independent model parameters
 		self.Mini = Mi
 		self.omega0 = o0
 		self.inc = inc
 		self.A_V = A_V
-		self.st = st # set of MIST models
+		self.age = age
+		self.Z = Z
 		# interpolate to set the dependent parameters
 		if st is not None:
+			self.st = st.copy()
+			# limit the model set to the ages immediately above and below the grid's age
+			t = np.unique(st.t)
+			i = np.searchsorted(t, age)
+			self.st.select((st.t == t[i-1]) | (st.t == t[i]))
+			# calculate the observables
 			self.calc_obs(verbose=verbose)
 		else:
 			self.mag = None
@@ -180,32 +157,45 @@ class Grid:
 	# this copy only has the independent star model variables, the observables, and the cluster variables;
 	# it does not have the original MIST models or the PARS grid.
 	def pickle(self):
-		grid = Grid(Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
+		grid = Grid(age=self.age, Z=self.Z, Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
 		grid.mag = np.copy(self.mag).astype(np.float32)
 		grid.vsini = np.copy(self.vsini).astype(np.float32)
-		grid.age = self.st.age
-		grid.Z = self.st.Z
-		del grid.st
+		grid.Z = self.Z
 		return grid
 
 	# Interpolates between MIST models in initial mass and omega
 	#	to find other model parameters; computes omega and equatorial radii;
 	# 	records a set of inclinations as well
 	# Makes use of the following:
-	#	MIST model set at some age and metallicity
+	#	MIST model set at some ages and a metallicity
 	#	initial masses
 	# 	initial omegas
 	def interp(self):
 		st = self.st
-		points = ( st.Mini, st.omega0 )
-		xi = tuple( np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' ) )
+		if st.age == self.age: # if the model set is at the age of this grid
+			# set up interpolation without age 
+			points = [ st.Mini, st.omega0 ]
+			xi = np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' )
+		else:
+			# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
+			points = [ st.Mini, st.omega0, st.t ]
+			values = st.EEP
+			xi = np.meshgrid( self.Mini, self.omega0, self.age, sparse=True, indexing='ij' )
+			EEP = griddata( tuple(points), values, tuple(xi), method='linear')
+			# replace the ages with the EEPs and calculate the dependent variables 
+			points[-1] = st.EEP
+			xi[-1] = EEP
+			for i in range(len(xi)):
+				xi[i] = np.squeeze(xi[i], axis=-1) # remove the age dimension
+
 		# interpolate the model parameters; 
 		# use the linear method because there are small discontinuities at a limited range of masses
-		self.M = griddata( points, st.M, xi, method='linear' )
-		self.L = 10**griddata( points, st.logL, xi, method='linear' )
-		oM = griddata( points, st.oM, xi, method='linear' )
-		logL_div_Ledd = griddata( points, st.logL_div_Ledd, xi, method='linear' )
-		R = griddata( points, st.R, xi, method='linear' )
+		self.M = griddata( tuple(points), st.M, tuple(xi), method='linear' )
+		self.L = 10**griddata( tuple(points), st.logL, tuple(xi), method='linear' )
+		oM = griddata( tuple(points), st.oM, tuple(xi), method='linear' )
+		logL_div_Ledd = griddata( tuple(points), st.logL_div_Ledd, tuple(xi), method='linear' )
+		R = griddata( tuple(points), st.R, tuple(xi), method='linear' )
+
 		# present-day omega_MESA, without the Eddington luminosity correction 
 		oMc = oM * np.sqrt(1 - 10**logL_div_Ledd)
 		# mitigate round-off error from interpolation

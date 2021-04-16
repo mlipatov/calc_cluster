@@ -53,8 +53,8 @@ print('omega means: ' + str(om_mean))
 print('omega standard deviations: '+ str(om_sigma))
 
 obs_allages = []
-# filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
-filelist = list(np.sort(glob.glob('data/model_grids/*_9p19_m0p45.pkl')))
+filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
+# filelist = list(np.sort(glob.glob('data/model_grids/*_9p19_m0p45.pkl')))
 for filepath in filelist: # for each combination of age and metallicity
 	# load the pre-computed observables on a grid of model parameters
 	with open(filepath, 'rb') as f:
@@ -114,6 +114,7 @@ for filepath in filelist: # for each combination of age and metallicity
 
 print('-------- Priors and convolutions ----------')
 for obs_binary, Mini, r, omega0, inc, age, Z in obs_allages:
+
 	print('Age: ' + str(grid.age)[:5])
 	print('Metallicity: ' + str(grid.Z))
 

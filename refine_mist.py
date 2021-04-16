@@ -8,16 +8,17 @@ from lib import mist_util as mu
 import config as cf
 from lib import load_data as ld
 
-from scipy.interpolate import griddata
+from scipy.interpolate import interpn
 import numpy as np
+from matplotlib import pyplot as plt
 
 # calculate the mass cut-offs given the boundaries of the observable space region
 # where we need model priors
-def Mlim(st, A_V):
-	Mi = np.sort(np.unique(st.Mini)) # original mass grid
+def Mlim(st, t, Z, A_V):
+	Mi = np.array(np.linspace(st.Mini.min(), st.Mini.max(), 1000)) # a mass grid
 	omega0 = np.array([st.omega0.min(), st.omega0.max()]) 
 	inc = np.array([0, np.pi/2]) # the two extreme inclinations
-	grid = mu.Grid(st, Mi, omega0, inc, cf.A_V)
+	grid = mu.Grid(st, t, Z, Mi, omega0, inc, cf.A_V)
 	# maximum mass for the minimum magnitude cutoff 
 	# is determined by the models without companions at inclination pi/2;
 	# reducing inclination / adding a companion only reduces magnitude
@@ -40,11 +41,11 @@ def Mlim(st, A_V):
 	return [Mmin, Mmax]
 
 # refine and coarsen in the mass and omega dimensions
-def rc_mass_omega_inc(st, A_V, dmax):
+def rc_mass_omega_inc(st, t, Z, A_V, dmax):
 	Mi = np.sort(np.unique(st.Mini)) # original mass grid
 	o0 = np.sort(np.unique(st.omega0)) # original omega grid
 	inc = np.linspace(0, np.pi/2, 10) # np.array([0, np.pi/2]) # relatively small inclination grid
-	grid = mu.Grid(st, Mi, o0, inc, A_V)
+	grid = mu.Grid(st, t, Z, Mi, o0, inc, A_V)
 
 	imax = np.nanmax(grid.get_maxdiff(2))
 	omax = np.nanmax(grid.get_maxdiff(1))
@@ -70,7 +71,29 @@ def rc_mass_omega_inc(st, A_V, dmax):
 		grid.coarsen(0, dmax=dmax)
 		omax = np.nanmax(grid.get_maxdiff(1))
 		imax = np.nanmax(grid.get_maxdiff(2))
-	return [grid.Mini, grid.omega0, grid.inc]
+	return grid
+
+# refine and coarsen in the mass and omega dimension, 
+# given initial guesses for all model grids
+def rc_mass_omega(st, t, Z, Mi, o0, inc, A_V, dmax):
+	grid = mu.Grid(st, t, Z, Mi, o0, inc, A_V)
+	omax = np.nanmax(grid.get_maxdiff(1))
+	mmax = np.nanmax(grid.get_maxdiff(0))
+	while omax > dmax or mmax > dmax:
+		while omax > dmax:
+			grid.refine(1, dmin=dmax)
+			omax = np.nanmax(grid.get_maxdiff(1))
+		grid.coarsen(1, dmax=dmax)
+		mmax = np.nanmax(grid.get_maxdiff(0))
+		imax = np.nanmax(grid.get_maxdiff(2))
+		
+		while mmax > dmax:
+			grid.refine(0, dmin=dmax)
+			mmax = np.nanmax(grid.get_maxdiff(0))
+		grid.coarsen(0, dmax=dmax)
+		omax = np.nanmax(grid.get_maxdiff(1))
+		imax = np.nanmax(grid.get_maxdiff(2))
+	return grid
 
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
@@ -78,16 +101,17 @@ sf.calcVA()
 sf.calcom()
 
 # Load and filter MIST models
-print('Loading MIST...')
+print('Loading MIST...', end='')
 start = time.time()
 st = mu.Set('data/mist_grid.npy') # load
+st.select_MS() # main sequence
 
 # valid rotation
 st.select_valid_rotation()
 st.set_omega0()
 print('\t' + str(time.time() - start) + ' seconds.')
 
-print('Loading PARS...')
+print('Loading PARS...', end='')
 start = time.time()
 with open('data/pars_grid_2.pkl', 'rb') as f: pars = pickle.load(f)
 print('\t' + str(time.time() - start) + ' seconds.\n')
@@ -97,50 +121,108 @@ mu.Grid.std = cf.std # standard deviations of observables
 mu.Grid.modulus = cf.modulus # distance modulus of the cluster
 mu.Grid.pars = pars # PARS grid
 
-# a range of ages and metallicities
-# t = np.unique(st.t)[99:99+17]
-t = np.unique(st.t)[106:106+4] # target ages; index 1 has 9.154
-# Z = np.unique(st.logZm)[3:3+4] # target metallicities between -0.75 and 0.0; index 1 has -0.45
-Z = np.unique(st.logZm)[4:4+1] # Z = -0.45
-for z0 in np.flip(Z):
-	for t0 in t:
-		print(t0, z0)
-		st1 = st.copy() # copy the model set
-		st1.select_Z(z0) # select metallicity
+t = np.unique(st.t)[106:106+4] # age range; [9.134, 9.154, 9.174, 9.194]
+z0 = np.unique(st.logZm)[4] # Z = -0.45
+st.select_Z(z0) # select metallicity
 
-		start = time.time()
-		# print('Computing parameters of models under enhanced mixing... ', end='')
-		# st1 = mu.select_MS_age_enhanced_mixing(st1, t0, 0.125) # select an age, under enhanced mixing
-		# print(str(time.time() - start) + ' seconds.')
-		st1.select_MS() # select main sequence
-		st1.select_age(t0) # select age
+mg = []; og = []; ig = []; # refined grids in the refined model parameters
+# for z0 in np.flip(Z):
+print('Z = ' + str(z0))
+for t0 in t:
+	print('t = ' + str(t0))
+	st1 = st.copy() # copy the model set
+	st1.select_age(t0)
 
-		# non-rotating models at this age and this metallicity
-		stc = st1.copy()
-		stc.select(stc.omega0 == 0)
+	# non-rotating models at this age and this metallicity
+	stc = st1.copy()
+	stc.select(stc.omega0 == 0)
 
-		# apply mass cut-offs according the region of interest on the CMD 
-		Mmin, Mmax = Mlim(st1, cf.A_V) 
-		st1.select_mass(Mmin=Mmin, Mmax=Mmax)
+	# apply mass cut-offs according the region of interest on the CMD 
+	start = time.time()
+	print('Applying mass cut-offs...', end='')
+	Mmin, Mmax = Mlim(st1, t0, z0, cf.A_V) 
+	st1.select_mass(Mmin=Mmin, Mmax=Mmax)
+	print(str(time.time() - start) + ' seconds.')
 
-		start = time.time()
-		print('Refining the mass, omega and inclination grids...')
-		Mini, omega0, inclination = rc_mass_omega_inc(st1, cf.A_V, cf.dmax) # coarsen and refine mass and omega grids
-		print('\t' + str(time.time() - start) + ' seconds.')
+	start = time.time()
+	print('Refining the mass, omega and inclination grids...')
+	# coarsen and refine model grids
+	grid = rc_mass_omega_inc(st1, t0, z0, cf.A_V, cf.dmax) 
+	og.append(grid.omega0)
+	ig.append(grid.inc)
+	mg.append(grid.Mini)
+	print('\t' + str(time.time() - start) + ' seconds.')
 
-		print('Computing the companion magnitudes...')
-		# primary grid that combines the separately obtained model parameter arrays
-		grid = mu.Grid(st1, Mini, omega0, inclination, cf.A_V, verbose=True)
-		# binary mass ratio spaced so that magnitudes are spaced evenly
-		r = np.linspace(0, 1, cf.num_r)**(1 / cf.s) 
-		# non-rotating companion magnitudes on a M * r grid
-		mag = mu.companion_grid(r, Mini, stc, pars, cf.A_V, cf.modulus)
+	# # primary grid that combines the separately obtained model parameter arrays
+	# grid = mu.Grid(st1, t0, z0, Mini, omega0, inclination, cf.A_V, verbose=True)
 
-		print()
-		zstr = str(z0).replace('-', 'm').replace('.', 'p')
-		tstr = str(t0)[:4].replace('.', 'p')
-		grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
-		grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
-		grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
-		with open('data/model_grids/grid_' + tstr + '_' + zstr + '.pkl', 'wb') as f:
-		    pickle.dump([grid.pickle(), mag, r], f)
+	# binary mass ratio spaced so that magnitudes are spaced evenly
+	r = np.linspace(0, 1, cf.num_r)**(1 / cf.s) 
+	# non-rotating companion magnitudes on a M * r grid
+	print('Computing the companion magnitudes...')
+	mag = mu.companion_grid(r, grid.Mini, stc, pars, cf.A_V, cf.modulus)
+
+	print()
+	zstr = str(z0).replace('-', 'm').replace('.', 'p')
+	tstr = str(t0)[:4].replace('.', 'p')
+	grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
+	grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
+	grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
+	with open('data/model_grids/grid_' + tstr + '_' + zstr + '.pkl', 'wb') as f:
+	    pickle.dump([grid.pickle(), mag, r], f)
+
+## now refine the age grid and interpolate the mass-omega-inclination grids on it
+
+# interpolate between backward and forward closest neighbors on 1D grids g1 and g2 in 1D grid g; 
+# none of the grids have to have the same dimension
+def double_interp(g1, g2, g):
+	# for each element in 1D grid g1, find the closest element in g2
+	# g1 and g2 don't have to have the same dimensions
+	# output has the same dimensions as g1
+	def closest(g1, g2):
+		return np.array([g2[np.abs(g2 - el).argmin()] for el in g1])
+	# interpolate from 1D grid g1 directionally towards 1D grid g2 on a third 1D grid g
+	# in other words, interpolate between (g[0], g1) and (g[-1], g2) at g[1:-1]
+	# g1 and g2 must have the same dimensions
+	# output has dimensions of g1 times g
+	def interp(g1, g2, g):
+		enum = np.arange(len(g1)) # enumerate the first grid
+		points = (g[[0,-1]], enum) # domain of known values: the boundary values of g times the enumeration 
+		values = np.vstack((g1, g2)) # known values on the domain: the two grids
+		xi = np.moveaxis(np.array(np.meshgrid(g, enum)), 0, -1) # desired value domain 
+		return interpn(points, values, xi, method='linear').T
+	# interpolate in g from g1 towards g2
+	inter1 = interp(g1, closest(g1, g2), g)
+	# interpolate in age between the grid at i+1th age and the grid points' neighbors at ith age
+	inter2 = interp(closest(g2, g1), g2, g)
+	# construct the union
+	inter = np.concatenate((inter1, inter2), axis=-1)
+	return [np.unique(i) for i in inter]	
+
+tt = np.array([]) # intermediate ages
+mgg = []; ogg = []; igg = []; # interpolated model space grids
+n = 4 # age refinement factor
+for i in range(len(t) - 1):
+	ti = np.linspace(t[i], t[i+1], n)
+	mgg = mgg + double_interp(mg[i], mg[i+1], ti)[1:-1]
+	ogg = ogg + double_interp(og[i], og[i+1], ti)[1:-1]
+	igg = igg + double_interp(ig[i], ig[i+1], ti)[1:-1]
+	tt = np.concatenate((tt, ti[1:-1]))
+
+# compute the intermediate grids
+for i in range(len(tt)):
+	print('t = ' + str(tt[i]) + '...', end='')
+	# st1 = st.copy() # copy the model set
+	# st1.select_age(t0)
+	# grid = mu.Grid(st1, tt[i], z0, mgg[i], ogg[i], igg[i], cf.A_V, verbose=True)
+	start = time.time()
+	grid = rc_mass_omega(st, tt[i], z0, mgg[i], ogg[i], igg[i], cf.A_V, cf.dmax)
+	mmax = np.nanmax(grid.get_maxdiff(0))
+	omax = np.nanmax(grid.get_maxdiff(1))
+	imax = np.nanmax(grid.get_maxdiff(2))
+	print (str(time.time() - start) + ' seconds.')
+	print (mmax, omax, imax)
+
+# m_union = reduce(np.union1d, mass_grids)
+# [plt.scatter(mass_grids[i], np.full_like(mass_grids[i], i), s=1) for i in np.arange(4)]
+# plt.scatter(m_union, np.full_like(m_union, 4), s=1)
