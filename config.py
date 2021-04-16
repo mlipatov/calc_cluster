@@ -25,7 +25,7 @@ v0err = 5 # standard deviation at the vsini = 0 boundary, in units of minimum st
 # s, such that magnitude = s * (-2.5 * log_10(initial mass)) for a given metallicity
 s = 4.6 
 # maximum number of smallest observable space standard deviations in between models in each model dimension
-dmax = 2.
+dmax = 10.
 # number of steps in the binary mass ratio r that ensures that magnitude differences between 
 # adjacent values of r are mostly less than the maximum allowed number of smallest magnitude standard deviations
 num_r = int((2.5 / np.log(10)) * (1 / (dmax * std[0]))) + 30 # adjust the additive term as necessary

@@ -31,10 +31,16 @@ def Mlim(st, A_V):
 	m_max = np.full_like(mag_max, False, dtype=bool) # will be True where magnitude is below maximum
 	np.greater_equal(mag_min, ld.obmin[np.newaxis, np.newaxis, 0], where=~np.isnan(mag_min), out=m_min) 
 	np.less_equal(mag_max, ld.obmax[np.newaxis, np.newaxis, 0], where=~np.isnan(mag_max), out=m_max)
-	j = np.nonzero( np.all(m_min & m_max, axis=-1) )[0]
+	j = np.nonzero( np.any(m_min & m_max, axis=-1) )[0]
 	if len(j) > 0:
-		Mmin = grid.Mini[j].min()
-		Mmax = grid.Mini[j].max()
+		jmin = j.min(); 
+		if jmin > 0:
+			jmin-=1
+		jmax = j.max(); 
+		if jmax < len(Mi) - 1:	
+			jmax+=1
+		Mmin = grid.Mini[jmin]
+		Mmax = grid.Mini[jmax]
 	else:
 		Mmin = np.nan
 		Mmax = np.nan
@@ -53,9 +59,6 @@ def refine_coarsen(st, A_V, dmax):
 	omax = np.nanmax(grid.get_maxdiff(1))
 	mmax = np.nanmax(grid.get_maxdiff(0))
 
-	nb = grid.calc_neighbors()
-	print(np.count_nonzero(nb >= 1) / np.count_nonzero(~np.isnan(nb)))
-
 	while omax > dmax or mmax > dmax or imax > dmax: #or tmax > dmax:
 		grid.coarsen(0, dmax=dmax)
 		print('mass: ' + str(mmax) + ', ' + str(len(grid.Mini)))
@@ -69,22 +72,6 @@ def refine_coarsen(st, A_V, dmax):
 		imax = np.nanmax(grid.get_maxdiff(3))
 		tmax = np.nanmax(grid.get_maxdiff(2))
 
-		nb = grid.calc_neighbors()
-		print(np.count_nonzero(nb >= 1) / np.count_nonzero(~np.isnan(nb)))
-
-		while tmax > dmax:
-			grid.refine(2, dmin=dmax)
-			tmax = np.nanmax(grid.get_maxdiff(2))
-			print('age: ' + str(tmax) + ', ' + str(len(grid.t)))
-		grid.coarsen(2, dmax=dmax)
-		print('age: ' + str(tmax) + ', ' + str(len(grid.t)))
-		omax = np.nanmax(grid.get_maxdiff(1))
-		mmax = np.nanmax(grid.get_maxdiff(0))
-		imax = np.nanmax(grid.get_maxdiff(3))
-
-		nb = grid.calc_neighbors()
-		print(np.count_nonzero(nb >= 1) / np.count_nonzero(~np.isnan(nb)))
-
 		while omax > dmax:
 			grid.refine(1, dmin=dmax)
 			omax = np.nanmax(grid.get_maxdiff(1))
@@ -94,9 +81,6 @@ def refine_coarsen(st, A_V, dmax):
 		mmax = np.nanmax(grid.get_maxdiff(0))
 		imax = np.nanmax(grid.get_maxdiff(3))
 		tmax = np.nanmax(grid.get_maxdiff(2))
-
-		nb = grid.calc_neighbors()
-		print(np.count_nonzero(nb >= 1) / np.count_nonzero(~np.isnan(nb)))
 
 		while imax > dmax:
 			grid.refine(3, dmin=dmax)
@@ -108,8 +92,15 @@ def refine_coarsen(st, A_V, dmax):
 		mmax = np.nanmax(grid.get_maxdiff(0))
 		tmax = np.nanmax(grid.get_maxdiff(2))
 
-		nb = grid.calc_neighbors()
-		print(np.count_nonzero(nb >= 1) / np.count_nonzero(~np.isnan(nb)))
+		while tmax > dmax:
+			grid.refine(2, dmin=dmax)
+			tmax = np.nanmax(grid.get_maxdiff(2))
+			print('age: ' + str(tmax) + ', ' + str(len(grid.t)))
+		grid.coarsen(2, dmax=dmax)
+		print('age: ' + str(tmax) + ', ' + str(len(grid.t)))
+		omax = np.nanmax(grid.get_maxdiff(1))
+		mmax = np.nanmax(grid.get_maxdiff(0))
+		imax = np.nanmax(grid.get_maxdiff(3))
 
 	return [grid.Mini, grid.omega0, grid.t, grid.inc]
 
@@ -118,24 +109,22 @@ def refine_coarsen(st, A_V, dmax):
 sf.calcVA()
 sf.calcom()
 
-# Load and filter MIST models
-print('Loading MIST...', end='', flush=True)
 start = time.time()
+print('Loading MIST...', end='', flush=True)
 st = mu.Set('data/mist_grid.npy') # load
+print(str(time.time() - start) + ' seconds.')
 
 # valid rotation
 st.select_valid_rotation()
 st.set_omega0()
 st.select_MS() # select main sequence
-# t = np.unique(st.t)[99:99+17]
 t = np.unique(st.t)[106:106+4] # target ages; index 1 has 9.154
-# Z = np.unique(st.logZm)[3:3+4] # target metallicities between -0.75 and 0.0; index 1 has -0.45
-Z = np.unique(st.logZm)[4:4+1] # Z = -0.45
+z0 = -0.45
 st.select(np.isin(st.t, t)) # select the ages
-print(str(time.time() - start) + ' seconds.')
+st.select_Z(z0) # select metallicity
 
-print('Loading PARS...', end='', flush=True)
 start = time.time()
+print('Loading PARS...', end='', flush=True)
 with open('data/pars_grid_2.pkl', 'rb') as f: pars = pickle.load(f)
 print(str(time.time() - start) + ' seconds.\n')
 
@@ -144,42 +133,38 @@ mu.Grid.std = cf.std # standard deviations of observables
 mu.Grid.modulus = cf.modulus # distance modulus of the cluster
 mu.Grid.pars = pars # PARS grid
 
-for z0 in np.flip(Z):
-	# for t0 in t:
-	print('Metallicity = ' + str(z0))
-	st1 = st.copy() # copy the model set
-	st1.select_Z(z0) # select metallicity
+print('Metallicity = ' + str(z0))
 
-	# non-rotating models at this age and this metallicity
-	stc = st1.copy()
-	stc.select(stc.omega0 == 0)
+# non-rotating models at this age and this metallicity
+stc = st.copy()
+stc.select(stc.omega0 == 0)
 
-	# apply mass cut-offs according the region of interest on the CMD 
-	start = time.time()
-	print('Applying mass cut-offs...', end='', flush=True)
-	Mmin, Mmax = Mlim(st1, cf.A_V) 
-	st1.select_mass(Mmin=Mmin, Mmax=Mmax)
-	print(str(time.time() - start) + ' seconds.')
+# apply mass cut-offs according the region of interest on the CMD 
+start = time.time()
+print('Applying mass cut-offs...', end='', flush=True)
+Mmin, Mmax = Mlim(st, cf.A_V) 
+st.select_mass(Mmin=Mmin) #, Mmax=Mmax)
+print(str(time.time() - start) + ' seconds.')
 
-	start = time.time()
-	print('Refining the mass, omega, inclination and age grids...', end='', flush=True)
-	Mini, omega0, t, inclination = refine_coarsen(st1, cf.A_V, cf.dmax)
-	print(str(time.time() - start) + ' seconds.')
+start = time.time()
+print('Refining the mass, omega, inclination and age grids...', flush=True)
+Mini, omega0, t, inclination = refine_coarsen(st, cf.A_V, cf.dmax)
+print(str(time.time() - start) + ' seconds.')
 
-	# primary grid that combines the separately obtained model parameter arrays
-	grid = mu.Grid(st1, Mini, omega0, t, inclination, cf.A_V, verbose=True)
+# primary grid that combines the separately obtained model parameter arrays
+grid = mu.Grid(st, Mini, omega0, t, inclination, cf.A_V, verbose=True)
 
-	print('Computing the companion magnitudes...')
-	# binary mass ratio spaced so that magnitudes are spaced evenly
-	r = np.linspace(0, 1, cf.num_r)**(1 / cf.s) 
-	# non-rotating companion magnitudes on a M * r grid
-	mag = mu.companion_grid(r, Mini, stc, pars, cf.A_V, cf.modulus)
+print('Computing the companion magnitudes...')
+# binary mass ratio spaced so that magnitudes are spaced evenly
+r = np.linspace(0, 1, cf.num_r)**(1 / cf.s) 
+# non-rotating companion magnitudes on a M * r grid
+mag = mu.companion_grid(r, Mini, stc, pars, cf.A_V, cf.modulus)
 
-	print()
-	zstr = str(z0).replace('-', 'm').replace('.', 'p')
-	tstr = str(t0)[:4].replace('.', 'p')
-	grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
-	grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
-	grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
-	with open('data/model_grids/grid_' + tstr + '_' + zstr + '.pkl', 'wb') as f:
-	    pickle.dump([grid.pickle(), mag, r], f)
+print()
+zstr = str(z0).replace('-', 'm').replace('.', 'p')
+# tstr = str(t0)[:4].replace('.', 'p')
+grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + zstr + '.png')
+grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + zstr + '.png')
+grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + zstr + '.png')
+with open('data/model_grids/grid_' + zstr + '.pkl', 'wb') as f:
+    pickle.dump([grid.pickle(), mag, r], f)

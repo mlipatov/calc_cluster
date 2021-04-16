@@ -258,39 +258,39 @@ class Grid:
 		diff = np.moveaxis(diff, axis, 0) 
 		# flatten all but the focal axis
 		diff = diff.reshape(diff.shape[0], -1)
-		# # suppress the error for all-NAN slices
-		# warnings.filterwarnings('ignore') 
+		# suppress the error for all-NAN slices, which can happen at the edges of the grid
+		warnings.filterwarnings('ignore') 
 		# maximum difference across observables and non-focal model dimensions
 		maxdiff = np.nanmax(diff, axis=1)
-		# # go back to default error reports
-		# warnings.filterwarnings('default')
+		# go back to default error reports
+		warnings.filterwarnings('default')
 		return maxdiff
 
-	# calculate the fraction of grid-dimension neighbors of each point 
-	# within a certain number of standard deviations; 
-	# if n is the dimension of the grid, each interior point has 2*n such neighbors,
-	# each of the 2*n vertices has n such neighbors, edge and face points have between n and 2*n neighbors
-	def calc_neighbors(self, threshold=1.0):
-		neighbors = np.zeros_like(self.obs)
-		max_neighbors = np.zeros_like(self.obs)
-		shape = self.obs.shape[:-1] # do not include the dimension that goes through the observables
-		isnan = np.isnan(self.obs) # entries that are NaN
-		for i in range(len(shape)):
-			# number of close enough neighbors
-			nb = ( (np.abs(np.diff(self.obs, axis=i)) / self.std) <= threshold ).astype(int)
-			# maximum number of close neighbors that are possible
-			max_nb = np.ones_like(nb)
-			# locations on the interior possibly get the left and right close neighbor checks,
-			# locations at the endpoints can only get one close neighbor check
-			nb = np.insert(nb, 0, 0, axis=i) + np.insert(nb, -1, 0, axis=i)
-			max_nb = np.insert(max_nb, 0, 0, axis=i) + np.insert(max_nb, -1, 0, axis=i)
-			# add neighbors
-			neighbors += nb
-			max_neighbors += max_nb
-		ratio = neighbors / max_neighbors
-		ratio[isnan] = np.nan 
-		# points on the grid where the fraction of neighbors that are close is sufficiently high
-		return ratio
+	# # calculate the fraction of grid-dimension neighbors of each point 
+	# # within a certain number of standard deviations; 
+	# # if n is the dimension of the grid, each interior point has 2*n such neighbors,
+	# # each of the 2*n vertices has n such neighbors, edge and face points have between n and 2*n neighbors
+	# def calc_neighbors(self, threshold=1.0):
+	# 	neighbors = np.zeros_like(self.obs)
+	# 	max_neighbors = np.zeros_like(self.obs)
+	# 	shape = self.obs.shape[:-1] # do not include the dimension that goes through the observables
+	# 	isnan = np.isnan(self.obs) # entries that are NaN
+	# 	for i in range(len(shape)):
+	# 		# number of close enough neighbors
+	# 		nb = ( (np.abs(np.diff(self.obs, axis=i)) / self.std) <= threshold ).astype(int)
+	# 		# maximum number of close neighbors that are possible
+	# 		max_nb = np.ones_like(nb)
+	# 		# locations on the interior possibly get the left and right close neighbor checks,
+	# 		# locations at the endpoints can only get one close neighbor check
+	# 		nb = np.insert(nb, 0, 0, axis=i) + np.insert(nb, -1, 0, axis=i)
+	# 		max_nb = np.insert(max_nb, 0, 0, axis=i) + np.insert(max_nb, -1, 0, axis=i)
+	# 		# add neighbors
+	# 		neighbors += nb
+	# 		max_neighbors += max_nb
+	# 	ratio = neighbors / max_neighbors
+	# 	ratio[isnan] = np.nan 
+	# 	# points on the grid where the fraction of neighbors that are close is sufficiently high
+	# 	return ratio
 
 	# Subdivide each interval into n subintervals, where n is the ceiling of the largest 
 	# 	(observable difference / (std * dmin)), where dmin is a class variable
