@@ -134,11 +134,12 @@ class Grid:
 		self.Z = Z
 		# interpolate to set the dependent parameters
 		if st is not None:
-			self.st = st.copy()
-			# limit the model set to the ages immediately above and below the grid's age
-			t = np.unique(st.t)
-			i = np.searchsorted(t, age)
-			self.st.select((st.t == t[i-1]) | (st.t == t[i]))
+			if age is not None:
+				# limit the model set to the ages immediately above and below the grid's age
+				t = np.unique(st.t)
+				i = np.searchsorted(t, age)
+				self.st = st.copy()
+				self.st.select((st.t == t[i-1]) | (st.t == t[i]))
 			# calculate the observables
 			self.calc_obs(verbose=verbose)
 		else:
@@ -182,11 +183,12 @@ class Grid:
 			values = st.EEP
 			xi = np.meshgrid( self.Mini, self.omega0, self.age, sparse=True, indexing='ij' )
 			EEP = griddata( tuple(points), values, tuple(xi), method='linear')
+			# remove the age dimension, record the EEPs
+			xi[-1] = self.EEP = np.squeeze(EEP, axis=-1)
+			for i in range(len(xi) - 1):
+				xi[i] = np.squeeze(xi[i], axis=-1)
 			# replace the ages with the EEPs and calculate the dependent variables 
 			points[-1] = st.EEP
-			xi[-1] = EEP
-			for i in range(len(xi)):
-				xi[i] = np.squeeze(xi[i], axis=-1) # remove the age dimension
 
 		# interpolate the model parameters; 
 		# use the linear method because there are small discontinuities at a limited range of masses
@@ -220,7 +222,7 @@ class Grid:
 		if verbose:
 			print('Calculating the observables for ' + str(len(self.Mini)) + ' x ' +\
 				str(len(self.omega0)) + ' x ' + str(len(self.inc)) + ' = ' +\
-				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc)) + ' models...')
+				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc)) + ' models...', end='')
 			start = time.time()
 		self.interp() # calculate the dependent model variables
 		# construct points for interpolating from the PARS grid;
@@ -260,7 +262,7 @@ class Grid:
 		self.obs = np.stack( (self.mag[..., 1], self.mag[..., 0] - self.mag[..., 2], self.vsini), axis=-1 )
 		self.clear_vars() # clear the dependent model variables
 		if verbose:
-			print('\t' + str(time.time() - start) + ' seconds.')
+			print('%.2f' % (time.time() - start) + ' seconds.')
 
 	# Get the maximum (observable difference / std) in a focal model dimension 
 	def get_maxdiff(self, axis):

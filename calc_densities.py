@@ -52,6 +52,10 @@ om_sigma = np.array([s_slow, s_middle, s_fast])
 print('omega means: ' + str(om_mean))
 print('omega standard deviations: '+ str(om_sigma))
 
+# age prior parameters
+age_mean = 9.164
+age_sigma = 0.015
+
 obs_allages = []
 filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
 # filelist = list(np.sort(glob.glob('data/model_grids/*_9p19_m0p45.pkl')))
@@ -60,8 +64,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	with open(filepath, 'rb') as f:
 		grid, mag, r = pickle.load(f)
 
-	print('Age: ' + str(grid.age)[:5])
-	print('Metallicity: ' + str(grid.Z))
+	print('Age: ' + '%.4f' % grid.age)
 
 	# observables of unary models
 	# dimensions: initial mass, initial omega, inclination, mag / color / vsini
@@ -115,9 +118,9 @@ for filepath in filelist: # for each combination of age and metallicity
 print('-------- Priors and convolutions ----------')
 for obs_binary, Mini, r, omega0, inc, age, Z in obs_allages:
 
-	print('Age: ' + str(grid.age)[:5])
-	print('Metallicity: ' + str(grid.Z))
+	print('Age: ' + '%.4f' % grid.age)
 
+	age_factor = np.exp(-0.5*((grid.age - age_mean) / age_sigma)**2)
 	# arrays of ordinate multipliers (weights) for the numerical integration in model space;
 	# these include the varying discrete distances between adjacent abscissas;
 	# dimensions: initial mass, binary mass ratio, omega, inclination
@@ -129,12 +132,12 @@ for obs_binary, Mini, r, omega0, inc, age, Z in obs_allages:
 	pr_Mini = (Mini**-2.35)[:, np.newaxis, np.newaxis, np.newaxis]
 	pr_inc = np.sin(inc)[np.newaxis, np.newaxis, np.newaxis, :]
 	# prior without the omega distribution
-	pr0 = pr_Mini * pr_inc * w_Mini * w_r * w_omega0 * w_inc	
+	pr0 = age_factor * pr_Mini * pr_inc * w_Mini * w_r * w_omega0 * w_inc	
 	# omega distribution prior; first dimension is the rotational population
 	pr_om = np.exp(-0.5*((omega0[np.newaxis, :] - om_mean[:, np.newaxis]) / om_sigma[:, np.newaxis])**2)
 	pr_om = pr_om[:, np.newaxis, np.newaxis, :, np.newaxis]
 
-	# densities for different omega distributions of unary and binary models
+	# densities for different rotational and multiplicity populations
 	densities = []
 	for j in range(len(om_mean)): # rotational populations
 		print('Rotational population ' + str(j))
@@ -150,7 +153,7 @@ for obs_binary, Mini, r, omega0, inc, age, Z in obs_allages:
 				print('\tBinaries ')
 				pr = pr_binary
 				obs_models = obs_binary
-			# distribute the prior over the data space grid
+			## distribute the prior over the data space grid
 			ind = [] # index of each model in the data space grid
 			for i in range(len(nobs)): # searchsorted only works on one array at a time
 				ind.append( np.searchsorted(obs[i], obs_models[..., i], side='right').flatten() - 1 )
@@ -166,7 +169,7 @@ for obs_binary, Mini, r, omega0, inc, age, Z in obs_allages:
 			print('\tPlacing the prior on a fine grid: ' + str(time.time() - start) + ' seconds.') 
 			# package the prior density with the grids of observables 
 			prior = du.Grid(prior, obs, cf.ROI, cf.norm, age, Z)
-			# normalized the prior for plotting
+			# normalize the prior for plotting
 			prior.normalize()
 			prior_cmd = prior.copy()
 			prior_cmd.marginalize(2)
