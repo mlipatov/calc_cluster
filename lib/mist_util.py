@@ -3,6 +3,7 @@ sys.path.append(os.path.abspath(os.path.join('..', 'paint_atmospheres')))
 from pa.lib import surface as sf
 from pa.lib import util as ut
 from pa.opt import grid as gd
+import config as cf
 
 import numpy as np
 from scipy.interpolate import griddata
@@ -132,6 +133,13 @@ class Grid:
 		self.A_V = A_V
 		self.age = age
 		self.Z = Z
+		# slices of the dependent parameter arrays and observable arrays to update
+		slices = [None] * 3
+		if Mi is not None: slices[0] = slice(None, None, None)
+		if o0 is not None: slices[1] = slice(None, None, None)
+		if inc is not None: slices[2] = slice(None, None, None)
+		self.slices = slices
+		self.limits = [-np.inf, np.inf] * 3
 		# interpolate to set the dependent parameters
 		if st is not None:
 			if age is not None:
@@ -146,6 +154,25 @@ class Grid:
 			self.mag = None
 			self.vsini = None
 			self.obs = None
+
+	# set limits of operation for a given axis
+	# calculates the limiting indices for that axis
+	def set_limits(axis, mi=-np.inf, ma=np.inf):			
+		self.limits[axis] = [mi, ma]
+		self.set_slices(axis)
+
+	# set limit indices according to the existing limiting values
+	def set_slices(axis):
+		mi, ma = self.limits[axis]
+		var = getattr(self, self.ivars[axis]) # get the model parameter list
+		if mi != -np.inf:
+			imin = np.searchsorted(var, mi, side='right')
+			if imin > 0: imin-=1
+		else: imin = None
+		if ma != np.inf:
+			imax = np.searchsorted(var, ma, side='left')
+		else: imax = None
+		self.slices[axis] = slice(imin, imax, None) 
 
 	# clear the dependent model variables that are used for calculations
 	def clear_vars(self):
@@ -166,22 +193,25 @@ class Grid:
 
 	# Interpolates between MIST models in initial mass and omega
 	#	to find other model parameters; computes omega and equatorial radii;
-	# 	records a set of inclinations as well
 	# Makes use of the following:
 	#	MIST model set at some ages and a metallicity
 	#	initial masses
 	# 	initial omegas
+	# 	the slice on the mass and omega grid on which to compute
 	def interp(self):
+		Mini = self.Mini[self.slices[0]]
+		omega0 = self.omega0[self.slices[1]]
+
 		st = self.st
 		if st.age == self.age: # if the model set is at the age of this grid
 			# set up interpolation without age 
 			points = [ st.Mini, st.omega0 ]
-			xi = np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' )
+			xi = np.meshgrid( Mini, omega0, sparse=True, indexing='ij' )
 		else:
 			# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
 			points = [ st.Mini, st.omega0, st.t ]
 			values = st.EEP
-			xi = np.meshgrid( self.Mini, self.omega0, self.age, sparse=True, indexing='ij' )
+			xi = np.meshgrid( Mini, omega0, self.age, sparse=True, indexing='ij' )
 			EEP = griddata( tuple(points), values, tuple(xi), method='linear')
 			# remove the age dimension, record the EEPs
 			xi[-1] = self.EEP = np.squeeze(EEP, axis=-1)
@@ -192,8 +222,8 @@ class Grid:
 
 		# interpolate the model parameters; 
 		# use the linear method because there are small discontinuities at a limited range of masses
-		self.M = griddata( tuple(points), st.M, tuple(xi), method='linear' )
-		self.L = 10**griddata( tuple(points), st.logL, tuple(xi), method='linear' )
+		M = griddata( tuple(points), st.M, tuple(xi), method='linear' )
+		L = 10**griddata( tuple(points), st.logL, tuple(xi), method='linear' )
 		oM = griddata( tuple(points), st.oM, tuple(xi), method='linear' )
 		logL_div_Ledd = griddata( tuple(points), st.logL_div_Ledd, tuple(xi), method='linear' )
 		R = griddata( tuple(points), st.R, tuple(xi), method='linear' )
@@ -215,8 +245,16 @@ class Grid:
 		Req[nnf] = R.flatten()[nnf] * np.cbrt((4 * np.pi / 3) / sf.V(omega[nnf]))
 		omega = omega.reshape(sh)
 		Req = Req.reshape(sh)
-		self.omega = omega
-		self.Req = Req
+		if self.M is not None:
+			self.M[self.slices[:-1]] = M
+			self.L[self.slices[:-1]] = L
+			self.omega[self.slices[:-1]] = omega
+			self.Req[self.slices[:-1]] = Req
+		else:
+			self.M = M
+			self.L = L
+			self.omega = omega
+			self.Req = Req
 
 	def calc_obs(self, verbose=False):
 		if verbose:
@@ -224,7 +262,13 @@ class Grid:
 				str(len(self.omega0)) + ' x ' + str(len(self.inc)) + ' = ' +\
 				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc)) + ' models...', end='')
 			start = time.time()
+		inc = self.inc[self.slices[-1]]
+
 		self.interp() # calculate the dependent model variables
+		M = self.M[self.slices[:-1]]
+		L = self.L[self.slices[:-1]]
+		omega = self.omega[self.slices[:-1]]
+		Req = self.Req[self.slices[:-1]]
 		# construct points for interpolating from the PARS grid;
 		# 	each point is a set of values used by the PARS grid in which we interpolate
 		#	(e.g. [tau, omega, inclination, gamma] 
@@ -233,15 +277,15 @@ class Grid:
 		# 	(e.g. initial mass, initial omega),
 		#	plus additional parameters for PARS that MESA models don't have 
 		#	(e.g. inclination)
-		tau = ut.tau(self.L, self.Req) # has dimensions of the grid of MESA independent variables
-		gamma = ut.gamma(self.M, self.Req) # has dimensions of the grid of MESA independent variables
+		tau = ut.tau(L, Req) # has dimensions of the grid of MESA independent variables
+		gamma = ut.gamma(M, Req) # has dimensions of the grid of MESA independent variables
 		pars_dims = len(self.pars.dims) - 3 # number of interpolated PARS dimensions
 		# start with arrays of PARS interpolated variables on a grid of 
 		# MESA independent variables and inclination
-		points = np.full(self.M.shape + ( len(self.inc), pars_dims ), np.nan)
+		points = np.full(M.shape + ( len(inc), pars_dims ), np.nan)
 		points[..., 0] = tau[..., np.newaxis] # add axes for non-MESA independent variables
-		points[..., 1] = self.omega[..., np.newaxis] # add axes for non-MESA independent variables
-		points[..., 2] = self.inc # if this is the only MESA-independent variable, no new axes necessary here
+		points[..., 1] = omega[..., np.newaxis] # add axes for non-MESA independent variables
+		points[..., 2] = inc # if this is the only MESA-independent variable, no new axes necessary here
 		points[..., 3] = gamma[..., np.newaxis] # add axes for non-MESA independent variables
 		# points[..., 4] = ut.logZp_from_logZm(self.st.Z) # same metallicity for each point
 		# points[..., 5] = self.A_V # same AV for each point
@@ -256,11 +300,19 @@ class Grid:
 		# correct for radius and distance;
 		# the radius array needs extra dimensions due to bands and PARS parameters
 		# that evolutionary models don't have (e.g. inclination)
-		self.mag = gd.correct(mag, self.Req[..., np.newaxis, np.newaxis], self.modulus)
-		self.vsini = ut.vsini1(self.M[..., np.newaxis], self.Req[..., np.newaxis], \
-			self.omega[..., np.newaxis], self.inc[np.newaxis, np.newaxis, :]) / 1e5
-		self.obs = np.stack( (self.mag[..., 1], self.mag[..., 0] - self.mag[..., 2], self.vsini), axis=-1 )
-		self.clear_vars() # clear the dependent model variables
+		mag = gd.correct(mag, Req[..., np.newaxis, np.newaxis], self.modulus)
+		vsini = ut.vsini1(M[..., np.newaxis], Req[..., np.newaxis], \
+			omega[..., np.newaxis], inc[np.newaxis, np.newaxis, :]) / 1e5
+		obs = np.stack( (mag[..., 1], mag[..., 0] - mag[..., 2], vsini), axis=-1 )
+		if self.mag is not None:
+			self.mag[self.slices] = mag
+			self.vsini[self.slices] = vsini
+			self.obs[self.slices] = obs
+		else:
+			self.mag = mag
+			self.vsini = vsini
+			self.obs = obs
+		# self.clear_vars() # clear the dependent model variables
 		if verbose:
 			print('%.2f' % (time.time() - start) + ' seconds.')
 
@@ -298,6 +350,7 @@ class Grid:
 			# split the interval at each location and insert the result 
 			var = np.insert(var, i+1, np.linspace(var[i], var[i+1], ns[i]+1)[1:-1])
 		setattr(self, self.ivars[axis], var) # set the model parameter list
+		self.set_slices() # set slices according to the new independent model parameters
 		self.calc_obs() # calculate the observables
 
 	# Coarsen the model grid in a given focal dimension 
@@ -394,6 +447,7 @@ class Grid:
 		self.mag = np.moveaxis(mag, 0, axis)
 		self.vsini = np.moveaxis(vsini, 0, axis)
 		setattr(self, self.ivars[axis], var) # set the model parameter list
+		self.set_slices() # set slices according to new independent model parameters
 		
 
 	def plot_diff(self, axis, filename):
