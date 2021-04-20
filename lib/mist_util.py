@@ -302,10 +302,12 @@ class Grid:
 
 	# Coarsen the model grid in a given focal dimension 
 	def coarsen(self, axis, dmax=1.0):
-		# print('Coarsening the model grid...')
-		# start = time.time()
-		obs = self.obs		
+		obs = self.obs
+		mag = self.mag
+		vsini = self.vsini	
 		obs = np.moveaxis(obs, axis, 0) # move the focal model axis to the front
+		mag = np.moveaxis(mag, axis, 0)
+		vsini = np.moveaxis(vsini, axis, 0)
 		var = getattr(self, self.ivars[axis])
 		maxdiff = self.get_maxdiff(axis)
 		ind = np.argsort(maxdiff) # indices of sorted differences, NAN are at the end
@@ -359,6 +361,8 @@ class Grid:
 				## merge with the interval to the left: 
 				# delete the left bound from the observables array, 
 				obs = np.delete(obs, j, axis=0)
+				mag = np.delete(mag, j, axis=0)
+				vsini = np.delete(vsini, j, axis=0)
 				# replace the maximum differences for the focal interval and the left neighbor 
 				# with the combined maximum differences 
 				maxdiff[j-1] = maxleft
@@ -369,6 +373,8 @@ class Grid:
 				## merge with the interval to the right: 
 				# delete the right bound from the observables array, 
 				obs = np.delete(obs, j+1, axis=0)
+				mag = np.delete(mag, j+1, axis=0)
+				vsini = np.delete(vsini, j+1, axis=0)
 				# replace the maximum differences for the focal interval and the right neighbor 
 				# with the combined maximum differences 
 				maxdiff[j] = maxright
@@ -385,9 +391,10 @@ class Grid:
 			elif maxdiff[j] >= dmax: stop = True
 
 		self.obs = np.moveaxis(obs, 0, axis) # move the focal model axis back into its place
+		self.mag = np.moveaxis(mag, 0, axis)
+		self.vsini = np.moveaxis(vsini, 0, axis)
 		setattr(self, self.ivars[axis], var) # set the model parameter list
 		
-		# print('\t' + str(time.time() - start) + ' seconds.')
 
 	def plot_diff(self, axis, filename):
 		label = self.lvars[axis]

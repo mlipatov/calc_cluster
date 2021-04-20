@@ -40,7 +40,7 @@ class Grid:
 	#	list of the kind of each observable: 
 	#		True for normalized over ROI, False for collected at the ROI boundaries
 	# 	age, metallicity
-	def __init__(self, dens, obs, ROI, norm, age, Z):
+	def __init__(self, dens, obs, ROI, norm, age=None, Z=None):
 		self.dens = dens 
 		self.obs = obs 
 		self.dim = len(obs) # number of dimensions, e.g. 3

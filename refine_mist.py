@@ -73,28 +73,6 @@ def rc_mass_omega_inc(st, t, Z, A_V, dmax):
 		imax = np.nanmax(grid.get_maxdiff(2))
 	return grid
 
-# # refine and coarsen in the mass and omega dimension, 
-# # given initial guesses for all model grids
-# def rc_mass_omega(st, t, Z, Mi, o0, inc, A_V, dmax):
-# 	grid = mu.Grid(st, t, Z, Mi, o0, inc, A_V)
-# 	omax = np.nanmax(grid.get_maxdiff(1))
-# 	mmax = np.nanmax(grid.get_maxdiff(0))
-# 	while omax > dmax or mmax > dmax:
-# 		while omax > dmax:
-# 			grid.refine(1, dmin=dmax)
-# 			omax = np.nanmax(grid.get_maxdiff(1))
-# 		grid.coarsen(1, dmax=dmax)
-# 		mmax = np.nanmax(grid.get_maxdiff(0))
-# 		imax = np.nanmax(grid.get_maxdiff(2))
-		
-# 		while mmax > dmax:
-# 			grid.refine(0, dmin=dmax)
-# 			mmax = np.nanmax(grid.get_maxdiff(0))
-# 		grid.coarsen(0, dmax=dmax)
-# 		omax = np.nanmax(grid.get_maxdiff(1))
-# 		imax = np.nanmax(grid.get_maxdiff(2))
-# 	return grid
-
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
 sf.calcVA()
@@ -121,16 +99,15 @@ mu.Grid.modulus = cf.modulus # distance modulus of the cluster
 mu.Grid.pars = pars # PARS grid
 
 t = np.unique(st.t)[106:106+4] # age range; 4 ages: [9.134, 9.154, 9.174, 9.194]
-z0 = np.unique(st.logZm)[4] # Z = -0.45
-st.select_Z(z0) # select metallicity
-zstr = str(z0).replace('-', 'm').replace('.', 'p')
+st.select_Z(cf.Z) # select metallicity
+zstr = str(cf.Z).replace('-', 'm').replace('.', 'p')
 
 grids = [] # refined grids in model parameters
 mg = []; og = []; ig = []; # refined grids in the model parameters
 # binary mass ratio spaced so that magnitudes are spaced evenly
 r = np.linspace(0, 1, cf.num_r)**(1 / cf.s) 
-# for z0 in np.flip(Z):
-print('Z = ' + str(z0) + '\n')
+# for cf.Z in np.flip(Z):
+print('Z = ' + str(cf.Z) + '\n')
 for t0 in t:
 	print('t = ' + str(t0))
 	st1 = st.copy() # copy the model set
@@ -143,14 +120,14 @@ for t0 in t:
 	# apply mass cut-offs according the region of interest on the CMD 
 	start = time.time()
 	print('Applying mass cut-offs...', end='')
-	Mmin, Mmax = Mlim(st1, t0, z0, cf.A_V) 
+	Mmin, Mmax = Mlim(st1, t0, cf.Z, cf.A_V) 
 	st1.select_mass(Mmin=Mmin, Mmax=Mmax)
 	print('%.2f' % (time.time() - start) + ' seconds.')
 
 	start = time.time()
 	print('Refining the mass, omega and inclination grids...', end='')
 	# coarsen and refine model grids
-	grid = rc_mass_omega_inc(st1, t0, z0, cf.A_V, cf.dmax) 
+	grid = rc_mass_omega_inc(st1, t0, cf.Z, cf.A_V, cf.dmax) 
 	grids.append(grid)
 	og.append(grid.omega0)
 	ig.append(grid.inc)
@@ -158,11 +135,10 @@ for t0 in t:
 	print('%.2f' % (time.time() - start) + ' seconds.')
 
 	# non-rotating companion magnitudes on a M * r grid
-	print('Computing the companion magnitudes...')
 	mag = mu.companion_grid(r, grid.Mini, stc, pars, cf.A_V, cf.modulus)
 
 	print()
-	tstr = str(t0)[:4].replace('.', 'p')
+	tstr = ('%.4f' % t0).replace('.', 'p')
 	grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
 	grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
 	grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
@@ -199,7 +175,7 @@ def double_interp(g1, g2, g):
 
 tt = np.array([]) # intermediate ages
 mgg = []; ogg = []; igg = []; # interpolated model space grids
-n = 20 # age refinement factor
+n = 4 # age refinement factor
 for i in range(len(t) - 1):
 	ti = np.linspace(t[i], t[i+1], n)
 	mgg = mgg + double_interp(mg[i], mg[i+1], ti)[1:-1]
@@ -211,21 +187,21 @@ for i in range(len(t) - 1):
 for i in range(len(tt)):
 	t0 = tt[i]
 	print('t = ' + str(t0) + '...')
-	grid = mu.Grid(st, t0, z0, mgg[i], ogg[i], igg[i], cf.A_V, verbose=True)
+	grid = mu.Grid(st, t0, cf.Z, mgg[i], ogg[i], igg[i], cf.A_V, verbose=True)
 	grids.append(grid)
 	# start = time.time()
-	# grid = rc_mass_omega(st, tt[i], z0, mgg[i], ogg[i], igg[i], cf.A_V, cf.dmax)
+	# grid = rc_mass_omega(st, tt[i], cf.Z, mgg[i], ogg[i], igg[i], cf.A_V, cf.dmax)
 	mmax = np.nanmax(grid.get_maxdiff(0))
 	omax = np.nanmax(grid.get_maxdiff(1))
 	imax = np.nanmax(grid.get_maxdiff(2))
 	# print (str(time.time() - start) + ' seconds.')
-	print (mmax, omax, imax)
+	print ('Maximum magnitude differences along mass, omega and inclination dimensions: \n' + str([mmax, omax, imax]))
 
-	# non-rotating companion magnitudes on a M * r grid
+	# non-rotating companion magnitudes on an M * r grid
 	print('Computing the companion magnitudes...')
 	mag = mu.companion_grid(r, grid.Mini, stc, pars, cf.A_V, cf.modulus)
 
-	tstr = str(t0)[:5].replace('.', 'p')
+	tstr = ('%.4f' % t0).replace('.', 'p')
 	grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
 	grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
 	grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
@@ -260,5 +236,5 @@ for i in range(len(ag) - 1):
 	g1 = ag[i][1]
 	g2 = ag[i+1][1]
 	md = np.nanmax([maxdiff(g1, g2), maxdiff(g2, g1)]) # maximum difference
-	print('magnitude difference between ages ' + '%.4f' % ag[i][0] + ' and ' + \
+	print('primary magnitude difference between ages ' + '%.4f' % ag[i][0] + ' and ' + \
 		'%.4f' % ag[i+1][0] + ': ' + '%.2f' % md)

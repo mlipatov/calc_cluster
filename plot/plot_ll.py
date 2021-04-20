@@ -1,5 +1,6 @@
 import sys
 sys.path.append('..')
+import config as cf
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -12,11 +13,12 @@ w0 = np.linspace(0, 1, 21, dtype=float) # proportion of the zero rotational popu
 w1 = np.linspace(0, 1, 21, dtype=float) # proportion of the maximum rotational population
 b = np.linspace(0, 1, 21, dtype=float) # proportion of the binaries population
 
-filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/ll*.pkl')))
+# filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/ll*.pkl')))
+filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/ll_m0p45*.pkl')))
 for filepath in filelist: # for each combination of age and metallicity
 	# load the log likelihood and the maximum q
 	with open(filepath, 'rb') as f:
-		ll_3d, qm_3d, om_sigma = pickle.load(f)
+		ll_3d, qm_3d, om_sigma, age_params = pickle.load(f)
 		ll_3d -= np.nanmax(ll_3d)
 
 	# likelihood at maximum-likelihood binaries proportion
@@ -32,12 +34,13 @@ for filepath in filelist: # for each combination of age and metallicity
 	# color map
 	cmapBig = mpl.cm.get_cmap('Greys', 512)
 	cmap = mpl.colors.ListedColormap(cmapBig(np.linspace(0, 1, 256)))
-	norm = mpl.colors.Normalize(vmin=-100, vmax=np.nanmax(ll), clip=True)
+	norm = mpl.colors.Normalize(vmin=np.nanmin(ll), vmax=np.nanmax(ll), clip=True)
 
 	# text box text
 	textstr = '\n'.join((
-		r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.') + '$',
-		r'${\rm [M/H]}_{\rm MIST}=' + base.split('_')[2].replace('p','.').replace('m','-') + '$',
+	    r'$\overline{\log_{10}{t}}=' + '%.3f' % age_params[0] + '$',
+	    r'$\sigma_{\log_{10}{t}}=' + '%.3f' % age_params[1] + '$',
+		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
 		r'$b = b_{\rm max} = ' + str(b[bm])[:5] + '$',
 		r'$\sigma_{\rm \omega} = \{' + ', '.join([str(n)[:4] for n in om_sigma]) + '\}$',
 		r'$w_{\rm 0, max} = ' + str(w0[w0m])[:4] + '$',
@@ -58,10 +61,10 @@ for filepath in filelist: # for each combination of age and metallicity
 	
 	# color bar
 	ax1.axis('off')
-	cax = fig.add_axes([0.75, 0.15, 0.03, 0.4])	
+	cax = fig.add_axes([0.75, 0.1, 0.03, 0.4])	
 	ticks = ticker.LinearLocator(5)
 	cb = fig.colorbar(mappable=pcm, ax=ax1, cax=cax, orientation='vertical', ticks=ticks, \
-		format='%.1f', alpha=1.0, shrink=0.6, norm=norm)
+		alpha=1.0, shrink=0.6, norm=norm) # format='%.1f',
 	cb.set_label(label=r'$\ln{\cal L}$', fontsize=18, rotation=0, labelpad=25, y=0.65)
 
 	# text box

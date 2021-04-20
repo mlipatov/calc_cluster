@@ -35,8 +35,8 @@ back[m0] = cf.v0err * cf.std[-1] / (np.sqrt(2 * np.pi) * cf.volume)
 # everywhere else
 back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * cf.v0err * cf.std[-1])) ) / (2 * cf.volume)
 
-filelist = list(np.sort(glob.glob('data/densities/pkl/*.pkl')))
-# filelist = list(np.sort(glob.glob('data/densities/pkl/density_9p15_m0p45*.pkl')))
+# filelist = list(np.sort(glob.glob('data/densities/pkl/*.pkl')))
+filelist = list(np.sort(glob.glob('data/densities/pkl/density_m0p45*.pkl')))
 # load a single density to get the arrays of observables
 with open(filelist[0], 'rb') as f:
 	densities = pickle.load(f) 
@@ -96,20 +96,16 @@ w0 = np.linspace(0, 1, 21, dtype=float) # proportion of the zero rotational popu
 w1 = np.linspace(0, 1, 21, dtype=float) # proportion of the maximum rotational population
 b = np.linspace(0, 1, 21, dtype=float) # proportion of the binaries population
 
-for filepath in filelist: # for each combination of age and metallicity
+for filepath in filelist: 
 	# load the pre-computed density on a grid of observables
 	with open(filepath, 'rb') as f:
 		# the densities should be normalized; their de-normalization functions should be computed
 		densities = pickle.load(f)
 		# densities.reverse() # remove the reversal after re-calculating the densities
-	age = densities[0][0][0].age
-	met = densities[0][0][0].Z
-	nrot = len(densities) - 1 # number of rotational populations
+	# age = densities[-1][0]
+	nrot = len(densities) - 2 # number of rotational populations
 	nmul = len(densities[0]) # number of multiplicity populations
-	om_sigma = densities[-1]
-
-	print('Age: ' + str(age)[:5])
-	print('Metallicity: ' + str(met))
+	om_sigma = densities[-2]
 
 	# cluster model densities at data points for each rotational population
 	f = np.zeros( (npts, nrot, nmul), dtype=float ) 
@@ -119,7 +115,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	for r in range(nrot): # for each rotational population
 		for m in range(nmul): # for each multiplicity population
 			for i in range(npts): # for each star
-				# status w.r.t. vsini measurement
+				# status w.r.t. the vsini measurement
 				if np.isnan(ld.obs[i, -1]): density1 = densities[r][m][1]				
 				elif ld.obs[i, -1] == -1: 	density1 = densities[r][m][2]
 				else: 						density1 = densities[r][m][0] 
@@ -180,7 +176,7 @@ for filepath in filelist: # for each combination of age and metallicity
 				l = np.prod(lf, axis=-1)
 				# logarithm of the integral, with logarithm of maximum likelihood added back
 				ll[i, j, k] = np.log(np.sum(l * w) * dq) + llmax
-	print('marginalization in q on a grid of w_0, w_1 and b: ' + str(time.time() - start) + ' seconds.')
+	print('marginalization in q on a grid of w_0, w_1 and b: ' + '%.2f' % (time.time() - start) + ' seconds.')
 	i0, i1, i2 = np.unravel_index(np.nanargmax(ll),ll.shape)
 	print('max ln likelihood: ' + str(np.nanmax(ll)) + ' at w_0 = ' + str(w0[i0])[:4] + \
 		', 1 - w_0 - w_1 = ' + str(1 - w0[i0] - w1[i1]) + ', w_1 = ' + str(w1[i1])[:4] +\
@@ -188,7 +184,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	print('min ln likelihood: ' + str(np.nanmin(ll)))
 
 	# package the likelihoods, the ML q values and the rotational distribution standard deviations
-	with open('data/likelihoods/pkl/ll_' + str(age).replace('.','p')[:4] + '_' + \
-			str(met).replace('-', 'm').replace('.', 'p') + \
+	with open('data/likelihoods/pkl/ll_' + \
+			str(cf.Z).replace('-', 'm').replace('.', 'p') + \
 			'_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma]) + '.pkl', 'wb') as f:
-	    pickle.dump([ll, qm, densities[-1]], f)    
+	    pickle.dump([ll, qm, densities[-2], densities[-1]], f)    

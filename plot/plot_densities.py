@@ -1,6 +1,7 @@
 import sys
 sys.path.append('..')
 from lib import load_data as ld
+import config as cf
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -10,8 +11,8 @@ import pickle, glob, os
 
 mpl.rcParams['font.size'] = 12
 ROI_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
-rot_pop = ['slow', 'intermediate', 'fast']
-mul_pop = ['unaries', 'binaries']
+rot_pop = ['Slow', 'Intermediate', 'Fast']
+mul_pop = ['Unaries', 'Binaries']
 
 # patches to plot for a 2D region
 # x index = 1
@@ -29,9 +30,9 @@ def plot_region(ax, region, region_kwargs):
 	ax.hlines(y, xmin, xmax, **kwargs)
 	ax.vlines(x, ymin, ymax, **kwargs)
 
-filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
-# filelist = list(np.sort(glob.glob('../data/densities/pkl/density_9p15_m0p45*.pkl')))
-for filepath in filelist: # for each combination of age and metallicity
+# filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
+filelist = list(np.sort(glob.glob('../data/densities/pkl/density_m0p45*.pkl')))
+for filepath in filelist:
 	# load the density file
 	with open(filepath, 'rb') as f:
 		densities = pickle.load(f)
@@ -40,7 +41,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	if len(base.split('p')[-1]) == 1:
 		base = base + '0'
 		
-	for k in range(len(densities) - 1): # rotational population
+	for k in range(len(densities) - 2): # rotational population
 		densities_k = densities[k]
 		for j in range(len(densities_k)): # multiplicity population
 			density = densities_k[j][0]
@@ -56,10 +57,12 @@ for filepath in filelist: # for each combination of age and metallicity
 
 			# text box
 			textstr = '\n'.join((
-			    r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.') + '$',
-			    r'${\rm [M/H]}_{\rm MIST}=' + base.split('_')[2].replace('p','.').replace('m','-') + '$',
+			    # r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.') + '$',
+			    r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
+			    r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
+			    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
 				str(rot_pop[k]) + r' rotation',
-				r'$\sigma_{\rm \omega} = ' + str(densities[-1][k])[:4] + '$',
+				r'$\sigma_{\rm \omega} = ' + str(densities[-2][k])[:4] + '$',
 				str(mul_pop[j])))
 
 				#, $\omega = $' + str(densities[k][3])))

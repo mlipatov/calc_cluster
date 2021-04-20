@@ -3,6 +3,8 @@ import numpy as np
 cluster = 'NGC1846'
 A_V = 0.26315789 # should be one of the A_V values on the PARS grid 
 modulus = 18.45
+Z = -0.45 # MIST metallicity 
+EEP = 390 # EEP at which models start moving fast across observable space (utilized in the refinement step)
 
 # minimum standard deviations of the observables:
 # magnitude F555W, color F435W - F814W and vsini in km/s
