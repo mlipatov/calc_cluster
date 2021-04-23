@@ -118,7 +118,7 @@ for filepath in filelist: # for each combination of age and metallicity
 
 print('-------- Priors on observable grids ----------')
 # dimensions: rotational population, multiplicity population
-priors = [ [None] * 2 ] * len(om_mean)
+priors = [ [None for i in range(2)] for j in range(len(om_mean))]
 for obs_binary, Mini, r, omega0, inc, age in obs_allages:
 
 	print('Age: ' + '%.4f' % age)
@@ -138,34 +138,37 @@ for obs_binary, Mini, r, omega0, inc, age in obs_allages:
 	# omega distribution prior; first dimension is the rotational population
 	pr_om = np.exp(-0.5*((omega0[np.newaxis, :] - om_mean[:, np.newaxis]) / om_sigma[:, np.newaxis])**2)
 	pr_om = pr_om[:, np.newaxis, np.newaxis, :, np.newaxis]
-	# rotational populations
-	for j in range(len(om_mean)): 
-		print('Rotational population ' + str(j))
-		# prior on the model grid, weighted according to the integration numerical approximation
-		pr_binary =  pr0 * pr_om[j]
-		# multiplicities
-		for k, mult in enumerate(['unary', 'binary']): 
+
+	# multiplicities
+	for k, mult in enumerate(['unary', 'binary']): 
+		if (mult == 'unary'):
+			obs_models = obs_binary[:, 0, ...]
+			pr_noom = pr0[:, 0, ...]
+		else:
+			obs_models = obs_binary
+			pr_noom = pr0
+
+		start = time.time()
+		ind = [] # index of each model in the data space grid
+		for i in range(len(nobs)): # for each data space dimension
+			ind.append( np.searchsorted(obs[i], obs_models[..., i], side='right').flatten() - 1 )
+		ind = np.array(ind) # make a list into a numpy array
+		# choose models that are not NAN and not -1 or len(observable grid dimension) - 1, i.e. outside the grid	
+		m = np.all( (ind != nobs[:, np.newaxis] - 1) & (ind != -1), axis=0 ) & \
+			np.all( ~np.isnan(obs_models), axis=-1 ).flatten()
+		ind = ind[:, m]
+		if mult == 'binary':
+			print('\tGetting the indices of models on observable grid: ' + '%.2f' % (time.time() - start) + ' seconds.') 
+
+		# rotational populations
+		for j in range(len(om_mean)): 
+			print('Rotational population ' + str(j))
+			# prior on the model grid, weighted according to the integration numerical approximation
+			pr =  pr_noom * pr_om[j]
 			# initialize the prior at this rotational population and this multiplicity
 			if priors[j][k] is None:
 				priors[j][k] = np.zeros(nobs, dtype=np.float32)
-			# get the prior on the model grid
-			if (mult == 'unary'):
-				# print('\tUnaries ')
-				pr = pr_binary[:, 0, ...]
-				obs_models = obs_binary[:, 0, ...]
-			else:
-				# print('\tBinaries ')
-				pr = pr_binary
-				obs_models = obs_binary
 			## distribute the prior over the data space grid
-			ind = [] # index of each model in the data space grid
-			for i in range(len(nobs)): # searchsorted only works on one array at a time
-				ind.append( np.searchsorted(obs[i], obs_models[..., i], side='right').flatten() - 1 )
-			ind = np.array(ind) # make a list into a numpy array
-			# choose models that are not NAN and not -1 or len(observable grid dimension) - 1, i.e. outside the grid	
-			m = np.all( (ind != nobs[:, np.newaxis] - 1) & (ind != -1), axis=0 ) & \
-				np.all( ~np.isnan(obs_models), axis=-1 ).flatten()
-			ind = ind[:, m]
 			# transfer the prior from the model grid to the grid of observables
 			start = time.time()
 			np.add.at(priors[j][k], tuple(ind), pr.flatten()[m])
@@ -174,7 +177,7 @@ for obs_binary, Mini, r, omega0, inc, age in obs_allages:
 
 print('-------- Convolutions ----------')
 # densities for different rotational and multiplicity populations
-densities = [ [None] * 2 ] * len(om_mean)
+densities = [ [None for i in range(2)] for j in range(len(om_mean))]
 # rotational populations
 for j in range(len(om_mean)):
 	print('Rotational population ' + str(j))

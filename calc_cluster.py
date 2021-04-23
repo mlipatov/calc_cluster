@@ -101,7 +101,6 @@ for filepath in filelist:
 	with open(filepath, 'rb') as f:
 		# the densities should be normalized; their de-normalization functions should be computed
 		densities = pickle.load(f)
-		# densities.reverse() # remove the reversal after re-calculating the densities
 	# age = densities[-1][0]
 	nrot = len(densities) - 2 # number of rotational populations
 	nmul = len(densities[0]) # number of multiplicity populations
