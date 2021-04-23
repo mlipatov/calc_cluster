@@ -145,96 +145,96 @@ for t0 in t:
 	with open('data/model_grids/grid_' + tstr + '_' + zstr + '.pkl', 'wb') as f:
 	    pickle.dump([grid.pickle(), mag, r], f)
 
-## now refine the age grid and interpolate the mass-omega-inclination grids on it
+# ## now refine the age grid and interpolate the mass-omega-inclination grids on it
 
-# interpolate between backward and forward closest neighbors on 1D grids g1 and g2 in 1D grid g; 
-# none of the grids have to have the same dimension
-def double_interp(g1, g2, g):
-	# for each element in 1D grid g1, get the index of the closest element in g2
-	# g1 and g2 don't have to have the same dimensions
-	# output has the same dimensions as g1
-	def closest(g1, g2):
-		return np.array([g2[np.abs(g2 - el).argmin()] for el in g1])
-	# interpolate from 1D grid g1 directionally towards 1D grid g2 on a third 1D grid g
-	# in other words, interpolate between (g[0], g1) and (g[-1], g2) at g[1:-1]
-	# g1 and g2 must have the same dimensions
-	# output has dimensions of g1 times g
-	def interp(g1, g2, g):
-		enum = np.arange(len(g1)) # enumerate the first grid
-		points = (g[[0,-1]], enum) # domain of known values: the boundary values of g times the enumeration 
-		values = np.vstack((g1, g2)) # known values on the domain: the two grids
-		xi = np.moveaxis(np.array(np.meshgrid(g, enum)), 0, -1) # desired value domain 
-		return interpn(points, values, xi, method='linear').T
-	# interpolate in g from g1 towards g2
-	inter1 = interp(g1, closest(g1, g2), g)
-	# interpolate in age between the grid at i+1th age and the grid points' neighbors at ith age
-	inter2 = interp(closest(g2, g1), g2, g)
-	# construct the union
-	inter = np.concatenate((inter1, inter2), axis=-1)
-	return [np.unique(i) for i in inter]	
+# # interpolate between backward and forward closest neighbors on 1D grids g1 and g2 in 1D grid g; 
+# # none of the grids have to have the same dimension
+# def double_interp(g1, g2, g):
+# 	# for each element in 1D grid g1, get the index of the closest element in g2
+# 	# g1 and g2 don't have to have the same dimensions
+# 	# output has the same dimensions as g1
+# 	def closest(g1, g2):
+# 		return np.array([g2[np.abs(g2 - el).argmin()] for el in g1])
+# 	# interpolate from 1D grid g1 directionally towards 1D grid g2 on a third 1D grid g
+# 	# in other words, interpolate between (g[0], g1) and (g[-1], g2) at g[1:-1]
+# 	# g1 and g2 must have the same dimensions
+# 	# output has dimensions of g1 times g
+# 	def interp(g1, g2, g):
+# 		enum = np.arange(len(g1)) # enumerate the first grid
+# 		points = (g[[0,-1]], enum) # domain of known values: the boundary values of g times the enumeration 
+# 		values = np.vstack((g1, g2)) # known values on the domain: the two grids
+# 		xi = np.moveaxis(np.array(np.meshgrid(g, enum)), 0, -1) # desired value domain 
+# 		return interpn(points, values, xi, method='linear').T
+# 	# interpolate in g from g1 towards g2
+# 	inter1 = interp(g1, closest(g1, g2), g)
+# 	# interpolate in age between the grid at i+1th age and the grid points' neighbors at ith age
+# 	inter2 = interp(closest(g2, g1), g2, g)
+# 	# construct the union
+# 	inter = np.concatenate((inter1, inter2), axis=-1)
+# 	return [np.unique(i) for i in inter]	
 
-tt = np.array([]) # intermediate ages
-mgg = []; ogg = []; igg = []; # interpolated model space grids
-n = 4 # age refinement factor
-for i in range(len(t) - 1):
-	ti = np.linspace(t[i], t[i+1], n)
-	mgg = mgg + double_interp(mg[i], mg[i+1], ti)[1:-1]
-	ogg = ogg + double_interp(og[i], og[i+1], ti)[1:-1]
-	igg = igg + double_interp(ig[i], ig[i+1], ti)[1:-1]
-	tt = np.concatenate((tt, ti[1:-1]))
+# tt = np.array([]) # intermediate ages
+# mgg = []; ogg = []; igg = []; # interpolated model space grids
+# n = 4 # age refinement factor
+# for i in range(len(t) - 1):
+# 	ti = np.linspace(t[i], t[i+1], n)
+# 	mgg = mgg + double_interp(mg[i], mg[i+1], ti)[1:-1]
+# 	ogg = ogg + double_interp(og[i], og[i+1], ti)[1:-1]
+# 	igg = igg + double_interp(ig[i], ig[i+1], ti)[1:-1]
+# 	tt = np.concatenate((tt, ti[1:-1]))
 
-# compute magnitudes for the intermediate grids
-for i in range(len(tt)):
-	t0 = tt[i]
-	print('t = ' + str(t0) + '...')
-	grid = mu.Grid(st, t0, cf.Z, mgg[i], ogg[i], igg[i], cf.A_V, verbose=True)
-	grids.append(grid)
-	# start = time.time()
-	# grid = rc_mass_omega(st, tt[i], cf.Z, mgg[i], ogg[i], igg[i], cf.A_V, cf.dmax)
-	mmax = np.nanmax(grid.get_maxdiff(0))
-	omax = np.nanmax(grid.get_maxdiff(1))
-	imax = np.nanmax(grid.get_maxdiff(2))
-	# print (str(time.time() - start) + ' seconds.')
-	print ('Maximum magnitude differences along mass, omega and inclination dimensions: \n' + str([mmax, omax, imax]))
+# # compute magnitudes for the intermediate grids
+# for i in range(len(tt)):
+# 	t0 = tt[i]
+# 	print('t = ' + str(t0) + '...')
+# 	grid = mu.Grid(st, t0, cf.Z, mgg[i], ogg[i], igg[i], cf.A_V, verbose=True)
+# 	grids.append(grid)
+# 	# start = time.time()
+# 	# grid = rc_mass_omega(st, tt[i], cf.Z, mgg[i], ogg[i], igg[i], cf.A_V, cf.dmax)
+# 	mmax = np.nanmax(grid.get_maxdiff(0))
+# 	omax = np.nanmax(grid.get_maxdiff(1))
+# 	imax = np.nanmax(grid.get_maxdiff(2))
+# 	# print (str(time.time() - start) + ' seconds.')
+# 	print ('Maximum magnitude differences along mass, omega and inclination dimensions: \n' + str([mmax, omax, imax]))
 
-	# non-rotating companion magnitudes on an M * r grid
-	print('Computing the companion magnitudes...')
-	mag = mu.companion_grid(r, grid.Mini, stc, pars, cf.A_V, cf.modulus)
+# 	# non-rotating companion magnitudes on an M * r grid
+# 	print('Computing the companion magnitudes...')
+# 	mag = mu.companion_grid(r, grid.Mini, stc, pars, cf.A_V, cf.modulus)
 
-	tstr = ('%.4f' % t0).replace('.', 'p')
-	grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
-	grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
-	grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
-	with open('data/model_grids/grid_' + tstr + '_' + zstr + '.pkl', 'wb') as f:
-	    pickle.dump([grid.pickle(), mag, r], f)
+# 	tstr = ('%.4f' % t0).replace('.', 'p')
+# 	grid.plot_diff(0, 'data/model_spacing/mass/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
+# 	grid.plot_diff(1, 'data/model_spacing/omega/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
+# 	grid.plot_diff(2, 'data/model_spacing/inc/diff_vs_inc_' + tstr + '_' + zstr + '.png')
+# 	with open('data/model_grids/grid_' + tstr + '_' + zstr + '.pkl', 'wb') as f:
+# 	    pickle.dump([grid.pickle(), mag, r], f)
 
-# sort the ages and the grids
-t = np.concatenate((t, tt))
-ag = sorted(zip(t, grids))
-## calculate maximum magnitude distances forward and backward in age
-# for each element in 1D grid g1, return the index of the closest neighbor in 1D grid g2
-# size of the output is equal to the size of g1
-def closest_ind(g1, g2):
-    ir = np.searchsorted(g2, g1) # right index
-    ir[ir == g2.shape[0]] = g2.shape[0] - 1 # get right index back within array bounds
-    il = ir - 1 # left index
-    il[il == -1] = 0 # get left index back within array bounds
-    i = il
-    m = np.abs(g2[ir] - g1) < np.abs(g2[il] - g1)
-    i[m] = ir[m]
-    return i
+# # sort the ages and the grids
+# t = np.concatenate((t, tt))
+# ag = sorted(zip(t, grids))
+# ## calculate maximum magnitude distances forward and backward in age
+# # for each element in 1D grid g1, return the index of the closest neighbor in 1D grid g2
+# # size of the output is equal to the size of g1
+# def closest_ind(g1, g2):
+#     ir = np.searchsorted(g2, g1) # right index
+#     ir[ir == g2.shape[0]] = g2.shape[0] - 1 # get right index back within array bounds
+#     il = ir - 1 # left index
+#     il[il == -1] = 0 # get left index back within array bounds
+#     i = il
+#     m = np.abs(g2[ir] - g1) < np.abs(g2[il] - g1)
+#     i[m] = ir[m]
+#     return i
 
-# return maximum magnitude difference from one model grid to another
-def maxdiff(g1, g2):
-	mi = closest_ind(g1.Mini, g2.Mini)
-	oi = closest_ind(g1.omega0, g2.omega0)
-	ii = closest_ind(g1.inc, g2.inc)
-	diff = g2.obs.take(mi, 0).take(oi, 1).take(ii, 2) - g1.obs
-	return np.nanmax(np.abs(diff))
+# # return maximum magnitude difference from one model grid to another
+# def maxdiff(g1, g2):
+# 	mi = closest_ind(g1.Mini, g2.Mini)
+# 	oi = closest_ind(g1.omega0, g2.omega0)
+# 	ii = closest_ind(g1.inc, g2.inc)
+# 	diff = g2.obs.take(mi, 0).take(oi, 1).take(ii, 2) - g1.obs
+# 	return np.nanmax(np.abs(diff))
 
-for i in range(len(ag) - 1):
-	g1 = ag[i][1]
-	g2 = ag[i+1][1]
-	md = np.nanmax([maxdiff(g1, g2), maxdiff(g2, g1)]) # maximum difference
-	print('primary magnitude difference between ages ' + '%.4f' % ag[i][0] + ' and ' + \
-		'%.4f' % ag[i+1][0] + ': ' + '%.2f' % md)
+# for i in range(len(ag) - 1):
+# 	g1 = ag[i][1]
+# 	g2 = ag[i+1][1]
+# 	md = np.nanmax([maxdiff(g1, g2), maxdiff(g2, g1)]) # maximum difference
+# 	print('primary magnitude difference between ages ' + '%.4f' % ag[i][0] + ' and ' + \
+# 		'%.4f' % ag[i+1][0] + ': ' + '%.2f' % md)
