@@ -113,9 +113,11 @@ class Set:
 # a grid of MIST models at some age and metallicity
 class Grid:
 	# independent variables that define the grid, axes of the corresponding array of observables
-	ivars = ['Mini', 'omega0', 'inc']
+	ivars = ['Mini', 'omega0', 't', 'inc']
 	# labels of the independent variables
-	lvars = [r'M_0', r'\omega_0', r'i']
+	lvars = [r'M_0', r'\omega_0', r'\log_{10}{t}', r'i']
+	# number of dimensions
+	ndim = 4
 	# standard deviations of the observables
 	std = None
 	# distance modulus of the cluster
@@ -124,23 +126,16 @@ class Grid:
 	pars = None
 
 	def __init__(self, \
-			st=None, age=None, Z=None, Mi=None, o0=None, inc=None, A_V=None, verbose=False):
+			st=None, Mi=None, o0=None, t=None, inc=None, A_V=None, verbose=False):
 		# independent model parameters
 		self.Mini = Mi
 		self.omega0 = o0
+		self.t = t
 		self.inc = inc
 		self.A_V = A_V
-		self.age = age
-		self.Z = Z
+		self.st = st # set of MIST models
 		# interpolate to set the dependent parameters
 		if st is not None:
-			if age is not None:
-				# limit the model set to the ages immediately above and below the grid's age
-				t = np.unique(st.t)
-				i = np.searchsorted(t, age)
-				self.st = st.copy()
-				self.st.select((st.t == t[i-1]) | (st.t == t[i]))
-			# calculate the observables
 			self.calc_obs(verbose=verbose)
 		else:
 			self.mag = None
@@ -158,46 +153,55 @@ class Grid:
 	# this copy only has the independent star model variables, the observables, and the cluster variables;
 	# it does not have the original MIST models or the PARS grid.
 	def pickle(self):
-		grid = Grid(age=self.age, Z=self.Z, Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
+		grid = Grid(Mi=self.Mini, o0=self.omega0, t=self.t, inc=self.inc, A_V=self.A_V)
 		grid.mag = np.copy(self.mag).astype(np.float32)
 		grid.vsini = np.copy(self.vsini).astype(np.float32)
-		grid.Z = self.Z
+		grid.age = self.st.age
+		grid.Z = self.st.Z
+		del grid.st
 		return grid
 
 	# Interpolates between MIST models in initial mass and omega
 	#	to find other model parameters; computes omega and equatorial radii;
 	# 	records a set of inclinations as well
 	# Makes use of the following:
-	#	MIST model set at some ages and a metallicity
+	#	MIST model set at some age and metallicity
 	#	initial masses
 	# 	initial omegas
+	# 	ages
 	def interp(self):
 		st = self.st
-		if st.age == self.age: # if the model set is at the age of this grid
-			# set up interpolation without age 
-			points = [ st.Mini, st.omega0 ]
-			xi = np.meshgrid( self.Mini, self.omega0, sparse=True, indexing='ij' )
-		else:
-			# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
-			points = [ st.Mini, st.omega0, st.t ]
-			values = st.EEP
-			xi = np.meshgrid( self.Mini, self.omega0, self.age, sparse=True, indexing='ij' )
-			EEP = griddata( tuple(points), values, tuple(xi), method='linear')
-			# remove the age dimension, record the EEPs
-			xi[-1] = self.EEP = np.squeeze(EEP, axis=-1)
-			for i in range(len(xi) - 1):
-				xi[i] = np.squeeze(xi[i], axis=-1)
-			# replace the ages with the EEPs and calculate the dependent variables 
-			points[-1] = st.EEP
-
-		# interpolate the model parameters; 
-		# use the linear method because there are small discontinuities at a limited range of masses
-		self.M = griddata( tuple(points), st.M, tuple(xi), method='linear' )
+		# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
+		points = [ st.Mini, st.omega0, st.t ]
+		xi = np.meshgrid( self.Mini, self.omega0, self.t, sparse=True, indexing='ij' )
+		EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
+		# replace the ages with the EEPs in the points from which we interpolate
+		points[-1] = st.EEP
+		# replace age with EEP in the points at which we interpolate 
+		xi[-1] = EEP
+		
+		## calculate the dependent variables via interpolation in the independent variables; 
+		## use the linear method because there are small discontinuities at a limited range of masses
+		M = griddata( tuple(points), st.M, tuple(xi), method='linear' ) # mass
+		# remove intermediate grid points where all masses are NaN
+		dims = np.arange(len(points)) # model dimensions
+		for i in range(len(dims)):
+			# mask that shows at which grid points not all entries are NaN 
+			m = ~np.all(np.isnan(M), axis=tuple(np.delete(dims, i)))
+			m[0] = m[-1] = True # keep the original boundary grid points
+			var = getattr(self, self.ivars[i]) # get this parameter grid (e.g. Mini, omega0)
+			setattr(self, self.ivars[i], var[m]) # delete the grid points
+			EEP = np.compress(m, EEP, axis=i) # delete the grid points from the EEP array
+			M = np.compress(m, M, axis=i) # delete the grid points from the mass array
+		self.M = M
+		# re-calculate the points at which we interpolate, replace age with EEP
+		xi = np.meshgrid( self.Mini, self.omega0, self.t, sparse=True, indexing='ij' )
+		xi[-1] = EEP
+		# calculate the rest of the dependent variables
 		self.L = 10**griddata( tuple(points), st.logL, tuple(xi), method='linear' )
 		oM = griddata( tuple(points), st.oM, tuple(xi), method='linear' )
 		logL_div_Ledd = griddata( tuple(points), st.logL_div_Ledd, tuple(xi), method='linear' )
 		R = griddata( tuple(points), st.R, tuple(xi), method='linear' )
-
 		# present-day omega_MESA, without the Eddington luminosity correction 
 		oMc = oM * np.sqrt(1 - 10**logL_div_Ledd)
 		# mitigate round-off error from interpolation
@@ -221,8 +225,8 @@ class Grid:
 	def calc_obs(self, verbose=False):
 		if verbose:
 			print('Calculating the observables for ' + str(len(self.Mini)) + ' x ' +\
-				str(len(self.omega0)) + ' x ' + str(len(self.inc)) + ' = ' +\
-				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc)) + ' models...', end='')
+				str(len(self.omega0)) + ' x ' + str(len(self.t)) + ' x ' + str(len(self.inc)) + ' = ' +\
+				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc) * len(self.t)) + ' models...')
 			start = time.time()
 		self.interp() # calculate the dependent model variables
 		# construct points for interpolating from the PARS grid;
@@ -262,7 +266,7 @@ class Grid:
 		self.obs = np.stack( (self.mag[..., 1], self.mag[..., 0] - self.mag[..., 2], self.vsini), axis=-1 )
 		self.clear_vars() # clear the dependent model variables
 		if verbose:
-			print('%.2f' % (time.time() - start) + ' seconds.')
+			print('\t' + str(time.time() - start) + ' seconds.')
 
 	# Get the maximum (observable difference / std) in a focal model dimension 
 	def get_maxdiff(self, axis):
@@ -272,12 +276,12 @@ class Grid:
 		diff = np.moveaxis(diff, axis, 0) 
 		# flatten all but the focal axis
 		diff = diff.reshape(diff.shape[0], -1)
-		# # suppress the error for all-NAN slices
-		# warnings.filterwarnings('ignore') 
+		# suppress the error for all-NAN slices, which can happen at the edges of the grid
+		warnings.filterwarnings('ignore') 
 		# maximum difference across observables and non-focal model dimensions
 		maxdiff = np.nanmax(diff, axis=1)
-		# # go back to default error reports
-		# warnings.filterwarnings('default')
+		# go back to default error reports
+		warnings.filterwarnings('default')
 		return maxdiff
 
 	# Subdivide each interval into n subintervals, where n is the ceiling of the largest 
@@ -302,12 +306,8 @@ class Grid:
 
 	# Coarsen the model grid in a given focal dimension 
 	def coarsen(self, axis, dmax=1.0):
-		obs = self.obs
-		mag = self.mag
-		vsini = self.vsini	
+		obs = self.obs		
 		obs = np.moveaxis(obs, axis, 0) # move the focal model axis to the front
-		mag = np.moveaxis(mag, axis, 0)
-		vsini = np.moveaxis(vsini, axis, 0)
 		var = getattr(self, self.ivars[axis])
 		maxdiff = self.get_maxdiff(axis)
 		ind = np.argsort(maxdiff) # indices of sorted differences, NAN are at the end
@@ -361,8 +361,6 @@ class Grid:
 				## merge with the interval to the left: 
 				# delete the left bound from the observables array, 
 				obs = np.delete(obs, j, axis=0)
-				mag = np.delete(mag, j, axis=0)
-				vsini = np.delete(vsini, j, axis=0)
 				# replace the maximum differences for the focal interval and the left neighbor 
 				# with the combined maximum differences 
 				maxdiff[j-1] = maxleft
@@ -373,8 +371,6 @@ class Grid:
 				## merge with the interval to the right: 
 				# delete the right bound from the observables array, 
 				obs = np.delete(obs, j+1, axis=0)
-				mag = np.delete(mag, j+1, axis=0)
-				vsini = np.delete(vsini, j+1, axis=0)
 				# replace the maximum differences for the focal interval and the right neighbor 
 				# with the combined maximum differences 
 				maxdiff[j] = maxright
@@ -391,11 +387,8 @@ class Grid:
 			elif maxdiff[j] >= dmax: stop = True
 
 		self.obs = np.moveaxis(obs, 0, axis) # move the focal model axis back into its place
-		self.mag = np.moveaxis(mag, 0, axis)
-		self.vsini = np.moveaxis(vsini, 0, axis)
 		setattr(self, self.ivars[axis], var) # set the model parameter list
 		
-
 	def plot_diff(self, axis, filename):
 		label = self.lvars[axis]
 		varname = self.ivars[axis]
