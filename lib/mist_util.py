@@ -306,8 +306,14 @@ class Grid:
 
 	# Coarsen the model grid in a given focal dimension 
 	def coarsen(self, axis, dmax=1.0):
-		obs = self.obs		
-		obs = np.moveaxis(obs, axis, 0) # move the focal model axis to the front
+		obs = self.obs
+		mag = self.mag
+		vsini = self.vsini		
+		# move the focal model axis to the front
+		obs = np.moveaxis(obs, axis, 0) 
+		mag = np.moveaxis(mag, axis, 0)
+		vsini = np.moveaxis(vsini, axis, 0) 
+		# model parameter grid 
 		var = getattr(self, self.ivars[axis])
 		maxdiff = self.get_maxdiff(axis)
 		ind = np.argsort(maxdiff) # indices of sorted differences, NAN are at the end
@@ -359,8 +365,10 @@ class Grid:
 					stop = True
 			elif merge == 'left':
 				## merge with the interval to the left: 
-				# delete the left bound from the observables array, 
+				# delete the left bound from the observables arrays, 
 				obs = np.delete(obs, j, axis=0)
+				mag = np.delete(mag, j, axis=0)
+				vsini = np.delete(vsini, j, axis=0)
 				# replace the maximum differences for the focal interval and the left neighbor 
 				# with the combined maximum differences 
 				maxdiff[j-1] = maxleft
@@ -369,8 +377,10 @@ class Grid:
 				var = np.delete(var, j)
 			elif merge == 'right':
 				## merge with the interval to the right: 
-				# delete the right bound from the observables array, 
+				# delete the right bound from the observables arrays, 
 				obs = np.delete(obs, j+1, axis=0)
+				mag = np.delete(mag, j+1, axis=0)
+				vsini = np.delete(vsini, j+1, axis=0)
 				# replace the maximum differences for the focal interval and the right neighbor 
 				# with the combined maximum differences 
 				maxdiff[j] = maxright
@@ -385,8 +395,10 @@ class Grid:
 			# check for the stopping condition
 			if np.isnan(maxdiff[j]): stop = True
 			elif maxdiff[j] >= dmax: stop = True
-
-		self.obs = np.moveaxis(obs, 0, axis) # move the focal model axis back into its place
+		# move the focal model axis back into its place
+		self.obs = np.moveaxis(obs, 0, axis) 
+		self.mag = np.moveaxis(mag, 0, axis)
+		self.vsini = np.moveaxis(vsini, 0, axis)
 		setattr(self, self.ivars[axis], var) # set the model parameter list
 		
 	def plot_diff(self, axis, filename):

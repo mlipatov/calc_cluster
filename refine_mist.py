@@ -37,9 +37,8 @@ def Mlim(st):
 		Mmin = np.nan
 	return Mmin
 
-# refine and coarsen in the mass and omega dimensions
-# refine and coarsen model dimensions
-def refine_coarsen(st):
+# refine and coarsen model grid between two ages
+def refine_coarsen(st, t1, t2):
 	# get maximum differences for all dimensions
 	def diffs(grid):
 		return np.array([np.nanmax(grid.get_maxdiff(i)) for i in range(grid.ndim)])
@@ -49,7 +48,7 @@ def refine_coarsen(st):
 
 	Mi = np.unique(st.Mini) # original mass grid
 	o0 = np.array([st.omega0.min(), st.omega0.max()]) # small omega grid
-	t = np.unique(st.t) # original age grid
+	t = np.array([t1, t2]) # age grid based on the given ages
 	inc = np.linspace(0, np.pi/2, 2) # small inclination grid
 	grid = mu.Grid(st, Mi, o0, t, inc, cf.A_V)
 	grid.coarsen(0, dmax=cf.dmax) # coarsen the mass grid
@@ -67,9 +66,9 @@ def refine_coarsen(st):
 				while md[i] > cf.dmax: # while the maximum difference in this dimension is above the cutoff
 					grid.refine(i, dmin=cf.dmax) # refine this dimension
 					md = diffs(grid) # update maximum differences
-					gl = lengths(grid) # update the grid length in this dimension
-					print(md)
-					print(gl)
+				gl = lengths(grid) # update the grid length in this dimension
+				print(md)
+				print(gl)
 				print('Coarsening the ' + ivar + ' dimension.')
 				grid.coarsen(i, dmax=cf.dmax)
 				gl = lengths(grid) # get new grid lengths
@@ -95,12 +94,15 @@ st.select_MS() # main sequence
 st.select_valid_rotation()
 st.set_omega0()
 
-t = np.unique(st.t)[105:105+6] # target ages; index 1 has 9.154
+# t = np.unique(st.t)[107:109]
+t = np.unique(st.t)[105:105+6] # target ages, around 9.154
 st.select(np.isin(st.t, t)) # select the ages
+splits = [11, 6, 5, 3, 2] # number of ages for each interval to give linspace
+
 st.select_Z(cf.Z) # select metallicity
 zstr = str(cf.Z).replace('-', 'm').replace('.', 'p')
 
-print('Loading PARS...', end='')
+print('Loading PARS...', end='', flush=True)
 start = time.time()
 with open('data/pars_grid_2.pkl', 'rb') as f: pars = pickle.load(f)
 print('%.2f' % (time.time() - start) + ' seconds.' + '\n')
@@ -110,12 +112,18 @@ mu.Grid.std = cf.std # standard deviations of observables
 mu.Grid.modulus = cf.modulus # distance modulus of the cluster
 mu.Grid.pars = pars # PARS grid
 
+# apply mass cut-off according the region of interest on the CMD 
+start = time.time()
+print('Applying mass cut-off...', end='')
+Mmin = Mlim(st)
+st.select_mass(Mmin=Mmin)
+print('minimum mass = ' + '%.4f' % Mmin + '; %.2f' % (time.time() - start) + ' seconds.')
+
 grids = [] # refined grids in model parameters
 # binary mass ratio spaced so that magnitudes are spaced evenly
 r = np.linspace(0, 1, cf.num_r)**(1 / cf.s) 
 
 for i in range(len(t) - 1):
-	print('t = ' + '%.4f' % t[i] + ' and ' + '%.4f' % t[i+1])
 	st1 = st.copy() # copy the model set
 	st1.select( (st1.t == t[i]) | (st1.t == t[i+1]) )
 
@@ -123,24 +131,26 @@ for i in range(len(t) - 1):
 	stc = st1.copy()
 	stc.select(stc.omega0 == 0)
 
-	# apply mass cut-off according the region of interest on the CMD 
-	start = time.time()
-	print('Applying mass cut-off...', end='')
-	Mmin = Mlim(st1)
-	st1.select_mass(Mmin=Mmin)
-	print('minimum mass = ' + '%.4f' % Mmin + '; %.2f' % (time.time() - start) + ' seconds.')
+	# # refine the age grid, especially at earlier ages, 
+	# # where more masses span the main sequence below the magnitude cut-off
+	# t1 = np.linspace(t[i], t[i+1], splits[i])
+
+	# for j in range(len(t1) - 1):
+
+		# print('t = ' + '%.4f' % t1[j] + ' and ' + '%.4f' % t1[j+1] + '\n')
+	print('t = ' + '%.4f' % t[i] + ' and ' + '%.4f' % t[i+1] + '\n')
 
 	start = time.time()
 	print('Refining the mass, omega and inclination grids...')
-	# coarsen and refine model grids
-	grid = refine_coarsen(st1) 
+	# coarsen and refine model grid between these two ages, using the appropriate model set
+	grid = refine_coarsen(st1, t[i], t[i+1]) 
 	print('%.2f' % (time.time() - start) + ' seconds.')
 
 	# non-rotating companion magnitudes on a M * r grid
 	mag = mu.companion_grid(r, grid.Mini, stc, pars, cf.A_V, cf.modulus)
 
 	print()
-	tstr = 't' + ('%.4f' % t[i]).replace('.', 'p') + '_' + ('%.4f' % t[i+1]).replace('.', 'p')
+	tstr = 't' + ('%.5f' % t[i]).replace('.', 'p') + '_' + ('%.5f' % t[i+1]).replace('.', 'p')
 	grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini_' + tstr + '_' + zstr + '.png')
 	grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0_' + tstr + '_' + zstr + '.png')
 	grid.plot_diff(2, 'data/model_grids/png/diff_vs_t_' + tstr + '_' + zstr + '.png')

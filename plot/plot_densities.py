@@ -30,8 +30,8 @@ def plot_region(ax, region, region_kwargs):
 	ax.hlines(y, xmin, xmax, **kwargs)
 	ax.vlines(x, ymin, ymax, **kwargs)
 
-# filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
-filelist = list(np.sort(glob.glob('../data/densities/pkl/density_m0p45*.pkl')))
+filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
+# filelist = list(np.sort(glob.glob('../data/densities/pkl/density_m0p45*.pkl')))
 for filepath in filelist:
 	# load the density file
 	with open(filepath, 'rb') as f:

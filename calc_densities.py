@@ -58,17 +58,17 @@ age_sigma = 0.015
 
 print('-------- Observables on model grids ----------')
 obs_allages = []
-filelist = list(np.sort(glob.glob('data/model_grids/*.pkl')))
-# filelist = list(np.sort(glob.glob('data/model_grids/*_9p19_m0p45.pkl')))
-for filepath in filelist: # for each combination of age and metallicity
+# filelist = list(np.sort(glob.glob('data/model_grids/pkl/*.pkl')))
+filelist = list(np.sort(glob.glob('data/model_grids/pkl/grid_t9p19463_9p21477_m0p45.pkl')))
+for filepath in filelist: # for each age range
 	# load the pre-computed observables on a grid of model parameters
 	with open(filepath, 'rb') as f:
 		grid, mag, r = pickle.load(f)
 
-	print('Age: ' + '%.4f' % grid.age)
+	print('Ages: ' + '%.4f' % grid.t.min() + ' - ' '%.4f' % grid.t.max())
 
 	# observables of unary models
-	# dimensions: initial mass, initial omega, inclination, mag / color / vsini
+	# dimensions: initial mass, initial omega, age, inclination, mag / color / vsini
 	obs_unary = np.full( grid.mag.shape, np.nan )
 	obs_unary[..., 0] = grid.mag[..., 1] # F555W magnitude
 	obs_unary[..., 1] = grid.mag[..., 0] - grid.mag[..., 2] # F435W - F814W color
@@ -76,11 +76,11 @@ for filepath in filelist: # for each combination of age and metallicity
 
 	# combined magnitudes of the non-rotating companion and its primary;
 	# companion dimensions: initial primary mass, binary mass ratio, filter
-	# primary dimensions: initial primary mass, initial omega, inclination, filter
-	# final dimensions: initial primary mass, binary mass ratio, initial omega, inclination, filter
+	# primary dimensions: initial primary mass, initial omega, age, inclination, filter
+	# final dimensions: initial primary mass, binary mass ratio, initial omega, age, inclination, filter
 	start = time.time()
 	mag_binary = \
-		mu.combine_mags(mag[..., np.newaxis, np.newaxis, :], grid.mag[:, np.newaxis, ...])
+		mu.combine_mags(mag[..., np.newaxis, np.newaxis, np.newaxis, :], grid.mag[:, np.newaxis, ...])
 	# insert the unary magnitudes, which evaluated to NAN above
 	mag_binary[:, 0, ...] = grid.mag
 	print('Combining primary and companion magnitudes: ' + str(time.time() - start) + ' seconds.') 
@@ -95,10 +95,10 @@ for filepath in filelist: # for each combination of age and metallicity
 	# differences in F555W magnitude along the r dimension
 	diff = np.abs(np.diff(obs_binary[..., 0], axis=1))
 	# mask along the r dimension where the differences are not all NaN
-	m = ~np.all(np.isnan(diff), axis=(0, 2, 3)) 
+	m = ~np.all(np.isnan(diff), axis=(0, 2, 3, 4)) 
 	# maximum differences in magnitude along the r dimension
 	dm = np.full(diff.shape[1], np.nan)
-	dm[m] = np.nanmax(diff[:, m,...], axis=(0, 2, 3))
+	dm[m] = np.nanmax(diff[:, m,...], axis=(0, 2, 3, 4))
 
 	# largest companions may be so close to TAMS that magnitude differences in the r dimension are too large
 	ind = np.argwhere( ~np.less_equal(dm, cf.dmax * cf.std[0], where=~np.isnan(dm)) ).flatten()
@@ -114,30 +114,31 @@ for filepath in filelist: # for each combination of age and metallicity
 		raise ValueError('intervals with excessive magnitude differences in r dimension do \
 			not form a contiguous set that ends at r = 1 for t = ' + str(t0)[:5] + ' and Z = ' + str(z0))
 
-	obs_allages.append([obs_binary, grid.Mini, r, grid.omega0, grid.inc, grid.age])
+	obs_allages.append([obs_binary, grid.Mini, r, grid.omega0, grid.t, grid.inc])
 
 print('-------- Priors on observable grids ----------')
 # dimensions: rotational population, multiplicity population
 priors = [ [None for i in range(2)] for j in range(len(om_mean))]
-for obs_binary, Mini, r, omega0, inc, age in obs_allages:
+for obs_binary, Mini, r, omega0, t, inc in obs_allages:
 
-	print('Age: ' + '%.4f' % age)
-	age_factor = np.exp(-0.5*((age - age_mean) / age_sigma)**2)
+	print('Ages: ' + '%.4f' % t.min() + ' - ' '%.4f' % t.max())
 	# arrays of ordinate multipliers (weights) for the numerical integration in model space;
 	# these include the varying discrete distances between adjacent abscissas;
 	# dimensions: initial mass, binary mass ratio, omega, inclination
-	w_Mini = trap(Mini)[:, np.newaxis, np.newaxis, np.newaxis]
-	w_r = trap(r)[np.newaxis, :, np.newaxis, np.newaxis]
-	w_omega0 = trap(omega0)[np.newaxis, np.newaxis, :, np.newaxis]
-	w_inc = trap(inc)[np.newaxis, np.newaxis, np.newaxis, :]
+	w_Mini = trap(Mini)[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+	w_r = trap(r)[np.newaxis, :, np.newaxis, np.newaxis, np.newaxis]
+	w_omega0 = trap(omega0)[np.newaxis, np.newaxis, :, np.newaxis, np.newaxis]
+	w_t = trap(t)[np.newaxis, np.newaxis, np.newaxis, :, np.newaxis]
+	w_inc = trap(inc)[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :]
 	# non-uniform priors in non-omega model dimensions
-	pr_Mini = (Mini**-2.35)[:, np.newaxis, np.newaxis, np.newaxis]
-	pr_inc = np.sin(inc)[np.newaxis, np.newaxis, np.newaxis, :]
+	pr_Mini = (Mini**-2.35)[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+	pr_t = np.exp(-0.5*((t - age_mean) / age_sigma)**2)[np.newaxis, np.newaxis, np.newaxis, :, np.newaxis]
+	pr_inc = np.sin(inc)[np.newaxis, np.newaxis, np.newaxis, np.newaxis, :]
 	# prior without the omega distribution
-	pr0 = age_factor * pr_Mini * pr_inc * w_Mini * w_r * w_omega0 * w_inc	
+	pr0 = pr_Mini * pr_t * pr_inc * (w_Mini * w_r * w_omega0 * w_t * w_inc)
 	# omega distribution prior; first dimension is the rotational population
 	pr_om = np.exp(-0.5*((omega0[np.newaxis, :] - om_mean[:, np.newaxis]) / om_sigma[:, np.newaxis])**2)
-	pr_om = pr_om[:, np.newaxis, np.newaxis, :, np.newaxis]
+	pr_om = pr_om[:, np.newaxis, np.newaxis, :, np.newaxis, np.newaxis]
 
 	# multiplicities
 	for k, mult in enumerate(['unary', 'binary']): 
@@ -158,11 +159,12 @@ for obs_binary, Mini, r, omega0, inc, age in obs_allages:
 			np.all( ~np.isnan(obs_models), axis=-1 ).flatten()
 		ind = ind[:, m]
 		if mult == 'binary':
-			print('\tGetting the indices of models on observable grid: ' + '%.2f' % (time.time() - start) + ' seconds.') 
+			print('\tGetting the indices of binary models on observable grid: ' + '%.2f' % (time.time() - start) + ' seconds.') 
 
 		# rotational populations
-		for j in range(len(om_mean)): 
-			print('Rotational population ' + str(j))
+		for j in range(len(om_mean)):
+			if mult == 'binary': 
+				print('Rotational population ' + str(j))
 			# prior on the model grid, weighted according to the integration numerical approximation
 			pr =  pr_noom * pr_om[j]
 			# initialize the prior at this rotational population and this multiplicity
