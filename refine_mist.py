@@ -54,22 +54,22 @@ def refine_coarsen(st, t1, t2):
 	grid.coarsen(0, dmax=cf.dmax) # coarsen the mass grid
 	md = diffs(grid) 	# get maximum differences for all dimensions
 	gl = lengths(grid) 	# get grid lengths for all dimensions
-	print(md)
-	print(gl)
+	print(md, flush=True)
+	print(gl, flush=True)
 	
 	while np.any(md > cf.dmax): # while any of the maximum differences are above the cutoff 
 		for i in range(len(md)): # for each of the dimensions
 			while md[i] > cf.dmax: # while this dimension is not fine enough
 				ivar = grid.ivars[i]
 				var = getattr(grid, ivar) # get the grid in this dimension
-				print('Refining the ' + ivar + ' dimension.')
+				print('Refining the ' + ivar + ' dimension.', flush=True)
 				while md[i] > cf.dmax: # while the maximum difference in this dimension is above the cutoff
 					grid.refine(i, dmin=cf.dmax) # refine this dimension
 					md = diffs(grid) # update maximum differences
 				gl = lengths(grid) # update the grid length in this dimension
-				print(md)
-				print(gl)
-				print('Coarsening the ' + ivar + ' dimension.')
+				print(md, flush=True)
+				print(gl, flush=True)
+				print('Coarsening the ' + ivar + ' dimension.', flush=True)
 				grid.coarsen(i, dmax=cf.dmax)
 				gl = lengths(grid) # get new grid lengths
 				md = diffs(grid)
@@ -105,7 +105,7 @@ zstr = str(cf.Z).replace('-', 'm').replace('.', 'p')
 print('Loading PARS...', end='', flush=True)
 start = time.time()
 with open('data/pars_grid_2.pkl', 'rb') as f: pars = pickle.load(f)
-print('%.2f' % (time.time() - start) + ' seconds.' + '\n')
+print('%.2f' % (time.time() - start) + ' seconds.' + '\n', flush=True)
 
 # set the parameters of the grid class
 mu.Grid.std = cf.std # standard deviations of observables
@@ -114,10 +114,10 @@ mu.Grid.pars = pars # PARS grid
 
 # apply mass cut-off according the region of interest on the CMD 
 start = time.time()
-print('Applying mass cut-off...', end='')
+print('Applying mass cut-off...', end='', flush=True)
 Mmin = Mlim(st)
 st.select_mass(Mmin=Mmin)
-print('minimum mass = ' + '%.4f' % Mmin + '; %.2f' % (time.time() - start) + ' seconds.')
+print('minimum mass = ' + '%.4f' % Mmin + '; %.2f' % (time.time() - start) + ' seconds.', flush=True)
 
 grids = [] # refined grids in model parameters
 # binary mass ratio spaced so that magnitudes are spaced evenly
@@ -136,15 +136,14 @@ for i in range(len(t) - 1):
 	# t1 = np.linspace(t[i], t[i+1], splits[i])
 
 	# for j in range(len(t1) - 1):
-
 		# print('t = ' + '%.4f' % t1[j] + ' and ' + '%.4f' % t1[j+1] + '\n')
 	print('t = ' + '%.4f' % t[i] + ' and ' + '%.4f' % t[i+1] + '\n')
 
 	start = time.time()
-	print('Refining the mass, omega and inclination grids...')
+	print('Refining the mass, omega and inclination grids...', flush=True)
 	# coarsen and refine model grid between these two ages, using the appropriate model set
 	grid = refine_coarsen(st1, t[i], t[i+1]) 
-	print('%.2f' % (time.time() - start) + ' seconds.')
+	print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
 
 	# non-rotating companion magnitudes on a M * r grid
 	mag = mu.companion_grid(r, grid.Mini, stc, pars, cf.A_V, cf.modulus)
