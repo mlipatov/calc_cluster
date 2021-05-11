@@ -41,11 +41,13 @@ for filepath in filelist:
 	if len(base.split('p')[-1]) == 1:
 		base = base + '0'
 		
-	for k in range(len(densities) - 2): # rotational population
-		densities_k = densities[k]
-		for j in range(len(densities_k)): # multiplicity population
-			density = densities_k[j][0]
-			density_cmd = densities_k[j][1]
+	for j in range(len(densities)): # rotational population
+		for k in range(len(densities[j])): # multiplicity population
+			density = densities[j][k]
+			density.normalize()
+
+			density_cmd = density.copy()
+			density_cmd.marginalize(2)
 
 			density_vsini = density.copy()
 			density_vsini.marginalize(1)
@@ -57,26 +59,26 @@ for filepath in filelist:
 
 			# text box
 			textstr = '\n'.join((
-			    # r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.') + '$',
-			    r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
-			    r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
+			    r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
+			    # r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
+			    # r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
 			    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-				str(rot_pop[k]) + r' rotation',
-				r'$\sigma_{\rm \omega} = ' + str(densities[-2][k])[:4] + '$',
-				str(mul_pop[j])))
+				str(rot_pop[j]) + r' rotation',
+				r'$\sigma_{\rm \omega} = ' + str(cf.om_sigma[j])[:4] + '$',
+				str(mul_pop[k])))
 
 				#, $\omega = $' + str(densities[k][3])))
 			    # r'$A_V=%.2f$' % (cf.A_V, )))
 
 			print('Plotting...')
-			for plot in ['cmd', 'vsini']:
+			for plot in ['cmd', 'vmd']:
 
 				if plot=='cmd':
 					density_plot = density_cmd; 
 					xlab = 'c = F435W - F814W'; xp = ld.color; xi = 1; 
 					cmap_lab = r'$\ln{\frac{dp}{dm\,dc}}$'; 
 					cmap_min = np.log(0.01); cmap_max = np.log(35); cb_format = '%.1f';
-				elif plot=='vsini':
+				elif plot=='vmd':
 					density_plot = density_vsini;
 					xlab = r'$v_r = v\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; xi = 2; 
 					cmap_lab = r'$\ln{\frac{dp}{dm\,dv_r}}$'; 
@@ -114,5 +116,5 @@ for filepath in filelist:
 				        verticalalignment='top', bbox=dict(facecolor='w', alpha=1.0, edgecolor='w'))
 
 				plt.savefig('../data/densities/' + plot + '/' + base + '_om' + \
-					str(k) + 'mul' + str(j) + '.png', dpi=300)
+					str(j) + 'mul' + str(k) + '.png', dpi=300)
 				plt.close()

@@ -29,11 +29,11 @@ mn = np.isnan(ld.obs[:, -1]) # mask of observations with no vsini
 m0 = ld.obs[:, -1] == -1 # mask of observations with vsini = 0
 mv = ~mn & ~m0 # observations with valid vsini
 # on the CMD
-back[mn] = 1 / cf.volume_cmd 
+back[mn] = 1 / cf.volume_cm 
 # at the vsini = 0 boundary
 back[m0] = cf.v0err * cf.std[-1] / (np.sqrt(2 * np.pi) * cf.volume) 
 # everywhere else
-back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * cf.v0err * cf.std[-1])) ) / (2 * cf.volume)
+back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * ld.err[mv, -1])) ) / (2 * cf.volume)
 
 # filelist = list(np.sort(glob.glob('data/densities/pkl/*.pkl')))
 filelist = list(np.sort(glob.glob('data/densities/pkl/density_m0p45*.pkl')))
@@ -73,19 +73,20 @@ for i in range(npts): # data point
 				# interpolate linearly: weights are distances to opposite neighbors;
 				# this approximates the kernel as a delta function
 				x0 = obs0[i, j]
-				kernel_j = np.array([x0 + 1 - x, x - x0])
+				kernel_j = np.array([x0 + 1 - x, x - x0]) # this is normalized, i.e. the sum is 1
 				slc.append( slice(x0.astype(int), (x0 + 1).astype(int), None) )
 			else:
 				# multiply by a wide kernel
 				x1 = obs1[i, j]; x2 = obs2[i, j]
 				kernel_j = np.exp( -(np.arange(x1, x2) - x)**2 / (2*s**2) )
+				kernel_j /= np.sum(kernel_j) # normalize the kernel to sum to 1
 				slc.append( slice(x1.astype(int), x2.astype(int), None) )
 			# add the dimension to the kernel
 			if kernel is None: 
 				kernel = kernel_j
 			else: 
 				kernel = np.multiply.outer(kernel, kernel_j)
-	kernel /= np.sum(kernel)
+	# kernel /= np.sum(kernel)
 	kernels.append(kernel)
 	slices.append( tuple(slc) )
 

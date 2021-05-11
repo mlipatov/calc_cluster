@@ -7,6 +7,19 @@ from scipy.ndimage import convolve1d
 from scipy.interpolate import interp1d
 import copy
 
+# calculate the factors of each discrete ordinate
+# for the trapezoidal rule with variable differentials
+# Input: abscissae
+def trap(x):
+	if len(x) > 1:
+		# calculate the differences between initial masses
+		diff = np.diff(x)
+		# array of averaged differentials for the trapezoidal rule
+		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
+	else:
+		d = np.array([1])
+	return d
+
 class ConvolutionException(Exception):
     pass
 
