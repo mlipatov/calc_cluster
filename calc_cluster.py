@@ -2,7 +2,7 @@ import sys, os, time, pickle
 
 from lib import dens_util as du
 import config as cf
-from lib import load_data as ld
+import load_data as ld
 
 import numpy as np
 import glob

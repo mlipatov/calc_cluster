@@ -4,7 +4,7 @@ from pa.lib import surface as sf
 from pa.lib import util as ut
 from pa.opt import grid as gd
 
-from lib import load_data as ld
+import load_data as ld
 import config as cf
 
 import numpy as np
@@ -26,7 +26,7 @@ class Set:
 		if filename is not None:
 			# logZ oM0 EEP log10_isochrone_age_yr initial_mass star_mass log_L log_L_div_Ledd log_Teff\
 			# log_R surf_avg_omega surf_r_equatorial_div_r surf_r_polar_div_r surf_avg_omega_div_omega_crit
-			md = np.load(filename, allow_pickle=False) # this will hold all the model parameters
+			md = np.load(filename, allow_pickle=False)
 			# select only the variables of interest
 			self.models = md[:, [0, 1, 2, 3, 4, 5, 6, 7, 9, 13]]
 			self.set_vars()
@@ -109,9 +109,31 @@ class Set:
 		self.Z = Z
 
 	def select_age(self, age):
-		m = (self.t == age)
-		self.select(m)
 		self.age = age
+		if age in self.t:
+			m = (self.t == age)
+			self.select(m)
+		else: # interpolate in age, keeping EEP and omega0 constant
+			EEP = np.unique(self.EEP)
+			oM0 = np.unique(self.oM0)
+			points = [ self.EEP, self.t ]
+			xi = [ EEP, [age] ]
+			if oM0.shape[0] > 1: # if omega is an interpolation variable
+				points.insert(1, self.oM0)
+				xi.insert(1, oM0)
+			xi = np.meshgrid( *xi, sparse=True, indexing='ij' )
+			models = griddata( tuple(points), self.models, tuple(xi), method='linear')
+			models = models.reshape(-1, models.shape[-1])
+			m = ~np.any(np.isnan(models), axis=-1)
+			self.models = models[m]
+			# correct for possible round-off error in initial omega_M
+			self.models[:, 1][ self.models[:, 1] < 0 ] = 0
+			# correct for possible round-off error in age
+			self.models[:, 3] = age
+			# set variables
+			self.set_vars()
+			# calculate initial omega
+			if self.omega0 is not None: self.set_omega0()
 
 # given a set of models and the boundaries of the observable space region where we need model priors,
 # calculate the lowest mass / highest magnitude cut-off
@@ -129,7 +151,7 @@ def Mlim(st):
 	mag = combine_mags(grid.obs[..., 0], np.expand_dims(grid.obs[:, 0, :, :, 0], 1))
 	# mask that is true where magnitude is below maximum
 	m = np.full_like(mag, False, dtype=bool) 
-	np.less_equal(mag, ld.obmax[np.newaxis, np.newaxis, 0], where=~np.isnan(mag), out=m)
+	np.less_equal(mag, ld.obs1[np.newaxis, np.newaxis, 0], where=~np.isnan(mag), out=m)
 	# indices of masses above the lower mass cut-off
 	j = np.nonzero( np.any(m, axis=-1) )[0] 
 	if len(j) > 0: # if there are masses above the cut-off
@@ -143,7 +165,8 @@ def Mlim(st):
 	return Mmin
 
 # given a set of models, produce a (M, omega, t, i) model grid with proper observable spacings at a given age;
-# if omega and inclination grids are given, refine only in mass dimension
+# if omega and inclination grids are given, refine only in mass dimension;
+# this function sometimes gets stuck, in this case, restart
 def refine_coarsen(st, t1, o0=None, inc=None):
 	# get maximum differences for all dimensions
 	def diffs(grid):
@@ -178,6 +201,8 @@ def refine_coarsen(st, t1, o0=None, inc=None):
 						grid.refine(i, dmin=cf.dmax) # refine this dimension
 						md = diffs(grid) # update maximum differences
 					gl = lengths(grid) # update the grid length in this dimension
+					# print(md, flush=True)
+					# print(gl, flush=True)
 					# print('Coarsening the ' + ivar + ' dimension.', flush=True)
 					grid.coarsen(i, dmax=cf.dmax)
 					gl = lengths(grid)

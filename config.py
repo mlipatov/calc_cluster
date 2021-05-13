@@ -18,7 +18,7 @@ std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
 # The region of interest (ROI) will then be the intersection of the observables grid
 # with the closed cube defined here.
 ROI = np.array( [[19.5, 22.], [0.4, 1.0], [0., 280.]] )
-norm = [True, True, False] # which dimensions are normalized on the ROI
+norm = [True, True, False] # in which dimensions the foreground distributions are normalized on the ROI
 volume = np.prod(np.diff(ROI, axis=-1)[:, 0]) # volume of the ROI
 volume_cm = np.prod(np.diff(ROI, axis=-1)[:-1, 0]) # volume of the CMD ROI
 v0err = 5 # standard deviation at the vsini = 0 boundary, in units of minimum standard deviation
@@ -35,12 +35,12 @@ r = np.linspace(0, 1, num_r)**(1 / s)
 # refinement factor for the grid over which the first convolution is performed
 downsample = 3
 # the number of standard deviations to assume for the truncation of Gaussian kernels in 
-# alotting data space for all convolutions and plotting; 
+# alotting data space for all integrations with error kernels and plotting; 
 # actual Gaussian kernels will be truncated at one less deviation 
 nsig = 4
 # number of coarse vsini grid steps (approximately the minimum vsini errors) in the standard deviation 
 # of kernels alotted for the initial convolution and subsequent de-normalization tests
-conv_err = 9
+denorm_err = 9
 # number of coarse vsini grid steps in the standard deviation of kernels assumed for plotting
 plot_err = 1
 
@@ -59,3 +59,6 @@ else:
 om_mean = np.array([0, om_middle, 1])
 om_sigma = np.array([s_slow, s_middle, s_fast])
 om_str = '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma])
+
+# multiplicity populations
+mult = ['unary', 'binary']

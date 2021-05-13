@@ -1,6 +1,6 @@
 import sys
 sys.path.append('..')
-from lib import load_data as ld
+import load_data as ld
 import config as cf
 
 import numpy as np
@@ -44,7 +44,7 @@ for filepath in filelist:
 	for j in range(len(densities)): # rotational population
 		for k in range(len(densities[j])): # multiplicity population
 			density = densities[j][k]
-			density.normalize()
+			# density.normalize()
 
 			density_cmd = density.copy()
 			density_cmd.marginalize(2)

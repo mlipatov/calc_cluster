@@ -98,13 +98,13 @@ class Grid:
 	# Notes:
 	#	operates on normalized, un-scaled probability density
 	def dP_sigma(self, nsig):
-		dmar = self.copy()
+		density = self.copy()
 		for i in range(len(self.obs)): # for each observable dimension
 			if not self.norm[i]: # if the dimension is not normalized in the ROI
-				dmar.marginalize(i) # marginalize it
+				density.marginalize(i) # marginalize in it
 		# standard deviations in units of grid step size, up to the size
 		# that can have half a kernel fit at an edge of the ROI 
-		s = np.linspace(0.5, cf.conv_err, 9)
+		s = np.linspace(0.5, cf.denorm_err, 9)
 		kernels = [Kernel(s[j], nsig) for j in range(s.shape[0])]
 		sigma = np.outer(self.step, s)	
 		for i in range(len(self.obs)): # for each observable dimension
@@ -112,7 +112,7 @@ class Grid:
 				dp = []
 				for j in range(len(kernels)): # for each kernel width
 					kernel = kernels[j]
-					d = dmar.copy()
+					d = density.copy()
 					# check that the kernel, evaluated at the ROI boundaries, fits within the grid
 					if d.check_roi(i, kernel): 
 						d.convolve(i, kernel)
