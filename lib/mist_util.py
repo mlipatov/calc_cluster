@@ -190,7 +190,7 @@ def refine_coarsen(st, t1, o0=None, inc=None):
 	# print(md, flush=True)
 	# print(gl, flush=True)
 	
-	while np.any(md > cf.dmax): # while any of the maximum differences are above the observable difference cutoff 
+	while np.any(md[dims] > cf.dmax): # while any of the maximum differences are above the observable difference cutoff 
 		for i in dims: # for each of the dimensions (M, omega, i)
 			while (md[i] > cf.dmax): # while this dimension is not fine enough
 				ivar = grid.ivars[i]

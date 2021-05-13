@@ -1,5 +1,6 @@
 # Utilities needed to convolve, downsample, normalize and evaluate probability densities on grids
 # of observables
+import load_data as ld
 import config as cf
 import numpy as np
 import numba as nb
@@ -23,7 +24,8 @@ def trap(x):
 class ConvolutionException(Exception):
     pass
 
-# a finite symmetric Gaussian probability density kernel on a discrete, evenly spaced grid
+# a finite symmetric Gaussian probability density kernel on a discrete, evenly spaced grid;
+# this is for initial convolutions with downsampling
 class Kernel:
 	# Inputs: 
 	#	standard deviation of the kernel, in units of step size
@@ -36,6 +38,55 @@ class Kernel:
 		y = np.exp(-0.5 * (x/sigma)**2)
 		self.y = y / np.sum(y) # normalize the kernel
 		self.n = n
+
+# run this function with the first convolved prior as the argument
+# to obtain the kernels and corresponding slices necessary for individual-star error integrations
+def calc_kernels(density, sigma, nsig):
+	npts = ld.obs.shape[0] # number of data points
+	ndim = ld.obs.shape[1] # number of observable dimensions
+	# fractional indices of data points in observables arrays, 
+	# a.k.a. observables of stars in pixels, offset by the zero-indexed observable
+	obs = np.empty_like(ld.obs, dtype=float)
+	for j in range(ndim):
+		obs[:, j] = (ld.obs[:, j] - density.obs[j][0]) / density.step[j]
+
+	# start and stop indices of kernels in the observables arrays
+	obs0 = np.floor(obs)
+	obs1 = np.floor(obs - nsig * sigma)
+	obs2 = np.ceil(obs + nsig * sigma + 1)
+
+	kernels = [] # error kernels at data points
+	slices = [] # corresponding slices in the density arrays
+	for i in range(npts): # data point
+		kernel = None
+		slc = []
+		for j in range(ndim): # dimension
+			# check that the observable exists and isn't in a boundary bin
+			if ~np.isnan(ld.obs[i, j]) and ld.obs[i, j] != -1:
+				s = sigma[i, j]
+				x = obs[i, j]
+				# compare the standard deviation to pixel size
+				if s < 1./2: 
+					# interpolate linearly: weights are distances to opposite neighbors;
+					# this approximates the kernel as a delta function
+					x0 = obs0[i, j]
+					kernel_j = np.array([x0 + 1 - x, x - x0]) # this is normalized, i.e. the sum is 1
+					slc.append( slice(x0.astype(int), (x0 + 1).astype(int), None) )
+				else:
+					# multiply by a wide kernel
+					x1 = obs1[i, j]; x2 = obs2[i, j]
+					kernel_j = np.exp( -(np.arange(x1, x2) - x)**2 / (2*s**2) )
+					kernel_j /= np.sum(kernel_j) # normalize the kernel to sum to 1
+					slc.append( slice(x1.astype(int), x2.astype(int), None) )
+				# add the dimension to the kernel
+				if kernel is None: 
+					kernel = kernel_j
+				else: 
+					kernel = np.multiply.outer(kernel, kernel_j)
+		# kernel /= np.sum(kernel)
+		kernels.append(kernel)
+		slices.append( tuple(slc) )
+	return [kernels, slices]
 
 # probability density on a discrete, evenly spaced grid of observables;
 # all integration (including marginalization, normalization and convolution at one or all points) 

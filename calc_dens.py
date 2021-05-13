@@ -1,11 +1,12 @@
 # Conduct all the operations on models grids that produce 
-# 	minimum-error isochrone probability distributions in observable space.
+# 	isochrone probability densities at data points for each rotational/multiplicity population.
 # This includes 
 #	refinement of (M, omega, i) grids at r = 0 and different t,
 # 	computation of the observables on (M, r, omega, i) grids at different t,
 # 	checking that observable differences between neighboring models are small enough in the r dimension,
 #	checking that the differences between neighboring isochrones are small enough,
-#	placing the prior on the observable grid, convolving it with the minimum-error kernel and coarsening.
+#	placing the prior on the observable grid, convolving it with the minimum-error kernel and coarsening,
+#	integrating the convolved prior with the residual error kernel for each data point.
 
 # PARS imports
 import sys, os, time, pickle
@@ -39,15 +40,13 @@ st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 nt = 6 # number of ages to take from the MIST grid
 it = 105 # first index of the MIST ages to take
+lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
-splits = [5] * (nt - 1)  # number of ages for each interval to give linspace
 # split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
-ts = [np.linspace(t[i], t[i+1], splits[i]) for i in range(nt - 1)] 
-# # ages to interpolate from: 
-# # the age itself for a MIST grid age, the closest left and right MIST grid ages otherwise
-# t_interp = sum( [ [np.array([x[0]])] + list(np.tile(x.take([0, -1]), (x.shape[0] - 2, 1))) for x in ts], [] )
-# t_interp.append( np.array([t[-1]]) )
+ts = [np.linspace(t[i], t[i+1], splits[i]) for i in range(nt - 1)]
+t_original = [True]
+for i in range(nt - 1): t_original = [True] + [False]*(lt - 2) + t_original
 t = np.unique(np.concatenate(ts)) # refined ages
 # non-rotating models at these ages and full mass range
 stc = st.copy(); stc.select(stc.omega0 == 0)  
@@ -89,53 +88,6 @@ res = ld.std**2 - cf.std[np.newaxis, :]**2
 res[ np.less(res, 0, where=~np.isnan(res)) ] = 0 # correct for round-off
 sigma = np.sqrt(res) / (ld.step[np.newaxis, :] * cf.downsample)
 
-# run this function with the first convolved prior as the argument
-# to obtain the kernels and corresponding slices necessary for individual-star convolutions
-def calc_kernels(density, ndim):
-	# fractional indices of data points in observables arrays, 
-	# a.k.a. observables of stars in pixels, offset by the zero-indexed observable
-	obs = np.empty_like(ld.obs, dtype=float)
-	for j in range(ndim):
-		obs[:, j] = (ld.obs[:, j] - density.obs[j][0]) / density.step[j]
-
-	# start and stop indices of kernels in the observables arrays
-	obs0 = np.floor(obs)
-	obs1 = np.floor(obs - nsig * sigma)
-	obs2 = np.ceil(obs + nsig * sigma + 1)
-
-	kernels = [] # error kernels at data points
-	slices = [] # corresponding slices in the density arrays
-	for i in range(npts): # data point
-		kernel = None
-		slc = []
-		for j in range(ndim): # dimension
-			# check that the observable exists and isn't in a boundary bin
-			if ~np.isnan(ld.obs[i, j]) and ld.obs[i, j] != -1:
-				s = sigma[i, j]
-				x = obs[i, j]
-				# compare the standard deviation to pixel size
-				if s < 1./2: 
-					# interpolate linearly: weights are distances to opposite neighbors;
-					# this approximates the kernel as a delta function
-					x0 = obs0[i, j]
-					kernel_j = np.array([x0 + 1 - x, x - x0]) # this is normalized, i.e. the sum is 1
-					slc.append( slice(x0.astype(int), (x0 + 1).astype(int), None) )
-				else:
-					# multiply by a wide kernel
-					x1 = obs1[i, j]; x2 = obs2[i, j]
-					kernel_j = np.exp( -(np.arange(x1, x2) - x)**2 / (2*s**2) )
-					kernel_j /= np.sum(kernel_j) # normalize the kernel to sum to 1
-					slc.append( slice(x1.astype(int), x2.astype(int), None) )
-				# add the dimension to the kernel
-				if kernel is None: 
-					kernel = kernel_j
-				else: 
-					kernel = np.multiply.outer(kernel, kernel_j)
-		# kernel /= np.sum(kernel)
-		kernels.append(kernel)
-		slices.append( tuple(slc) )
-	return [kernels, slices]
-
 # probability densities at data point locations
 # dimensions: age, multiplicity population, rotational population, data point
 points = np.full( (len(t), nmul, nrot, npts), np.nan )
@@ -147,7 +99,16 @@ for it in range(len(t)):
 	stc1 = stc.copy(); stc1.select_age( t[it] )	# non-rotating model set for the companions
 	# refine model grids
 	start = time.time(); print('refining the mass, omega and inclination grids...', flush=True)
-	grid = mu.refine_coarsen(st1, t[it]); print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
+	if t_original[it]:
+		grid = mu.refine_coarsen(st1, t[it])
+		# save the omega and inclination grids for the use in the next age
+		omega0_grid = grid.omega0
+		inc_grid = grid.inc
+	else:
+		# refine with the omega and inclination grids fixed
+		grid = mu.refine_coarsen(st1, t[it], o0=omega0_grid, inc=inc_grid)
+	print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
+
 	# print plots of maximum differences versus model parameter
 	grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini_' + t_str + '_' + cf.z_str + '.png')
 	grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0_' + t_str + '_' + cf.z_str + '.png')
@@ -307,7 +268,7 @@ for it in range(len(t)):
 		print(mult + ' convolutions: ' + str(time.time() - start) + ' seconds.') 
 	# at the first time point, 
 	# calculate residual kernels and corresponding slices for individual data points
-	if it == 0: kernels, slices = calc_kernels(densities[0][0], ndim)
+	if it == 0: kernels, slices = du.calc_kernels(densities[0][0], sigma, nsig)
 
 	# save the convolved priors; this takes up lots of memory, only do it if you want to plot these densities
 	with open('data/densities/pkl/density' + t_str + '.pkl', 'wb') as f:
@@ -347,4 +308,4 @@ for it in range(len(t)):
 				points[it, k, j, i] = float(dens * norm)
 # save the data point densities
 with open('data/points.pkl', 'wb') as f:
-	pickle.dump(points, f)
+	pickle.dump([points, t], f)
