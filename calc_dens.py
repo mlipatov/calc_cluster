@@ -45,8 +45,8 @@ t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
 # split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
 ts = [np.linspace(t[i], t[i+1], splits[i]) for i in range(nt - 1)]
-t_original = [True]
-for i in range(nt - 1): t_original = [True] + [False]*(lt - 2) + t_original
+t_orig = [True]
+for i in range(nt - 1): t_orig = [True] + [False]*(lt - 2) + t_orig
 t = np.unique(np.concatenate(ts)) # refined ages
 # non-rotating models at these ages and full mass range
 stc = st.copy(); stc.select(stc.omega0 == 0)  
@@ -99,7 +99,7 @@ for it in range(len(t)):
 	stc1 = stc.copy(); stc1.select_age( t[it] )	# non-rotating model set for the companions
 	# refine model grids
 	start = time.time(); print('refining the mass, omega and inclination grids...', flush=True)
-	if t_original[it]:
+	if t_orig[it]:
 		grid = mu.refine_coarsen(st1, t[it])
 		# save the omega and inclination grids for the use in the next age
 		omega0_grid = grid.omega0
@@ -238,7 +238,7 @@ for it in range(len(t)):
 			np.add.at(pr_obs, tuple(ind), pr.flatten()[m]) 
 			# print('\tPlacing the binary prior on a fine grid: ' + '%.2f' % (time.time() - start) + ' seconds.') 
 			# package the prior density with the grids of observables 
-			density = du.Grid(pr_obs, [x.copy() for x in ld.obs_grids], cf.ROI, cf.norm, Z=cf.Z)		
+			density = du.Grid(pr_obs, [x.copy() for x in ld.obs_grids], cf.ROI, cf.norm, Z=cf.Z, age=t[it])		
 			# convolve and normalize the prior with the minimum-error Gaussians in each observable dimension
 			min_kernels = [ du.Kernel(cf.std[i] / density.step[i], nsig, ds=cf.downsample) \
 							for i in range(len(cf.std)) ]
@@ -257,7 +257,7 @@ for it in range(len(t)):
 			density_cmd.marginalize(2)
 			densities_cmd[j][k] = density_cmd
 			# for data points where vsini is at the lower ROI boundary, convolve in vsini with the residual error kernel;
-			# cannot and should not re-normalize after the convolution; integrate the probability beyond the lower boundary
+			# do not re-normalize after the convolution; integrate the probability beyond the lower boundary
 			s = cf.std[-1] * np.sqrt(cf.v0err**2 - 1) # residual sigma = sqrt( sigma^2 - sigma_0^2 )
 			kernel = du.Kernel(s / density.step[-1], nsig)
 			density_v0 = density.copy()
@@ -286,7 +286,7 @@ for it in range(len(t)):
 				if np.isnan(ld.obs[i, -1]): density1 = densities_cmd[j][k] # sigma_vsini = infinity				
 				elif ld.obs[i, -1] == -1: 	density1 = densities_v0[j][k] # vsini = v_0 = 0
 				else: 						density1 = densities[j][k] # vsini > v_0 
-				# integration with the kernel
+				# integration with the kernel, which is normalized up to the product of step sizes
 				dens = np.sum(kernels[i] * density1.dens[slices[i]])
 				dens /= np.prod(density1.step) # scale by density step sizes
 				# normalization correction for this data point in this density grid

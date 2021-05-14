@@ -312,6 +312,17 @@ class Grid:
 		norm = d.dens
 		self.dens /= norm
 
+	# multiply density by scalar
+	def mult(self, scalar):
+		self.dens *= scalar
+
 	# return properly scaled probability density
 	def density(self):
 		return self.dens / np.prod(self.step)
+
+# add densities on a list of grids, if numerically the grids are all the same
+def add(grids):
+	grid = grids[0].copy()
+	grid.correction = None
+	for g in grids[1:]: grid.dens += g.dens
+	return grid 
