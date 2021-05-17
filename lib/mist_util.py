@@ -143,12 +143,11 @@ def Mlim(st):
 	# smallest inclination (so that we see the star pole-on), and largest (i.e. equal-mass) companion.
 	# construct the corresponding grid
 	Mi = np.array(np.linspace(st.Mini.min(), st.Mini.max(), 100)) 
-	omega0 = np.array([st.omega0.min()]) 
-	t = np.array([st.t.max()]) 
+	omega0 = np.array([st.omega0.min()])  
 	inc = np.array([0]) 
-	grid = Grid(st, Mi, omega0, t, inc, cf.A_V)
+	grid = Grid(st, Mi, omega0, inc, cf.A_V)
 	# combine primary and companion magnitudes 
-	mag = combine_mags(grid.obs[..., 0], np.expand_dims(grid.obs[:, 0, :, :, 0], 1))
+	mag = combine_mags(grid.obs[..., 0], np.expand_dims(grid.obs[:, 0, :, 0], 1))
 	# mask that is true where magnitude is below maximum
 	m = np.full_like(mag, False, dtype=bool) 
 	np.less_equal(mag, ld.obs1[np.newaxis, np.newaxis, 0], where=~np.isnan(mag), out=m)
@@ -167,7 +166,7 @@ def Mlim(st):
 # given a set of models, produce a (M, omega, t, i) model grid with proper observable spacings at a given age;
 # if omega and inclination grids are given, refine only in mass dimension;
 # this function sometimes gets stuck, in this case, restart
-def refine_coarsen(st, t1, o0=None, inc=None):
+def refine_coarsen(st, o0=None, inc=None):
 	# get maximum differences for all dimensions
 	def diffs(grid):
 		return np.array([np.nanmax(grid.get_maxdiff(i)) for i in range(grid.ndim)])
@@ -176,19 +175,15 @@ def refine_coarsen(st, t1, o0=None, inc=None):
 		return np.array([len(getattr(grid, grid.ivars[i])) for i in range(grid.ndim)])
 
 	Mi = np.unique(st.Mini) # original mass grid
-	t = np.array([t1]) # single age
-	dims = [0, 1, 2, 3] # dimensions to refine
+	dims = list(range(Grid.ndim)) # dimensions to refine
 	if o0 is None: o0 = np.array([st.omega0.min(), st.omega0.max()]) # small omega grid
 	else: dims.remove(1) # do not refine in omega dimension	
 	if inc is None:	inc = np.linspace(0, np.pi/2, 2) # small inclination grid
-	else: dims.remove(3) # do not refine in inclination dimension
+	else: dims.remove(2) # do not refine in inclination dimension
 
-	grid = Grid(st, Mi, o0, t, inc, cf.A_V)
+	grid = Grid(st, Mi, o0, inc, cf.A_V)
 	grid.coarsen(0, dmax=cf.dmax) # coarsen the mass grid, in case it's too fine to start with
 	md = diffs(grid) 	# get maximum differences for all dimensions
-	gl = lengths(grid) 	# get grid lengths for all dimensions
-	# print(md, flush=True)
-	# print(gl, flush=True)
 	
 	while np.any(md[dims] > cf.dmax): # while any of the maximum differences are above the observable difference cutoff 
 		for i in dims: # for each of the dimensions (M, omega, i)
@@ -200,13 +195,10 @@ def refine_coarsen(st, t1, o0=None, inc=None):
 					while md[i] > cf.dmax: # while the maximum difference in this dimension is above the cutoff
 						grid.refine(i, dmin=cf.dmax) # refine this dimension
 						md = diffs(grid) # update maximum differences
-					gl = lengths(grid) # update the grid length in this dimension
-					# print(md, flush=True)
-					# print(gl, flush=True)
 					# print('Coarsening the ' + ivar + ' dimension.', flush=True)
 					grid.coarsen(i, dmax=cf.dmax)
-					gl = lengths(grid)
 					md = diffs(grid)
+	gl = lengths(grid)
 	print(md, flush=True)
 	print(gl, flush=True)
 
@@ -215,27 +207,24 @@ def refine_coarsen(st, t1, o0=None, inc=None):
 # a grid of MIST models at some age and metallicity
 class Grid:
 	# independent variables that define the grid, axes of the corresponding array of observables
-	ivars = ['Mini', 'omega0', 't', 'inc']
+	ivars = ['Mini', 'omega0', 'inc']
 	# labels of the independent variables
-	lvars = [r'M_0', r'\omega_0', r'\log_{10}{t}', r'i']
+	lvars = [r'M_0', r'\omega_0', r'i']
 	# number of dimensions
-	ndim = 4
-	# # standard deviations of the observables
-	# std = None
-	# # distance modulus of the cluster
-	# modulus = None
+	ndim = len(ivars)
 	# PARS grid
 	pars = None
 
 	def __init__(self, \
-			st=None, Mi=None, o0=None, t=None, inc=None, A_V=None, verbose=False):
+			st=None, Mi=None, o0=None, inc=None, A_V=None, verbose=False):
 		# independent model parameters
 		self.Mini = Mi
 		self.omega0 = o0
-		self.t = t
 		self.inc = inc
 		self.A_V = A_V
 		self.st = st # set of MIST models
+		self.age = st.age
+		self.Z = st.Z
 		# interpolate to set the dependent parameters
 		if st is not None:
 			self.calc_obs(verbose=verbose)
@@ -255,11 +244,11 @@ class Grid:
 	# this copy only has the independent star model variables, the observables, and the cluster variables;
 	# it does not have the original MIST models or the PARS grid.
 	def pickle(self):
-		grid = Grid(Mi=self.Mini, o0=self.omega0, t=self.t, inc=self.inc, A_V=self.A_V)
+		grid = Grid(Mi=self.Mini, o0=self.omega0, inc=self.inc, A_V=self.A_V)
 		grid.mag = np.copy(self.mag).astype(np.float32)
 		grid.vsini = np.copy(self.vsini).astype(np.float32)
-		grid.age = self.st.age
-		grid.Z = self.st.Z
+		grid.age = self.age
+		grid.Z = self.Z
 		del grid.st
 		return grid
 
@@ -271,24 +260,26 @@ class Grid:
 	#	initial masses
 	# 	initial omegas
 	# 	ages
+	# Note: when you are certain you don't need to interpolate in age here, remove
+	# 	all comments that used to be program code and have the 'age' boolean variable in them
 	def interp(self):
 		st = self.st
-		age = (np.unique(self.st.t).shape[0] > 1) # true if age is an independent variable in interpolation
+		# age = (np.unique(self.st.t).shape[0] > 1) # true if age is an independent variable in interpolation
 		points = [ st.Mini, st.omega0 ] # points from which to interpolate
 		xi = [ self.Mini, self.omega0 ] # points at which to interpolate
 		dims = [ 0, 1 ] # corresponding dimensions
-		if age: 
-			points += [ st.t ]
-			xi += [ self.t ]
-			dims += [ 2 ]
+		# if age: 
+		# 	points += [ st.t ]
+		# 	xi += [ self.t ]
+		# 	dims += [ 2 ]
 		xi = np.meshgrid( *xi, sparse=True, indexing='ij' )
-		if age:
-			# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
-			EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
-			# replace the ages with the EEPs in the points from which we interpolate
-			points[-1] = st.EEP
-			# replace age with EEP in the points at which we interpolate 
-			xi[-1] = EEP
+		# if age:
+		# 	# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
+		# 	EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
+		# 	# replace the ages with the EEPs in the points from which we interpolate
+		# 	points[-1] = st.EEP
+		# 	# replace age with EEP in the points at which we interpolate 
+		# 	xi[-1] = EEP
 		
 		## calculate the dependent variables via interpolation in the independent variables; 
 		## use the linear method because there are small discontinuities at a limited range of masses
@@ -301,24 +292,24 @@ class Grid:
 			var = getattr(self, self.ivars[i]) # get this parameter grid (e.g. Mini, omega0)
 			setattr(self, self.ivars[i], var[m]) # delete the NaN grid points
 			M = np.compress(m, M, axis=i) # delete the NaN grid points from the mass array
-			if age: EEP = np.compress(m, EEP, axis=i) # delete the NaN grid points from the EEP array
+			# if age: EEP = np.compress(m, EEP, axis=i) # delete the NaN grid points from the EEP array
 		self.M = M
 		# re-calculate the points at which we interpolate
 		xi = [ self.Mini, self.omega0 ]
-		if age: xi += [ self.t ]
+		# if age: xi += [ self.t ]
 		xi = np.meshgrid( *xi, sparse=True, indexing='ij' )
-		if age: xi[-1] = EEP
+		# if age: xi[-1] = EEP
 		# calculate the rest of the dependent variables
 		self.L = 10**griddata( tuple(points), st.logL, tuple(xi), method='linear' )
 		oM = griddata( tuple(points), st.oM, tuple(xi), method='linear' )
 		logL_div_Ledd = griddata( tuple(points), st.logL_div_Ledd, tuple(xi), method='linear' )
 		R = griddata( tuple(points), st.R, tuple(xi), method='linear' )
-		if not age: # add the age dimension back
-			self.M = np.expand_dims(self.M, 2)
-			self.L = np.expand_dims(self.L, 2)
-			oM = np.expand_dims(oM, 2)
-			logL_div_Ledd = np.expand_dims(logL_div_Ledd, 2)
-			R = np.expand_dims(R, 2)
+		# if not age: # add the age dimension back
+		# 	self.M = np.expand_dims(self.M, 2)
+		# 	self.L = np.expand_dims(self.L, 2)
+		# 	oM = np.expand_dims(oM, 2)
+		# 	logL_div_Ledd = np.expand_dims(logL_div_Ledd, 2)
+		# 	R = np.expand_dims(R, 2)
 		# present-day omega_MESA, without the Eddington luminosity correction 
 		oMc = oM * np.sqrt(1 - 10**logL_div_Ledd)
 		# mitigate round-off error from interpolation
@@ -558,22 +549,24 @@ class Grid:
 # 	PARS grid of observables
 #	reddening
 #	distance modulus
-def companion_grid(r, Mini, st, t, pars, A_V, modulus):
-	age = (np.unique(st.t).shape[0] > 1) # true if age is an independent variable in interpolation
+# Note: when you are certain you don't need to interpolate in age here, remove the 
+#	comments that have the age boolean in them, which used to be program code
+def companion_grid(r, Mini, st, pars, A_V, modulus):
+	# age = (np.unique(st.t).shape[0] > 1) # true if age is an independent variable in interpolation
 	Mc = Mini[:, np.newaxis] * r[np.newaxis, :] # companion mass on a grid of primary mass and binary ratio
-	if age: 
-		points = [ st.Mini, st.t ]
-		xi = np.meshgrid( Mc.flatten(order='C'), np.array([t]), sparse=True, indexing='ij' ) 
-		# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
-		EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
-		# replace age with EEP in the points from which we interpolate
-		points[-1] = st.EEP; points = tuple(points)
-		# replace age with EEP in the points at which we interpolate 
-		xi[-1] = EEP; xi = tuple(xi)
-		shape = Mc.shape
-	else:
-		points = ( st.Mini, ) # points from which to interpolate
-		xi = Mc # points at which to interpolate
+	# if age: 
+	# 	points = [ st.Mini, st.t ]
+	# 	xi = np.meshgrid( Mc.flatten(order='C'), np.array([t]), sparse=True, indexing='ij' ) 
+	# 	# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
+	# 	EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
+	# 	# replace age with EEP in the points from which we interpolate
+	# 	points[-1] = st.EEP; points = tuple(points)
+	# 	# replace age with EEP in the points at which we interpolate 
+	# 	xi[-1] = EEP; xi = tuple(xi)
+	# 	shape = Mc.shape
+	# else:
+	points = ( st.Mini, ) # points from which to interpolate
+	xi = Mc # points at which to interpolate
 
 	## compute all three magnitudes of non-rotating companions 
 	## on a grid of primary initial mass and binary mass ratio;
@@ -583,11 +576,11 @@ def companion_grid(r, Mini, st, t, pars, A_V, modulus):
 	L = 10**griddata( points, st.logL, xi, method='linear' )
 	logL_div_Ledd = griddata( points, st.logL_div_Ledd, xi, method='linear' )
 	R = griddata( points, st.R, xi, method='linear' )
-	if age: # squeeze out the age dimension, reshape back
-		M = np.squeeze(M).reshape(shape)
-		L = np.squeeze(L).reshape(shape)
-		logL_div_Ledd = np.squeeze(logL_div_Ledd).reshape(shape)
-		R = np.squeeze(R).reshape(shape)
+	# if age: # squeeze out the age dimension, reshape back
+	# 	M = np.squeeze(M).reshape(shape)
+	# 	L = np.squeeze(L).reshape(shape)
+	# 	logL_div_Ledd = np.squeeze(logL_div_Ledd).reshape(shape)
+	# 	R = np.squeeze(R).reshape(shape)
 	# PARS grid variables
 	tau = ut.tau(L, R) 
 	gamma = ut.gamma(M, R) 

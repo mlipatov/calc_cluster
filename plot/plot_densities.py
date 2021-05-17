@@ -17,8 +17,6 @@ mul_pop = ['Unaries', 'Binaries']
 # color maps
 cmapBig = mpl.cm.get_cmap('afmhot_r', 512)
 cmap_hot = mpl.colors.ListedColormap(cmapBig(np.linspace(0, 0.8, 256)))
-# cmapBig = mpl.cm.get_cmap('Blues', 512)
-# cmap_blues = mpl.colors.ListedColormap(cmapBig(np.linspace(0, 0.8, 256)))
 
 # patches to plot the boundaries of a 2D region
 # x index = 1

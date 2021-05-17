@@ -38,8 +38,8 @@ st.select_MS() # select main sequence
 st.select_Z(cf.Z) # select metallicity
 st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
-nt = 6 # number of ages to take from the MIST grid
-it = 105 # first index of the MIST ages to take
+nt = 23 # number of ages to take from the MIST grid
+it = 96 # first index of the MIST ages to take
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
@@ -59,7 +59,8 @@ mu.Grid.pars = pars # give a PARS grid reference to the grid class
 # apply the lower mass cut-off for the primaries according the region of interest on the CMD 
 start = time.time()
 print('Calculating the mass cut-off...', end='', flush=True)
-Mmin = mu.Mlim(st)
+st1 = st.copy(); st1.select_age( t[-1] ) # pick the highest age
+Mmin = mu.Mlim(st1)
 st.select_mass(Mmin=Mmin)
 print('minimum mass = ' + '%.4f' % Mmin + '; %.2f' % (time.time() - start) + ' seconds.', flush=True)
 
@@ -100,30 +101,30 @@ for it in range(len(t)):
 	# refine model grids
 	start = time.time(); print('refining the mass, omega and inclination grids...', flush=True)
 	if t_orig[it]:
-		grid = mu.refine_coarsen(st1, t[it])
+		grid = mu.refine_coarsen(st1)
 		# save the omega and inclination grids for the use in the next age
 		omega0_grid = grid.omega0
 		inc_grid = grid.inc
 	else:
 		# refine with the omega and inclination grids fixed
-		grid = mu.refine_coarsen(st1, t[it], o0=omega0_grid, inc=inc_grid)
+		grid = mu.refine_coarsen(st1, o0=omega0_grid, inc=inc_grid)
 	print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
 
 	# print plots of maximum differences versus model parameter
 	grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini_' + t_str + '_' + cf.z_str + '.png')
 	grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0_' + t_str + '_' + cf.z_str + '.png')
-	grid.plot_diff(3, 'data/model_grids/png/diff_vs_inc_' + t_str + '_' + cf.z_str + '.png')
+	grid.plot_diff(2, 'data/model_grids/png/diff_vs_inc_' + t_str + '_' + cf.z_str + '.png')
 	# get the EEPs of models on the grid
 	EEP = grid.get_EEP()
 
 	# get non-rotating companion magnitudes on a M * r grid
-	mag = mu.companion_grid(cf.r, grid.Mini, stc1, t[it], pars, cf.A_V, cf.modulus)
+	mag = mu.companion_grid(cf.r, grid.Mini, stc1, pars, cf.A_V, cf.modulus)
 	# combine the magnitudes of the non-rotating companion and its primary;
 	# companion dimensions: initial primary mass, binary mass ratio, filter
-	# primary dimensions: initial primary mass, initial omega, age, inclination, filter
-	# final dimensions: initial primary mass, binary mass ratio, initial omega, age, inclination, filter
+	# primary dimensions: initial primary mass, initial omega, inclination, filter
+	# final dimensions: initial primary mass, binary mass ratio, initial omega, inclination, filter
 	mag_binary = \
-		mu.combine_mags(mag[..., np.newaxis, np.newaxis, np.newaxis, :], grid.mag[:, np.newaxis, ...])
+		mu.combine_mags(mag[..., np.newaxis, np.newaxis, :], grid.mag[:, np.newaxis, ...])
 	# insert the unary magnitudes, which evaluated to NAN above
 	mag_binary[:, 0, ...] = grid.mag
 	# compute the observables of binary models;
@@ -135,20 +136,21 @@ for it in range(len(t)):
 	obs_binary[..., 1] = mag_binary[..., 0] - mag_binary[..., 2] # F435W - F814W color
 	obs_binary[..., 2] = grid.vsini[:, np.newaxis, ...] # vsini
 
-	# differences in F555W magnitude along the r dimension
-	diff = np.abs(np.diff(obs_binary[..., 0], axis=1))
+	# differences in observables along the r dimension
+	diff = np.abs(np.diff(obs_binary, axis=1))
+	diff = np.moveaxis(diff, 1, -2) # move the r axis from original location to just before observables
 	# mask along the r dimension where the differences are not all NaN
-	m = ~np.all(np.isnan(diff), axis=(0, 2, 3, 4)) 
-	# maximum differences in magnitude along the r dimension
-	dm = np.full(diff.shape[1], np.nan)
-	dm[m] = np.nanmax(diff[:, m,...], axis=(0, 2, 3, 4))
+	m = ~np.all(np.isnan(diff), axis=(0, 1, 2)) # sum over mass, omega and i 
+	# maximum observable differences along the r dimension
+	dm = np.full(m.shape, np.nan)
+	dm[m] = np.nanmax(diff[..., m], axis=(0, 1, 2))
 	# largest companions may be so close to TAMS that magnitude differences in the r dimension are too large
 	ind = np.argwhere( ~np.less_equal(dm, cf.dmax * cf.std[0], where=~np.isnan(dm)) ).flatten()
 	if ind.size == 0:
-		print('all magnitude differences are small in the r dimension')
+		print('all observable differences are small in the r dimension')
 	else:
 		# left boundary of the first interval in r dimension with excessive magnitude difference
-		print('magnitude differences are small up to r = ' + str(cf.r[:-1][ind[0]]))
+		print('observable differences are small up to r = ' + str(cf.r[:-1][ind[0]]))
 		# cull the magnitude and r arrays
 		cf.r = cf.r[:ind[0]+1]
 		obs_binary = obs_binary[:, :ind[0]+1, ...]
