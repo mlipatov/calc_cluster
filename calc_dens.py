@@ -22,6 +22,7 @@ import config as cf
 # Python imports
 import numpy as np
 from scipy.special import erf
+import gc # garbage collection
 
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
@@ -38,9 +39,11 @@ st.select_MS() # select main sequence
 st.select_Z(cf.Z) # select metallicity
 st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
+# choose isochrone ages so that the space of age prior parameters with appreciable likelihoods
+# is covered sufficiently finely
 nt = 16 # number of ages to take from the MIST grid
 it = 100 # first index of the MIST ages to take
-lt = 17; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
+lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
 # split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
@@ -167,8 +170,8 @@ for it in range(len(t)):
 			i0 = np.argwhere(np.around(EEP_prev) == eep)
 			i1 = np.argwhere(np.around(EEP) == eep)
 			# magnitudes of corresponding models: look at all r and all i
-			obs0 = obs_binary_prev[i0.T[0], :, i0.T[1], i0.T[2]].reshape(-1, 3)
-			obs1 = obs_binary[i1.T[0], :, i1.T[1], i1.T[2]].reshape(-1, 3)
+			obs0 = obs_binary_prev[i0.T[0], i0.T[1], i0.T[2]].reshape(-1, 3)
+			obs1 = obs_binary[i1.T[0], i1.T[1], i1.T[2]].reshape(-1, 3)
 			obs0 = obs0[~np.isnan(obs0[:, 0])]
 			obs1 = obs1[~np.isnan(obs1[:, 0])]
 			if obs0.shape[0] > 0 and obs1.shape[0] > 0: 
@@ -308,6 +311,7 @@ for it in range(len(t)):
 				# cluster model density at this data point for this rotational and multiplicity populations
 				# dimensions: age, multiplicity population, rotational population, data point
 				points[it, k, j, i] = float(dens * norm)
+	gc.collect() # collect garbage / free up memory
 # save the data point densities
 with open('data/points.pkl', 'wb') as f:
 	pickle.dump([points, t], f)

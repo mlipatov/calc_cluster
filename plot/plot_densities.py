@@ -130,14 +130,15 @@ for filepath in filelist:
 	it += 1
 
 # define a prior in age
-t = np.array(t)
+# with open('../data/points.pkl', 'rb') as f: points, t = pickle.load(f)
+# t = np.array(t)
 t = np.array([9.11409396, 9.11912752, 9.12416107, 9.12919463, 9.13422819,
        9.13926174, 9.1442953 , 9.14932886, 9.15436242, 9.15939597,
        9.16442953, 9.16946309, 9.17449664, 9.1795302 , 9.18456376,
        9.18959732, 9.19463087, 9.19966443, 9.20469799, 9.20973154,
        9.2147651 ]) # delete this line when ages are calculated in the preceding file
-t_mean = 9.1594
-t_std = 0.047
+t_mean = 9.159
+t_std = 0.041
 t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
 t_pr /= np.sum(t_pr) # normalize
 # t_pr /= (t[1] - t[0]) # normalize so that the integral is 1

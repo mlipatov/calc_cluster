@@ -47,8 +47,8 @@ plot_err = 1
 # slowest rotational population is centered on omega = 0, fastest on omega = 1
 # standard deviations of the rotational populations
 s_slow = 0.5 
-s_middle = 0.1
-s_fast = 0.1 
+s_middle = 0.4
+s_fast = 0.05 
 a = s_fast / s_slow
 # medium rotating population: 
 # mean is the location where the slow and fast distributions are equal
