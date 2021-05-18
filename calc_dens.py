@@ -38,9 +38,9 @@ st.select_MS() # select main sequence
 st.select_Z(cf.Z) # select metallicity
 st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
-nt = 23 # number of ages to take from the MIST grid
-it = 96 # first index of the MIST ages to take
-lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
+nt = 16 # number of ages to take from the MIST grid
+it = 100 # first index of the MIST ages to take
+lt = 17; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
 # split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
