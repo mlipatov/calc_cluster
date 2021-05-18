@@ -6,6 +6,9 @@ modulus = 18.45
 Z = -0.45 # MIST metallicity 
 z_str = '_Z' + str(Z).replace('-', 'm').replace('.', 'p') # metallicity string for printing
 
+
+## parameters for the point density calculations
+
 # minimum standard deviations of the observables:
 # magnitude F555W, color F435W - F814W and vsini in km/s
 std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
@@ -47,7 +50,7 @@ plot_err = 1
 # slowest rotational population is centered on omega = 0, fastest on omega = 1
 # standard deviations of the rotational populations
 s_slow = 0.5 
-s_middle = 0.4
+s_middle = 0.1
 s_fast = 0.05 
 a = s_fast / s_slow
 # medium rotating population: 
@@ -63,7 +66,11 @@ om_str = '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma])
 # multiplicity populations
 mult = ['unary', 'binary']
 
-# the sum of the two rotational population will be constrained to <=1
+## parameters for the likelihood calculations
+# ranges that contain mean age and standard deviation
+tm = [9.153, 9.163]
+ts = [0.037, 0.046]
+# binary and rotational population proportions;
 w0 = np.linspace(0.1, 0.25, 11, dtype=float) # proportion of the zero rotational population
 w1 = np.linspace(0.5, 1, 11, dtype=float) # proportion of the maximum rotational population
 b = np.linspace(0.6, 0.8, 11, dtype=float) # proportion of the binaries population

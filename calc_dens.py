@@ -60,12 +60,10 @@ with open('data/pars_grid_2.pkl', 'rb') as f: pars = pickle.load(f)
 print('%.2f' % (time.time() - start) + ' seconds.' + '\n', flush=True)
 mu.Grid.pars = pars # give a PARS grid reference to the grid class
 # apply the lower mass cut-off for the primaries according the region of interest on the CMD 
-start = time.time()
-print('Calculating the mass cut-off...', end='', flush=True)
 st1 = st.copy(); st1.select_age( t[-1] ) # pick the highest age
 Mmin = mu.Mlim(st1)
 st.select_mass(Mmin=Mmin)
-print('minimum mass = ' + '%.4f' % Mmin + '; %.2f' % (time.time() - start) + ' seconds.', flush=True)
+print('minimum mass = ' + '%.4f' % Mmin, flush=True)
 
 nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
 npts = ld.obs.shape[0] # number of data points
@@ -166,12 +164,12 @@ for it in range(len(t)):
 		numbers = []
 		diff = []
 		for eep in EEPrange:
-			# indices of locations in the EEP grids where EEP rounds to some integer
+			# indices of mass + omega locations in the EEP grids where EEP rounds to some integer
 			i0 = np.argwhere(np.around(EEP_prev) == eep)
 			i1 = np.argwhere(np.around(EEP) == eep)
-			# magnitudes of corresponding models: look at all r and all i
-			obs0 = obs_binary_prev[i0.T[0], i0.T[1], i0.T[2]].reshape(-1, 3)
-			obs1 = obs_binary[i1.T[0], i1.T[1], i1.T[2]].reshape(-1, 3)
+			# observables of corresponding models: look at all r and all i
+			obs0 = obs_binary_prev[i0.T[0], :, i0.T[1]].reshape(-1, 3)
+			obs1 = obs_binary[i1.T[0], :, i1.T[1]].reshape(-1, 3)
 			obs0 = obs0[~np.isnan(obs0[:, 0])]
 			obs1 = obs1[~np.isnan(obs1[:, 0])]
 			if obs0.shape[0] > 0 and obs1.shape[0] > 0: 

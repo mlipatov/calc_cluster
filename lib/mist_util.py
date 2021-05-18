@@ -515,15 +515,15 @@ class Grid:
 	# get EEP on the model grid		
 	def get_EEP(self):
 		st = self.st
-		age = (np.unique(self.st.t).shape[0] > 1) # true if age is an independent variable in interpolation
+		# age = (np.unique(self.st.t).shape[0] > 1) # true if age is an independent variable in interpolation
 		points = [ st.Mini, st.omega0 ] # points from which to interpolate
 		xi = [ self.Mini, self.omega0 ] # points at which to interpolate
-		if age: 
-			points += [ st.t ]
-			xi += [ self.t ]
+		# if age: 
+		# 	points += [ st.t ]
+		# 	xi += [ self.t ]
 		xi = np.meshgrid( *xi, sparse=True, indexing='ij' )
 		EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
-		if not age: EEP = np.expand_dims(EEP, 2) # add the age dimension back
+		# if not age: EEP = np.expand_dims(EEP, 2) # add the age dimension back
 		return EEP
 
 	def plot_diff(self, axis, filename):

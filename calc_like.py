@@ -34,19 +34,16 @@ back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * ld.std[mv, -1])) ) / (2 * cf
 # dimensions: age, multiplicity population, rotational population, data point
 with open('data/points.pkl', 'rb') as f: points, t = pickle.load(f)
 ## a range of age priors
-# a range that we think contains mean age
-tm_range = [9.153, 9.163]
-ts_range = [0.037, 0.046]
 # smaller of the two distances between range boundaries and available age grid boundaries,
 # divided by the number of standard deviations in half the Gaussian age prior;
 # this is the largest possible standard deviation of this prior
-std_max = np.minimum( tm_range[0] - t[0], t[-1] - tm_range[-1] ) / nsig
+std_max = np.minimum( cf.tm[0] - t[0], t[-1] - cf.tm[-1] ) / nsig
 # means and standard deviations of the priors; 
 # step size should be comparable to that in the age grids
-n_mean = int((tm_range[-1] - tm_range[0]) / (t[1] - t[0]) + 2) * 3
-n_std = int((ts_range[-1] - ts_range[0]) / (t[1] - t[0]) + 2) * 3
-t_mean = np.linspace(tm_range[0], tm_range[-1], n_mean)
-t_std = np.linspace(ts_range[0], np.minimum(std_max, ts_range[-1]), n_std)
+n_mean = int((cf.tm[-1] - cf.tm[0]) / (t[1] - t[0]) + 2) * 3
+n_std = int((cf.ts[-1] - cf.ts[0]) / (t[1] - t[0]) + 2) * 3
+t_mean = np.linspace(cf.tm[0], cf.tm[-1], n_mean)
+t_std = np.linspace(cf.ts[0], np.minimum(std_max, cf.ts[-1]), n_std)
 
 # # proportion of the available age range that allows for variation in the mean
 # p = 1./20
