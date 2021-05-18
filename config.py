@@ -62,3 +62,8 @@ om_str = '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma])
 
 # multiplicity populations
 mult = ['unary', 'binary']
+
+# the sum of the two rotational population will be constrained to <=1
+w0 = np.linspace(0.1, 0.25, 11, dtype=float) # proportion of the zero rotational population
+w1 = np.linspace(0.5, 1, 11, dtype=float) # proportion of the maximum rotational population
+b = np.linspace(0.6, 0.8, 11, dtype=float) # proportion of the binaries population

@@ -137,7 +137,7 @@ t = np.array([9.11409396, 9.11912752, 9.12416107, 9.12919463, 9.13422819,
        9.18959732, 9.19463087, 9.19966443, 9.20469799, 9.20973154,
        9.2147651 ]) # delete this line when ages are calculated in the preceding file
 t_mean = 9.1594
-t_std = 0.025
+t_std = 0.047
 t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
 t_pr /= np.sum(t_pr) # normalize
 # t_pr /= (t[1] - t[0]) # normalize so that the integral is 1
