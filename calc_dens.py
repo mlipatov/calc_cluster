@@ -189,6 +189,7 @@ for it in range(len(t)):
 			', '.join('%.4f' % x for x in d/cf.std))
 
 	# make copies of observables and EEPs for the next iteration
+	if it > 0: del obs_binary_prev # mark the old version of previous observables for garbage collection
 	obs_binary_prev = obs_binary.copy()
 	EEP_prev = EEP.copy()
 
@@ -322,13 +323,12 @@ for it in range(len(t)):
 		pickle.dump([points, t], f)
 	# mark large variables for cleanup
 	del mag_binary
-	del obs_binary_prev
 	del pr_obs
 	del pr0
 	del pr_noom
 	del pr
 	del m
-	gc.collect(generation=2) # collect garbage / free up memory    
+	gc.collect() # collect garbage / free up memory    
 	# # look at the sizes of the largest variables
 	# for name, size in sorted(((name, sys.getsizeof(value)) for name, value in locals().items()),
 	# 						 key= lambda x: -x[1])[:10]:
