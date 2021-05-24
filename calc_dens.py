@@ -318,7 +318,7 @@ for it in range(len(t)):
 	# save the data point densities at these ages for these rotational population distributions; 
 	# do this at every age, in case the program crashes
 	with open('data/points/points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
-		'_t' + '%.4f' % t[0] + '_' + '%.4f' % t[-1] + '.pkl', 'wb') as f:
+		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % t[-1] ).replace('.','p') + '.pkl', 'wb') as f:
 		pickle.dump([points, t], f)
 	# mark large variables for cleanup
 	del mag_binary
@@ -328,7 +328,7 @@ for it in range(len(t)):
 	del pr_noom
 	del pr
 	del m
-	gc.collect() # collect garbage / free up memory    
+	gc.collect(generation=2) # collect garbage / free up memory    
 	# # look at the sizes of the largest variables
 	# for name, size in sorted(((name, sys.getsizeof(value)) for name, value in locals().items()),
 	# 						 key= lambda x: -x[1])[:10]:
