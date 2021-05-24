@@ -12,8 +12,6 @@ import pickle, glob, os
 
 mpl.rcParams['font.size'] = 12
 ROI_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
-rot_pop = ['Slow', 'Intermediate', 'Fast']
-mul_pop = ['Unaries', 'Binaries']
 # color maps
 cmapBig = mpl.cm.get_cmap('afmhot_r', 512)
 cmap_hot = mpl.colors.ListedColormap(cmapBig(np.linspace(0, 0.8, 256)))
@@ -116,9 +114,9 @@ for filepath in filelist:
 			#     # r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
 			#     # r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
 			#     r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-			# 	str(rot_pop[j]) + r' rotation',
+			# 	str(cf.rot_pop[j]) + r' rotation',
 			# 	r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
-			# 	str(mul_pop[k])))
+			# 	str(cf.mul_pop[k])))
 			# 	#, $\omega = $' + str(densities[k][3])))
 			#     # r'$A_V=%.2f$' % (cf.A_V, )))
 
@@ -154,9 +152,9 @@ for j in range(len(densities_cmd)):
 		    r'$\overline{\log_{10}{t}}=' + '%.3f' % t_mean + '$',
 		    r'$\sigma_{\log_{10}{t}}=' + '%.3f' % t_std + '$',
 		    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-			str(rot_pop[j]) + r' rotation',
+			str(cf.rot_pop[j]) + r' rotation',
 			r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
-			str(mul_pop[k])))
+			str(cf.mul_pop[k])))
 
 		print('Plotting...')
 		for plot_type in ['cmd', 'vmd']:

@@ -24,6 +24,9 @@ import numpy as np
 from scipy.special import erf
 import gc # garbage collection
 
+plot_model_grids = True # whether to plot the mass, omega and inclination refined grids
+dens_out_dir = 'data/densities/pkl/' # directory where to save the densities
+
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
 sf.calcVA()
@@ -41,8 +44,10 @@ st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 # choose isochrone ages so that the space of age prior parameters with appreciable likelihoods
 # is covered sufficiently finely
-nt = 16 # number of ages to take from the MIST grid
-it = 100 # first index of the MIST ages to take
+# nt = 16 # number of ages to take from the MIST grid
+# it = 100 # first index of the MIST ages to take
+nt = 9 # number of ages to take from the MIST grid
+it = 107 # first index of the MIST ages to take
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
@@ -112,9 +117,10 @@ for it in range(len(t)):
 	print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
 
 	# print plots of maximum differences versus model parameter
-	grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini_' + t_str + '_' + cf.z_str + '.png')
-	grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0_' + t_str + '_' + cf.z_str + '.png')
-	grid.plot_diff(2, 'data/model_grids/png/diff_vs_inc_' + t_str + '_' + cf.z_str + '.png')
+	if plot_model_grids:
+		grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini_' + t_str + '_' + cf.z_str + '.png')
+		grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0_' + t_str + '_' + cf.z_str + '.png')
+		grid.plot_diff(2, 'data/model_grids/png/diff_vs_inc_' + t_str + '_' + cf.z_str + '.png')
 	# get the EEPs of models on the grid
 	EEP = grid.get_EEP()
 
@@ -274,7 +280,7 @@ for it in range(len(t)):
 	if it == 0: kernels, slices = du.calc_kernels(densities[0][0], sigma, nsig)
 
 	# save the convolved priors; this takes up lots of memory, only do it if you want to plot these densities
-	with open('data/densities/pkl/density' + t_str + '.pkl', 'wb') as f:
+	with open(dens_out_dir + 'density' + t_str + '.pkl', 'wb') as f:
 		pickle.dump(densities, f)
 
 	# calculate the probability densities at data point locations

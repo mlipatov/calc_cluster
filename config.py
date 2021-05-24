@@ -66,6 +66,10 @@ om_str = '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma])
 # multiplicity populations
 mult = ['unary', 'binary']
 
+# rotational and multiplicity populations for printing
+rot_pop = ['Slow', 'Intermediate', 'Fast']
+mul_pop = ['Unaries', 'Binaries']
+
 ## parameters for the likelihood calculations
 # ranges that contain mean age and standard deviation
 tm = [9.153, 9.163]
