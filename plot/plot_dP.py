@@ -1,6 +1,7 @@
 # plot the dependence of probability change on sigma
 import sys
 sys.path.append('..')
+import config as cf
 import os, glob, pickle
 import numpy as np
 from matplotlib import pyplot as plt
@@ -13,12 +14,11 @@ dimensions = ['magnitude', 'color']
 filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
 prefix = '../data/normalization/'
 for filepath in filelist: # for each combination of age and metallicity
-	suffix = os.path.basename(filepath).split('.')[0][7:]
 	# load the pre-computed density on a grid of observables
 	with open(filepath, 'rb') as f:
 		densities = pickle.load(f)
-		for j in range(densities.shape[0]):
-			for k in range(densities.shape[1]):
+		for j in range(len(densities)):
+			for k in range(len(densities[0])):
 				density = densities[j][k]
 				for axis in range(len(density.correction)):
 					dP_spline = density.correction[axis]
@@ -45,5 +45,6 @@ for filepath in filelist: # for each combination of age and metallicity
 						ax.text(txt_x, 1.05, textstr, fontsize=12, transform=ax.transAxes, horizontalalignment='left',
 						        verticalalignment='top', bbox=dict(facecolor='w', alpha=0.0, edgecolor='w'))
 						# write plot file
-						plt.savefig(prefix + dims[axis] + '/dP_' + suffix + '.png', dpi=300)
+						suffix = ('%.4f' % density.age).replace('.', '') + '_om' + str(j) + '_mul' + str(k)
+						plt.savefig(prefix + dims[axis] + '/dP' + suffix + '.png', dpi=300)
 						plt.close()

@@ -11,6 +11,14 @@ import numpy as np
 from scipy.interpolate import griddata
 from matplotlib import pyplot as plt
 
+def sizeof_fmt(num, suffix='B'):
+    ''' by Fred Cirera,  https://stackoverflow.com/a/1094933/1870254, modified'''
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f %s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f %s%s" % (num, 'Yi', suffix)
+
 # combine magnitude arrays that can be broadcast to the same shape;
 # this takes a while because we have to evaluate logarithms
 def combine_mags(mag1, mag2):

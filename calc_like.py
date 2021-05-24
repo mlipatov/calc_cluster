@@ -32,7 +32,17 @@ back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * ld.std[mv, -1])) ) / (2 * cf
 ## rotational population and multiplicity population proportions
 # load the data point densities
 # dimensions: age, multiplicity population, rotational population, data point
-with open('data/points.pkl', 'rb') as f: points, t = pickle.load(f)
+points = []
+t = np.array([])
+filelist = list(np.sort(glob.glob('data/points/*.pkl')))
+for filepath in filelist:
+	with open(filepath, 'rb') as f: 
+		pts1, t1 = pickle.load(f)
+		points.append(pts1)
+		t = np.concatenate((t, t1))
+t, indices = np.unique(t, return_index=True)
+points = points[indices]
+points = np.concatenate(points)
 ## a range of age priors
 # smaller of the two distances between range boundaries and available age grid boundaries,
 # divided by the number of standard deviations in half the Gaussian age prior;

@@ -44,10 +44,10 @@ st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 # choose isochrone ages so that the space of age prior parameters with appreciable likelihoods
 # is covered sufficiently finely
-# nt = 16 # number of ages to take from the MIST grid
-# it = 100 # first index of the MIST ages to take
-nt = 9 # number of ages to take from the MIST grid
-it = 107 # first index of the MIST ages to take
+nt = 16 # number of ages to take from the MIST grid
+it = 100 # first index of the MIST ages to take
+# nt = 10 # number of ages to take from the MIST grid
+# it = 106 # first index of the MIST ages to take
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
@@ -315,7 +315,22 @@ for it in range(len(t)):
 				# cluster model density at this data point for this rotational and multiplicity populations
 				# dimensions: age, multiplicity population, rotational population, data point
 				points[it, k, j, i] = float(dens * norm)
-	gc.collect() # collect garbage / free up memory
-# save the data point densities
-with open('data/points.pkl', 'wb') as f:
-	pickle.dump([points, t], f)
+	# save the data point densities at these ages for these rotational population distributions; 
+	# do this at every age, in case the program crashes
+	with open('data/points/points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
+		'_t' + '%.4f' % t[0] + '_' + '%.4f' % t[-1] + '.pkl', 'wb') as f:
+		pickle.dump([points, t], f)
+	# mark large variables for cleanup
+	del mag_binary
+	del obs_binary_prev
+	del pr_obs
+	del pr0
+	del pr_noom
+	del pr
+	del m
+	gc.collect() # collect garbage / free up memory    
+	# # look at the sizes of the largest variables
+	# for name, size in sorted(((name, sys.getsizeof(value)) for name, value in locals().items()),
+	# 						 key= lambda x: -x[1])[:10]:
+	# 	print("{:>30}: {:>8}".format(name, mu.sizeof_fmt(size)))
+
