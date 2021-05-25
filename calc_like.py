@@ -41,8 +41,8 @@ for filepath in filelist:
 		points.append(pts1)
 		t = np.concatenate((t, t1))
 t, indices = np.unique(t, return_index=True)
-points = points[indices]
 points = np.concatenate(points)
+points = points[indices]
 ## a range of age priors
 # smaller of the two distances between range boundaries and available age grid boundaries,
 # divided by the number of standard deviations in half the Gaussian age prior;

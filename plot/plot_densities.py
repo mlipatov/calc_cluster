@@ -108,56 +108,57 @@ for filepath in filelist:
 			density_vsini.marginalize(1)
 			density_vsini.normalize()
 			densities_vsini[j][k][it] = density_vsini
-			# text 
-			textstr = '\n'.join((
-			    r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
-			    # r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
-			    # r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
-			    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-				str(cf.rot_pop[j]) + r' rotation',
-				r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
-				str(cf.mul_pop[k])))
-				#, $\omega = $' + str(densities[k][3])))
-			    # r'$A_V=%.2f$' % (cf.A_V, )))
 
-			print('Plotting...')
-			for plot_type in ['cmd', 'vmd']:
-				if plot_type=='cmd': density_plot = density_cmd
-				elif plot_type=='vmd': density_plot = density_vsini
-				plot(density_plot, cmap_hot, textstr, plot_type, base)
+			# # text 
+			# textstr = '\n'.join((
+			#     r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
+			#     # r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
+			#     # r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
+			#     r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
+			# 	str(cf.rot_pop[j]) + r' rotation',
+			# 	r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
+			# 	str(cf.mul_pop[k])))
+			# 	#, $\omega = $' + str(densities[k][3])))
+			#     # r'$A_V=%.2f$' % (cf.A_V, )))
+
+			# print('Plotting...')
+			# for plot_type in ['cmd', 'vmd']:
+			# 	if plot_type=='cmd': density_plot = density_cmd
+			# 	elif plot_type=='vmd': density_plot = density_vsini
+			# 	plot(density_plot, cmap_hot, textstr, plot_type, base)
 	it += 1
 
-# # define a prior in age
-# # with open('../data/points.pkl', 'rb') as f: points, t = pickle.load(f)
-# # t = np.array(t)
+# define a prior in age
+# with open('../data/points.pkl', 'rb') as f: points, t = pickle.load(f)
+t = np.array(t)
 # t = np.array([9.11409396, 9.11912752, 9.12416107, 9.12919463, 9.13422819,
 #        9.13926174, 9.1442953 , 9.14932886, 9.15436242, 9.15939597,
 #        9.16442953, 9.16946309, 9.17449664, 9.1795302 , 9.18456376,
 #        9.18959732, 9.19463087, 9.19966443, 9.20469799, 9.20973154,
 #        9.2147651 ]) # delete this line when ages are calculated in the preceding file
-# t_mean = 9.159
-# t_std = 0.041
-# t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
-# t_pr /= np.sum(t_pr) # normalize
-# # t_pr /= (t[1] - t[0]) # normalize so that the integral is 1
-# for j in range(len(densities_cmd)):
-# 	for k in range(len(densities_cmd[j])):
-# 		for it in range(len(densities_cmd[j][k])):
-# 			densities_cmd[j][k][it].dens *= t_pr[it]
-# 			densities_vsini[j][k][it].dens *= t_pr[it]
-# 		density_cmd = du.add(densities_cmd[j][k])
-# 		density_vsini = du.add(densities_vsini[j][k])
-# 		# text 
-# 		textstr = '\n'.join((
-# 		    r'$\overline{\log_{10}{t}}=' + '%.3f' % t_mean + '$',
-# 		    r'$\sigma_{\log_{10}{t}}=' + '%.3f' % t_std + '$',
-# 		    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-# 			str(cf.rot_pop[j]) + r' rotation',
-# 			r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
-# 			str(cf.mul_pop[k])))
+t_mean = 9.159
+t_std = 0.041
+t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
+t_pr /= np.sum(t_pr) # normalize
+# t_pr /= (t[1] - t[0]) # normalize so that the integral is 1
+for j in range(len(densities_cmd)):
+	for k in range(len(densities_cmd[j])):
+		for it in range(len(densities_cmd[j][k])):
+			densities_cmd[j][k][it].dens *= t_pr[it]
+			densities_vsini[j][k][it].dens *= t_pr[it]
+		density_cmd = du.add(densities_cmd[j][k])
+		density_vsini = du.add(densities_vsini[j][k])
+		# text 
+		textstr = '\n'.join((
+		    r'$\overline{\log_{10}{t}}=' + '%.3f' % t_mean + '$',
+		    r'$\sigma_{\log_{10}{t}}=' + '%.3f' % t_std + '$',
+		    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
+			str(cf.rot_pop[j]) + r' rotation',
+			r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
+			str(cf.mul_pop[k])))
 
-# 		print('Plotting...')
-# 		for plot_type in ['cmd', 'vmd']:
-# 			if plot_type=='cmd': density_plot = density_cmd
-# 			elif plot_type=='vmd': density_plot = density_vsini
-# 			plot(density_plot, cmap_hot, textstr, plot_type, 'density_dist')
+		print('Plotting...')
+		for plot_type in ['cmd', 'vmd']:
+			if plot_type=='cmd': density_plot = density_cmd
+			elif plot_type=='vmd': density_plot = density_vsini
+			plot(density_plot, cmap_hot, textstr, plot_type, 'density_dist')

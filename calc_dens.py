@@ -46,8 +46,6 @@ st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 # is covered sufficiently finely
 nt = 16 # number of ages to take from the MIST grid
 it = 100 # first index of the MIST ages to take
-# nt = 10 # number of ages to take from the MIST grid
-# it = 106 # first index of the MIST ages to take
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
@@ -100,7 +98,10 @@ sigma = np.sqrt(res) / (ld.step[np.newaxis, :] * cf.downsample)
 points = np.full( (len(t), nmul, nrot, npts), np.nan )
 for it in range(len(t)):
 	### refinement of (M, omega, i) grids at r = 0 and different t
-	print('\nt = ' + '%.4f' % t[it]); t_str = '_t' + ('%.4f' % t[it]).replace('.', 'p')
+	print('\nt = ' + '%.4f' % t[it], end=':')
+	if t_orig[it]: print(' original model grid age.')
+	else: print(' new intermediate age.')
+	t_str = '_t' + ('%.4f' % t[it]).replace('.', 'p')
 	# select age
 	st1 = st.copy(); st1.select_age( t[it] ) # primary model set
 	stc1 = stc.copy(); stc1.select_age( t[it] )	# non-rotating model set for the companions
@@ -124,7 +125,7 @@ for it in range(len(t)):
 	# get the EEPs of models on the grid
 	EEP = grid.get_EEP()
 
-	# get non-rotating companion magnitudes on a M * r grid
+	# get non-rotating companion magnitudes on a M * r grid; use the full 0 <= r <= 1 grid here
 	mag = mu.companion_grid(cf.r, grid.Mini, stc1, pars, cf.A_V, cf.modulus)
 	# combine the magnitudes of the non-rotating companion and its primary;
 	# companion dimensions: initial primary mass, binary mass ratio, filter
@@ -159,8 +160,8 @@ for it in range(len(t)):
 		# left boundary of the first interval in r dimension with excessive magnitude difference
 		print('observable differences are small up to r = ' + str(cf.r[:-1][ind[0]]))
 		# cull the magnitude and r arrays
-		cf.r = cf.r[:ind[0]+1]
-		obs_binary = obs_binary[:, :ind[0]+1, ...]
+		r = cf.r[:ind[0] + 1]
+		obs_binary = obs_binary[:, :ind[0] + 1, ...]
 
 	# compute the distance from the previous-age isochrone
 	if it > 0:
@@ -189,7 +190,7 @@ for it in range(len(t)):
 			', '.join('%.4f' % x for x in d/cf.std))
 
 	# make copies of observables and EEPs for the next iteration
-	if it > 0: del obs_binary_prev # mark the old version of previous observables for garbage collection
+	# if it > 0: del obs_binary_prev # mark the old version of previous observables for garbage collection
 	obs_binary_prev = obs_binary.copy()
 	EEP_prev = EEP.copy()
 
@@ -197,7 +198,7 @@ for it in range(len(t)):
 	# these include the varying discrete distances between adjacent abscissas;
 	# dimensions: mass, r, omega, inclination
 	w_Mini = du.trap(grid.Mini)[:, np.newaxis, np.newaxis, np.newaxis]
-	w_r = du.trap(cf.r)[np.newaxis, :, np.newaxis, np.newaxis]
+	w_r = du.trap(r)[np.newaxis, :, np.newaxis, np.newaxis] # use the culled r grid here
 	w_omega0 = du.trap(grid.omega0)[np.newaxis, np.newaxis, :, np.newaxis]
 	w_inc = du.trap(grid.inc)[np.newaxis, np.newaxis, np.newaxis, :]
 	# non-uniform priors in non-omega model dimensions
@@ -321,14 +322,14 @@ for it in range(len(t)):
 	with open('data/points/points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
 		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % t[-1] ).replace('.','p') + '.pkl', 'wb') as f:
 		pickle.dump([points, t], f)
-	# mark large variables for cleanup
-	del mag_binary
-	del pr_obs
-	del pr0
-	del pr_noom
-	del pr
-	del m
-	gc.collect() # collect garbage / free up memory    
+	# # mark large variables for cleanup
+	# del mag_binary
+	# del pr_obs
+	# del pr0
+	# del pr_noom
+	# del pr
+	# del m
+	# gc.collect() # collect garbage / free up memory    
 	# # look at the sizes of the largest variables
 	# for name, size in sorted(((name, sys.getsizeof(value)) for name, value in locals().items()),
 	# 						 key= lambda x: -x[1])[:10]:
