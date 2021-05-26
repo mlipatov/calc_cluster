@@ -122,9 +122,9 @@ for it in range(len(t)):
 
 	# print plots of maximum differences versus model parameter
 	if plot_model_grids:
-		grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini_' + t_str + '_' + cf.z_str + '.png')
-		grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0_' + t_str + '_' + cf.z_str + '.png')
-		grid.plot_diff(2, 'data/model_grids/png/diff_vs_inc_' + t_str + '_' + cf.z_str + '.png')
+		grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini' + t_str + cf.z_str + '.png')
+		grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0' + t_str + cf.z_str + '.png')
+		grid.plot_diff(2, 'data/model_grids/png/diff_vs_inc' + t_str + cf.z_str + '.png')
 	# get the EEPs of models on the grid
 	EEP = grid.get_EEP()
 
@@ -322,8 +322,8 @@ for it in range(len(t)):
 	# save the data point densities at these ages for these rotational population distributions; 
 	# do this at every age, in case the program crashes
 	with open('data/points/points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
-		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % t[-1] ).replace('.','p') + '.pkl', 'wb') as f:
-		pickle.dump([points, t], f)
+		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % t[it] ).replace('.','p') + '.pkl', 'wb') as f:
+		pickle.dump([points[:it+1], t[:it+1]], f)
 	# mark large variables for cleanup
 	del mag_binary
 	del pr_obs

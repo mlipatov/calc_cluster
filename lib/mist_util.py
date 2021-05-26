@@ -10,6 +10,17 @@ import config as cf
 import numpy as np
 from scipy.interpolate import griddata
 from matplotlib import pyplot as plt
+import matplotlib as mpl
+
+mpl.rcParams['font.size'] = 12
+
+def sizeof_fmt(num, suffix='B'):
+    ''' by Fred Cirera,  https://stackoverflow.com/a/1094933/1870254, modified'''
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f %s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f %s%s" % (num, 'Yi', suffix)
 
 # combine magnitude arrays that can be broadcast to the same shape;
 # this takes a while because we have to evaluate logarithms
@@ -531,7 +542,7 @@ class Grid:
 		maxdiff = self.get_maxdiff(axis)
 		plt.scatter(var, maxdiff, s=2)
 		plt.xlabel(r'$' + label + r'$')
-		plt.ylabel(r'$\max{\left|\,\Delta x\left(' + label + r'\right) / \sigma_x\,\right|}$')
+		plt.ylabel(r'$\max{\left|\,\Delta x / \sigma_x\,\right|}$')
 		plt.savefig(filename, dpi=200)
 		plt.close()
 
