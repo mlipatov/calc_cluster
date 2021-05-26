@@ -24,6 +24,7 @@ import numpy as np
 from scipy.special import erf
 import gc # garbage collection
 
+ages = 1 # or 2
 plot_model_grids = True # whether to plot the mass, omega and inclination refined grids
 dens_out_dir = 'data/densities/pkl/' # directory where to save the densities
 
@@ -44,12 +45,14 @@ st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 # choose isochrone ages so that the space of age prior parameters with appreciable likelihoods
 # is covered sufficiently finely
-nt = 17 # number of ages to take from the MIST grid
-it = 100 # first index of the MIST ages to take
+if ages == 1:
+	nt = 9 # number of ages to take from the MIST grid
+	it = 100 # first index of the MIST ages to take
+else: 
+	nt = 9 # number of ages to take from the MIST grid
+	it = 108 # first index of the MIST ages to take
+
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
-# nt = 2 # number of ages to take from the MIST grid
-# it = 100 # first index of the MIST ages to take
-# lt = 3; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
 # split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
@@ -99,7 +102,8 @@ sigma = np.sqrt(res) / (ld.step[np.newaxis, :] * cf.downsample)
 # probability densities at data point locations
 # dimensions: age, multiplicity population, rotational population, data point
 points = np.full( (len(t), nmul, nrot, npts), np.nan )
-for it in range(len(t)):
+it_0 = 4
+for it in range(it_0, len(t)):
 	### refinement of (M, omega, i) grids at r = 0 and different t
 	print('\nt = ' + '%.4f' % t[it], end=':')
 	if t_orig[it]: print(' original model grid age.')
@@ -167,7 +171,7 @@ for it in range(len(t)):
 		obs_binary = obs_binary[:, :ind[0] + 1, ...]
 
 	# compute the distance from the previous-age isochrone
-	if it > 0:
+	if it > it_0:
 		emin = int(np.floor(min(np.nanmin(EEP_prev), np.nanmin(EEP))))
 		emax = int(np.ceil(max(np.nanmax(EEP_prev), np.nanmax(EEP))))
 		EEPrange = np.array(range(emin, emax + 1))
@@ -193,7 +197,7 @@ for it in range(len(t)):
 			', '.join('%.4f' % x for x in d/cf.std))
 
 	# make copies of observables and EEPs for the next iteration
-	if it > 0: del obs_binary_prev # mark the old version of previous observables for garbage collection
+	if it > it_0: del obs_binary_prev # mark the old version of previous observables for garbage collection
 	obs_binary_prev = obs_binary.copy()
 	EEP_prev = EEP.copy()
 
@@ -281,7 +285,7 @@ for it in range(len(t)):
 		print(mult + ' convolutions: ' + str(time.time() - start) + ' seconds.') 
 	# at the first time point, 
 	# calculate residual kernels and corresponding slices for individual data points
-	if it == 0: kernels, slices = du.calc_kernels(densities[0][0], sigma, nsig)
+	if it == it_0: kernels, slices = du.calc_kernels(densities[0][0], sigma, nsig)
 
 	# save the convolved priors; this takes up lots of memory, only do it if you want to plot these densities
 	with open(dens_out_dir + 'density' + t_str + '.pkl', 'wb') as f:
@@ -320,10 +324,12 @@ for it in range(len(t)):
 				# dimensions: age, multiplicity population, rotational population, data point
 				points[it, k, j, i] = float(dens * norm)
 	# save the data point densities at these ages for these rotational population distributions; 
-	# do this at every age, in case the program crashes
-	with open('data/points/points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
-		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % t[it] ).replace('.','p') + '.pkl', 'wb') as f:
-		pickle.dump([points[:it+1], t[:it+1]], f)
+	# do this at every age, in case the program crashes; delete the previously saved file every time
+	file = 'data/points/points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
+		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % t[it] ).replace('.','p') + '.pkl'
+	with open(file, 'wb') as f:	pickle.dump([points[:it+1], t[:it+1]], f)
+	if it > it_0: os.remove(prev_file)
+	prev_file = file
 	# mark large variables for cleanup
 	del mag_binary
 	del pr_obs
