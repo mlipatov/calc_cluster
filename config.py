@@ -75,6 +75,6 @@ mul_pop = ['Unaries', 'Binaries']
 tm = [9.153, 9.163]
 ts = [0.037, 0.046]
 # binary and rotational population proportions;
-w0 = np.linspace(0.1, 0.25, 11, dtype=float) # proportion of the zero rotational population
-w1 = np.linspace(0.5, 1, 11, dtype=float) # proportion of the maximum rotational population
-b = np.linspace(0.6, 0.8, 11, dtype=float) # proportion of the binaries population
+w0 = np.linspace(0, 1.0, 11, dtype=float) # proportion of the zero rotational population
+w1 = np.linspace(0, 1.0, 11, dtype=float) # proportion of the maximum rotational population
+b = np.linspace(0, 1.0, 11, dtype=float) # proportion of the binaries population

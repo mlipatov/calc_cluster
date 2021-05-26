@@ -11,14 +11,6 @@ import numpy as np
 from scipy.interpolate import griddata
 from matplotlib import pyplot as plt
 
-def sizeof_fmt(num, suffix='B'):
-    ''' by Fred Cirera,  https://stackoverflow.com/a/1094933/1870254, modified'''
-    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
-        if abs(num) < 1024.0:
-            return "%3.1f %s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.1f %s%s" % (num, 'Yi', suffix)
-
 # combine magnitude arrays that can be broadcast to the same shape;
 # this takes a while because we have to evaluate logarithms
 def combine_mags(mag1, mag2):
@@ -523,15 +515,10 @@ class Grid:
 	# get EEP on the model grid		
 	def get_EEP(self):
 		st = self.st
-		# age = (np.unique(self.st.t).shape[0] > 1) # true if age is an independent variable in interpolation
 		points = [ st.Mini, st.omega0 ] # points from which to interpolate
 		xi = [ self.Mini, self.omega0 ] # points at which to interpolate
-		# if age: 
-		# 	points += [ st.t ]
-		# 	xi += [ self.t ]
 		xi = np.meshgrid( *xi, sparse=True, indexing='ij' )
 		EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
-		# if not age: EEP = np.expand_dims(EEP, 2) # add the age dimension back
 		return EEP
 
 	def plot_diff(self, axis, filename):

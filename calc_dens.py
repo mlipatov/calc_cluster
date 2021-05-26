@@ -44,9 +44,12 @@ st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 # choose isochrone ages so that the space of age prior parameters with appreciable likelihoods
 # is covered sufficiently finely
-nt = 16 # number of ages to take from the MIST grid
+nt = 17 # number of ages to take from the MIST grid
 it = 100 # first index of the MIST ages to take
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
+# nt = 2 # number of ages to take from the MIST grid
+# it = 100 # first index of the MIST ages to take
+# lt = 3; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.154
 st.select(np.isin(st.t, t)) # select the ages
 # split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
@@ -190,7 +193,7 @@ for it in range(len(t)):
 			', '.join('%.4f' % x for x in d/cf.std))
 
 	# make copies of observables and EEPs for the next iteration
-	# if it > 0: del obs_binary_prev # mark the old version of previous observables for garbage collection
+	if it > 0: del obs_binary_prev # mark the old version of previous observables for garbage collection
 	obs_binary_prev = obs_binary.copy()
 	EEP_prev = EEP.copy()
 
@@ -203,7 +206,6 @@ for it in range(len(t)):
 	w_inc = du.trap(grid.inc)[np.newaxis, np.newaxis, np.newaxis, :]
 	# non-uniform priors in non-omega model dimensions
 	pr_Mini = (grid.Mini**-2.35)[:, np.newaxis, np.newaxis, np.newaxis]
-	# pr_t = np.exp(-0.5*((t - age_mean) / age_sigma)**2)[np.newaxis, np.newaxis, np.newaxis, :, np.newaxis]
 	pr_inc = np.sin(grid.inc)[np.newaxis, np.newaxis, np.newaxis, :]
 	# overall prior without the omega distribution: prior on r is flat
 	pr0 = pr_Mini * pr_inc * (w_Mini * w_r * w_omega0 *  w_inc)
@@ -243,7 +245,7 @@ for it in range(len(t)):
 		for j in range(len(cf.om_mean)):
 			rot_str = '_rot' + str(j)
 			# prior on the model grid
-			pr =  pr_noom * pr_om[j]
+			pr = pr_noom * pr_om[j]
 			# transfer the prior from the model grid to the grid of observables
 			pr_obs = np.zeros(ld.nobs, dtype=np.float32) # initialize the prior on observable grid
 			np.add.at(pr_obs, tuple(ind), pr.flatten()[m]) 
@@ -322,14 +324,14 @@ for it in range(len(t)):
 	with open('data/points/points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
 		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % t[-1] ).replace('.','p') + '.pkl', 'wb') as f:
 		pickle.dump([points, t], f)
-	# # mark large variables for cleanup
-	# del mag_binary
-	# del pr_obs
-	# del pr0
-	# del pr_noom
-	# del pr
-	# del m
-	# gc.collect() # collect garbage / free up memory    
+	# mark large variables for cleanup
+	del mag_binary
+	del pr_obs
+	del pr0
+	del pr_noom
+	del pr
+	del m
+	gc.collect() # collect garbage / free up memory    
 	# # look at the sizes of the largest variables
 	# for name, size in sorted(((name, sys.getsizeof(value)) for name, value in locals().items()),
 	# 						 key= lambda x: -x[1])[:10]:
