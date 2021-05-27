@@ -34,16 +34,16 @@ res[ np.less(res, 0, where=~np.isnan(res)) ] = 0 # correct for round-off
 sigma = np.sqrt(res) / (ld.step[np.newaxis, :] * cf.downsample)
 
 filelist = list(np.sort(glob.glob(cf.obs_dir + '*.pkl'))) # observables 
-
+t = np.full(len(filelist), np.nan)
 # probability densities at data point locations
 # dimensions: age, multiplicity population, rotational population, data point
 points = np.full( (len(filelist), nmul, nrot, npts), np.nan )
 for it in range(len(filelist)):
 	with open(filelist[it], 'rb') as f: 
-		obs_binary, t, Mini, r, omega0, inc = pickle.load(f)
-	print('\nt = ' + '%.4f' % t)
-	t_str = '_t' + ('%.4f' % t).replace('.', 'p')
-	if it = 0: t0 = t
+		obs_binary, age, Mini, r, omega0, inc = pickle.load(f)
+	print('\nt = ' + '%.4f' % age)
+	t_str = '_t' + ('%.4f' % age).replace('.', 'p')
+	t[it] = age
 
 	# arrays of ordinate multipliers (weights) for the numerical integration in model space;
 	# these include the varying discrete distances between adjacent abscissas;
@@ -99,7 +99,7 @@ for it in range(len(filelist)):
 			np.add.at(pr_obs, tuple(ind), pr.flatten()[m]) 
 			# print('\tPlacing the binary prior on a fine grid: ' + '%.2f' % (time.time() - start) + ' seconds.') 
 			# package the prior density with the grids of observables 
-			density = du.Grid(pr_obs, [x.copy() for x in ld.obs_grids], cf.ROI, cf.norm, Z=cf.Z, age=t)		
+			density = du.Grid(pr_obs, [x.copy() for x in ld.obs_grids], cf.ROI, cf.norm, Z=cf.Z, age=age)		
 			# convolve and normalize the prior with the minimum-error Gaussians in each observable dimension
 			min_kernels = [ du.Kernel(cf.std[i] / density.step[i], nsig, ds=cf.downsample) \
 							for i in range(len(cf.std)) ]
@@ -170,8 +170,8 @@ for it in range(len(filelist)):
 	# save the data point densities at these ages for these rotational population distributions; 
 	# do this at every age, in case the program crashes; delete the previously saved file every time
 	file = cf.points_dir + 'points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
-		( '_t' + '%.4f' % t0 + '_' + '%.4f' % t ).replace('.','p') + '.pkl'
-	with open(file, 'wb') as f:	pickle.dump([points[:it+1], t], f)
+		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % age ).replace('.','p') + '.pkl'
+	with open(file, 'wb') as f: pickle.dump([points[:it+1], t[:it+1]], f)
 	if it > 0: os.remove(prev_file)
 	prev_file = file
 	# mark large variables for cleanup
