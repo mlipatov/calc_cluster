@@ -1,6 +1,11 @@
 import numpy as np
 
-cluster = 'NGC1846'
+# directories
+dens_dir = 'data/densities/pkl/'
+obs_dir = 'data/observables/'
+points_dir = 'data/points/'
+
+# cluster parameters
 A_V = 0.26315789 # should be one of the A_V values on the PARS grid 
 modulus = 18.45
 Z = -0.45 # MIST metallicity 
@@ -75,6 +80,6 @@ mul_pop = ['Unaries', 'Binaries']
 tm = [9.153, 9.163]
 ts = [0.037, 0.046]
 # binary and rotational population proportions;
-w0 = np.linspace(0, 1.0, 11, dtype=float) # proportion of the zero rotational population
-w1 = np.linspace(0, 1.0, 11, dtype=float) # proportion of the maximum rotational population
-b = np.linspace(0, 1.0, 11, dtype=float) # proportion of the binaries population
+w0 = np.linspace(0, 0.4, 11, dtype=float) # proportion of the zero rotational population
+w1 = np.linspace(0.6, 1.0, 11, dtype=float) # proportion of the maximum rotational population
+b = np.linspace(0, 1.0, 21, dtype=float) # proportion of the binaries population

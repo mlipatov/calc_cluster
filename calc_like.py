@@ -3,7 +3,7 @@ import sys, os, time, pickle
 from lib import dens_util as du
 import config as cf
 import load_data as ld
-
+# Python imports
 import numpy as np
 import glob
 from scipy.optimize import root_scalar
@@ -15,6 +15,20 @@ eps = np.finfo(float).eps
 nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
 npts = ld.obs.shape[0] # number of data points
 ndim = ld.obs.shape[1] # number of observable dimensions
+
+# load the data point densities
+# dimensions: age, multiplicity population, rotational population, data point
+filelist = list(np.sort(glob.glob(cf.points_dir + '*.pkl')))
+t = None
+for filepath in filelist:
+	with open(filepath, 'rb') as f: 
+		pts1, t1 = pickle.load(f)
+		if t is None: # if there are no ages from before
+			points = pts1; t = t1
+		else:
+			m = ~np.isin(t1, t) # where the new ages are not in exisiting ages
+			points = np.concatenate((points, pts1[m]), axis=0)
+			t = np.concatenate((t, t1[m]))
 
 # background probability density
 back = np.empty(npts)
@@ -30,26 +44,6 @@ back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * ld.std[mv, -1])) ) / (2 * cf
 
 ## compute likelihoods on a grid of age, metallicity, 
 ## rotational population and multiplicity population proportions
-# load the data point densities
-# dimensions: age, multiplicity population, rotational population, data point
-filelist = list(np.sort(glob.glob('data/points/*.pkl')))
-if len(filelist) > 1:
-	print('More than one data point density file. ')
-else:
-	with open(filelist[0], 'rb') as f:
-		points, t = pickle.load(f)
-# points = []
-# t = np.array([])
-# filelist = list(np.sort(glob.glob('data/points/*.pkl')))
-# for filepath in filelist:
-# 	with open(filepath, 'rb') as f: 
-# 		pts1, t1 = pickle.load(f)
-# 		points.append(pts1)
-# 		t = np.concatenate((t, t1))
-# t, indices = np.unique(t, return_index=True)
-# points = np.concatenate(points)
-# points = points[indices]
-
 ## a range of age priors
 # smaller of the two distances between range boundaries and available age grid boundaries,
 # divided by the number of standard deviations in half the Gaussian age prior;

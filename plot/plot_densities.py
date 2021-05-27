@@ -109,23 +109,23 @@ for filepath in filelist:
 			density_vsini.normalize()
 			densities_vsini[j][k][it] = density_vsini
 
-			# # text 
-			# textstr = '\n'.join((
-			#     r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
-			#     # r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
-			#     # r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
-			#     r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-			# 	str(cf.rot_pop[j]) + r' rotation',
-			# 	r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
-			# 	str(cf.mul_pop[k])))
-			# 	#, $\omega = $' + str(densities[k][3])))
-			#     # r'$A_V=%.2f$' % (cf.A_V, )))
+			# text 
+			textstr = '\n'.join((
+			    r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
+			    # r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
+			    # r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
+			    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
+				str(cf.rot_pop[j]) + r' rotation',
+				r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
+				str(cf.mul_pop[k])))
+				#, $\omega = $' + str(densities[k][3])))
+			    # r'$A_V=%.2f$' % (cf.A_V, )))
 
-			# print('Plotting...')
-			# for plot_type in ['cmd', 'vmd']:
-			# 	if plot_type=='cmd': density_plot = density_cmd
-			# 	elif plot_type=='vmd': density_plot = density_vsini
-			# 	plot(density_plot, cmap_hot, textstr, plot_type, base)
+			print('Plotting...')
+			for plot_type in ['cmd', 'vmd']:
+				if plot_type=='cmd': density_plot = density_cmd
+				elif plot_type=='vmd': density_plot = density_vsini
+				plot(density_plot, cmap_hot, textstr, plot_type, base)
 	it += 1
 
 # define a prior in age
