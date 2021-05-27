@@ -87,7 +87,6 @@ for it in range(len(filelist)):
 		m = np.all( (ind != ld.nobs[:, np.newaxis] - 1) & (ind != -1), axis=0 ) & \
 			np.all( ~np.isnan(obs_models), axis=-1 ).flatten()
 		ind = ind[:, m]
-		# print('\tGetting the indices of binary models on observable grid: ' + '%.2f' % (time.time() - start) + ' seconds.') 
 
 		# rotational populations
 		for j in range(len(cf.om_mean)):
@@ -135,6 +134,7 @@ for it in range(len(filelist)):
 	with open(cf.dens_dir + 'density' + t_str + '.pkl', 'wb') as f:
 		pickle.dump(densities, f)
 
+	start = time.time() 
 	# calculate the probability densities at data point locations
 	f = np.zeros( (npts, nrot, nmul), dtype=float ) 
 	# maximum absolute de-normalization
@@ -167,6 +167,7 @@ for it in range(len(filelist)):
 				# cluster model density at this data point for this rotational and multiplicity populations
 				# dimensions: age, multiplicity population, rotational population, data point
 				points[it, k, j, i] = float(dens * norm)
+	print('data point densities: ' + str(time.time() - start) + ' seconds.')
 	# save the data point densities at these ages for these rotational population distributions; 
 	# do this at every age, in case the program crashes; delete the previously saved file every time
 	file = cf.points_dir + 'points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
