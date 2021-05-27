@@ -125,7 +125,7 @@ for it in range(len(filelist)):
 				density_v0.convolve(-1, kernel)
 			density_v0.integrate_lower(2)
 			densities_v0[j][k] = density_v0
-		print(mult + ' convolutions: ' + str(time.time() - start) + ' seconds.') 
+		print(mult + ' convolutions: ' + str(time.time() - start) + ' seconds.', flush=True) 
 	# at the first time point, 
 	# calculate residual kernels and corresponding slices for individual data points
 	if it == 0: kernels, slices = du.calc_kernels(densities[0][0], sigma, nsig)
@@ -167,7 +167,7 @@ for it in range(len(filelist)):
 				# cluster model density at this data point for this rotational and multiplicity populations
 				# dimensions: age, multiplicity population, rotational population, data point
 				points[it, k, j, i] = float(dens * norm)
-	print('data point densities: ' + str(time.time() - start) + ' seconds.')
+	print('data point densities: ' + str(time.time() - start) + ' seconds.', flush=True)
 	# save the data point densities at these ages for these rotational population distributions; 
 	# do this at every age, in case the program crashes; delete the previously saved file every time
 	file = cf.points_dir + 'points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
