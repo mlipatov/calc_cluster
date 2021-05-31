@@ -55,7 +55,7 @@ plot_err = 1
 # slowest rotational population is centered on omega = 0, fastest on omega = 1
 # standard deviations of the rotational populations
 s_slow = 0.5 
-s_middle = 0.1
+s_middle = 0.2
 s_fast = 0.05 
 a = s_fast / s_slow
 # medium rotating population: 
@@ -76,10 +76,15 @@ rot_pop = ['Slow', 'Intermediate', 'Fast']
 mul_pop = ['Unaries', 'Binaries']
 
 ## parameters for the likelihood calculations
-# ranges that contain mean age and standard deviation
-tm = [9.153, 9.163]
-ts = [0.037, 0.046]
-# binary and rotational population proportions;
-w0 = np.linspace(0, 0.4, 11, dtype=float) # proportion of the zero rotational population
-w1 = np.linspace(0.6, 1.0, 11, dtype=float) # proportion of the maximum rotational population
-b = np.linspace(0, 1.0, 21, dtype=float) # proportion of the binaries population
+n = 20 # number of steps in age dimension and one of the rotational population dimension
+# target ranges
+tmin, tmax = [9.153, 9.163]; tr = tmax - tmin # age
+smin, smax = [0.037, 0.046]; sr = smax - smin # sigma_age
+w0min, w0max = [0, 0.3]; w0r = w0max - w0min # slow rotator proportion
+w1min, w1max = [0.5, 0.9]; w1r = w1max - w1min # fast rotator proportion
+# steps
+ts = tr / n; tn = int(tr / ts); sn = int(sr / ts) # age and sigma_age
+ws = w1r / n; w0n = int(w0r / ws); w1n = int(w1r / ws) # rotational proportions
+# grids (age parameter grids determined elsewhere)
+w0 = np.linspace(w0min, w0max, w0n, dtype=float) 
+w1 = np.linspace(w1min, w1max, w1n, dtype=float)

@@ -172,7 +172,7 @@ for it in range(len(filelist)):
 	# do this at every age, in case the program crashes; delete the previously saved file every time
 	file = cf.points_dir + 'points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
 		( '_t' + '%.4f' % t[0] + '_' + '%.4f' % age ).replace('.','p') + '.pkl'
-	with open(file, 'wb') as f: pickle.dump([points[:it+1], t[:it+1]], f)
+	with open(file, 'wb') as f: pickle.dump([points[:it+1], t[:it+1], cf.om_sigma], f)
 	if it > 0: os.remove(prev_file)
 	prev_file = file
 	# mark large variables for cleanup
