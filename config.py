@@ -76,15 +76,14 @@ rot_pop = ['Slow', 'Intermediate', 'Fast']
 mul_pop = ['Unaries', 'Binaries']
 
 ## parameters for the likelihood calculations
-n = 20 # number of steps in age dimension and one of the rotational population dimension
+n = 21 # number of steps in each dimension
+
 # target ranges
-tmin, tmax = [9.153, 9.163]; tr = tmax - tmin # age
-smin, smax = [0.037, 0.046]; sr = smax - smin # sigma_age
-w0min, w0max = [0, 0.3]; w0r = w0max - w0min # slow rotator proportion
-w1min, w1max = [0.5, 0.9]; w1r = w1max - w1min # fast rotator proportion
-# steps
-ts = tr / n; tn = int(tr / ts); sn = int(sr / ts) # age and sigma_age
-ws = w1r / n; w0n = int(w0r / ws); w1n = int(w1r / ws) # rotational proportions
+tmin, tmax = [9.154, 9.165] # age
+smin, smax = [0.036, 0.047] # sigma_age
+w0min, w0max = [0.025, 0.225] # slow rotator proportion
+w1min, w1max = [0.4, 0.9] # fast rotator proportion
+
 # grids (age parameter grids determined elsewhere)
-w0 = np.linspace(w0min, w0max, w0n, dtype=float) 
-w1 = np.linspace(w1min, w1max, w1n, dtype=float)
+w0 = np.linspace(w0min, w0max, n, dtype=float) 
+w1 = np.linspace(w1min, w1max, n, dtype=float)

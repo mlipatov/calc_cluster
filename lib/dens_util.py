@@ -8,7 +8,27 @@ from scipy.ndimage import convolve1d
 from scipy.interpolate import interp1d
 import copy
 
-# calculate the factors of each discrete ordinate
+# given a set of likelihoods / probability densities, their integration weights and the proportion
+# of probability expected to be outside the observed domain,
+# return a spline that gives a probability density value versus proportion of density that is
+# captured by all points above the value
+def CI_func(dens, weights=1, outside=0):
+	i = np.flip(np.argsort(dens, axis=None)) # indices of the densities sorted in descending order 
+	d = dens.flatten()[i] # thus sorted densities
+	if isinstance(weights, np.ndarray): 
+		w = weights.flatten()[i] # and weights 
+	m = ~np.isnan(d) # mask shows non-NAN densities
+	d = d[m] # remove NANs from densities
+	if isinstance(weights, np.ndarray): 
+		w = w[m] # and from weights
+	else:
+		w = weights
+	p = d * w # probabilities corresponding to densities
+	cp = (1 - outside) * np.cumsum(p) / np.sum(p) # cumulative proportion of total probability
+	f = interp1d(cp, d, kind='linear')
+	return f
+
+# calculate the weights of each discrete ordinate
 # for the trapezoidal rule with variable differentials
 # Input: abscissae
 def trap(x):

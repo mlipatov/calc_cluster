@@ -26,19 +26,17 @@ def plot(x, y, qm, bm, ll, xlabel, ylabel, textstr, filename):
 	ax.set_ylabel(ylabel, fontsize=14)
 	ax.spines["top"].set_visible(False)
 	ax.spines["right"].set_visible(False)
-	ax.yaxis.set_major_formatter(FormatStrFormatter('%.3f'))
-	ax.xaxis.set_major_formatter(FormatStrFormatter('%.3f'))
 
 	# maximum q values
 	csq = ax.contour(x, y, qm, 3, colors='r', linestyles='dashed')
-	ax.clabel(csq, fmt='%.4f')
+	ax.clabel(csq, fmt='%.3f')
 	csq.collections[0].set_label(r'$\widehat{q}_{\rm local}$')
 	# maximum b values
 	csb = ax.contour(x, y, bm, 3, colors='b', linestyles='dashed')
-	ax.clabel(csb, fmt='%.4f')
+	ax.clabel(csb, fmt='%.2f')
 	csb.collections[0].set_label(r'$\widehat{b}_{\rm local}$')
 
-	ax.legend(loc='upper left', bbox_to_anchor=(1.35, 0.67))
+	ax.legend(loc='upper left', bbox_to_anchor=(1.35, 0.63))
 
 	# color bar
 	ax1.axis('off')
@@ -60,7 +58,7 @@ filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/*.pkl')))
 for filepath in filelist: # for each combination of age and metallicity
 	# load the log likelihood and the maximum q
 	with open(filepath, 'rb') as f:
-		ll_4d, qm_4d, bm_4d, t_mean, t_std = pickle.load(f)
+		ll_4d, qm_4d, bm_4d, t_mean, t_std, w0, w1, om_sigma = pickle.load(f)
 	# get base file name
 	base = os.path.basename(filepath).split('.')[0]
 	if len(base.split('p')[-1]) == 1:
@@ -76,15 +74,16 @@ for filepath in filelist: # for each combination of age and metallicity
 	qm = qm_4d[..., tmm, tsm] # maximum q
 	bm = bm_4d[..., tmm, tsm] # maximum b
 	# text box text
-	textstr = '\n'.join((		
+	textstr = '\n'.join((
+		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',		
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in cf.om_sigma]) + '\}$',
-	    r'$\mu_{\log_{10}{t}} = \widehat{\mu}_{\log_{10}{t}}=' + '%.3f' % t_mean[tmm] + '$',
-	    r'$\sigma_{\log_{10}{t}} = \widehat{\sigma}_{\log_{10}{t}}=' + '%.3f' % t_std[tsm] + '$',
-		r'$\widehat{w} = \{' + '%.2f' % cf.w0[w0m] + ', ' + '%.2f' % (1 - cf.w0[w0m] - cf.w1[w1m]) +\
-			', ' + '%.2f' % cf.w1[w1m] + '\}$',
-		r'$\widehat{q} = $' + '%.4f' % qm[w0m, w1m],
-		r'$\widehat{b} = $' + '%.4f' % bm[w0m, w1m]))
+	    r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in cf.om_sigma]) + '\}$',
+		r'$\widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w1[w1m]) +\
+			', ' + '%.2f' % w1[w1m] + '\}$',
+	    r'$\mu_{\log_{10}{t}} = \widehat{\mu}_{\log_{10}{t}}=' + '%.4f' % t_mean[tmm] + '$',
+	    r'$\sigma_{\log_{10}{t}} = \widehat{\sigma}_{\log_{10}{t}}=' + '%.4f' % t_std[tsm] + '$',
+		r'$\widehat{q} = $' + '%.3f' % qm[w0m, w1m],
+		r'$\widehat{b} = $' + '%.2f' % bm[w0m, w1m]))
 	filename = '../data/likelihoods/png/' + base + '_rotation' + '.png'
 	plot(cf.w1, cf.w0, qm, bm, ll, r'$w_1$', r'$w_0$', textstr, filename)
 
@@ -94,14 +93,15 @@ for filepath in filelist: # for each combination of age and metallicity
 	qm = qm_4d[w0m, w1m, ...] # maximum q
 	bm = bm_4d[w0m, w1m, ...] # maximum b
 	# text box text
-	textstr = '\n'.join((		
+	textstr = '\n'.join((	
+		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',	
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in cf.om_sigma]) + '\}$',
-	    r'$\widehat{\mu}_{\log_{10}{t}}=' + '%.3f' % t_mean[tmm] + '$',
-	    r'$\widehat{\sigma}_{\log_{10}{t}}=' + '%.3f' % t_std[tsm] + '$',
-		r'$w_{\rm 0} = \widehat{w}_{\rm 0} = ' + '%.3f' % cf.w0[w0m] + '$',
-		r'$w_{\rm 1} = \widehat{w}_{\rm 1} = ' + '%.3f' % cf.w1[w1m] + '$',
-		r'$\widehat{q} = $' + '%.4f' % qm[tmm, tsm],
-		r'$\widehat{b} = $' + '%.4f' % bm[tmm, tsm]))
+		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
+		r'$w = \widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w1[w1m]) +\
+			', ' + '%.2f' % w1[w1m] + '\}$',
+	    r'$\widehat{\mu}_{\log_{10}{t}}=' + '%.4f' % t_mean[tmm] + '$',
+	    r'$\widehat{\sigma}_{\log_{10}{t}}=' + '%.4f' % t_std[tsm] + '$',
+		r'$\widehat{q} = $' + '%.3f' % qm[tmm, tsm],
+		r'$\widehat{b} = $' + '%.2f' % bm[tmm, tsm]))
 	filename = '../data/likelihoods/png/' + base + '_age' + '.png'
 	plot(t_std, t_mean, qm, bm, ll, r'$\sigma_{\log_{10}{t}}$', r'$\mu_{\log_{10}{t}}$', textstr, filename)
