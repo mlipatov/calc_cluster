@@ -111,12 +111,11 @@ for filepath in filelist:
 
 			# text 
 			textstr = '\n'.join((
+				r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 			    r'$\log_{10}{t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
-			    # r'$\overline{\log_{10}{t}}=' + '%.3f' % densities[-1][0] + '$',
-			    # r'$\sigma_{\log_{10}{t}}=' + '%.3f' % densities[-1][1] + '$',
 			    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
 				str(cf.rot_pop[j]) + r' rotation',
-				r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
+				r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
 				str(cf.mul_pop[k])))
 				#, $\omega = $' + str(densities[k][3])))
 			    # r'$A_V=%.2f$' % (cf.A_V, )))
@@ -128,31 +127,33 @@ for filepath in filelist:
 				plot(density_plot, cmap_hot, textstr, plot_type, base)
 	it += 1
 
-# define a prior in age
-t = np.array(t)
-t_mean = 9.159
-t_std = 0.041
-t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
-t_pr /= np.sum(t_pr) # normalize
-# t_pr /= (t[1] - t[0]) # normalize so that the integral is 1
-for j in range(len(densities_cmd)):
-	for k in range(len(densities_cmd[j])):
-		for it in range(len(densities_cmd[j][k])):
-			densities_cmd[j][k][it].dens *= t_pr[it]
-			densities_vsini[j][k][it].dens *= t_pr[it]
-		density_cmd = du.add(densities_cmd[j][k])
-		density_vsini = du.add(densities_vsini[j][k])
-		# text 
-		textstr = '\n'.join((
-		    r'$\overline{\log_{10}{t}}=' + '%.3f' % t_mean + '$',
-		    r'$\sigma_{\log_{10}{t}}=' + '%.3f' % t_std + '$',
-		    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-			str(cf.rot_pop[j]) + r' rotation',
-			r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
-			str(cf.mul_pop[k])))
+# ## plot the minimum-error density at maximum-likelihood cluster parameters
+# # define a prior in age
+# t = np.array(t)
+# t_mean = 9.1589
+# t_std = 0.0414
+# t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
+# t_pr /= np.sum(t_pr) # normalize
+# # t_pr /= (t[1] - t[0]) # normalize so that the integral is 1
+# for j in range(len(densities_cmd)):
+# 	for k in range(len(densities_cmd[j])):
+# 		for it in range(len(densities_cmd[j][k])):
+# 			densities_cmd[j][k][it].dens *= t_pr[it]
+# 			densities_vsini[j][k][it].dens *= t_pr[it]
+# 		density_cmd = du.add(densities_cmd[j][k])
+# 		density_vsini = du.add(densities_vsini[j][k])
 
-		print('Plotting...')
-		for plot_type in ['cmd', 'vmd']:
-			if plot_type=='cmd': density_plot = density_cmd
-			elif plot_type=='vmd': density_plot = density_vsini
-			plot(density_plot, cmap_hot, textstr, plot_type, 'density_dist')
+# # text 
+# textstr = '\n'.join((
+#     r'$\overline{\log_{10}{t}}=' + '%.3f' % t_mean + '$',
+#     r'$\sigma_{\log_{10}{t}}=' + '%.3f' % t_std + '$',
+#     r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
+#     r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
+# 	r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
+# 	str(cf.mul_pop[k])))
+
+# print('Plotting...')
+# for plot_type in ['cmd', 'vmd']:
+# 	if plot_type=='cmd': density_plot = density_cmd
+# 	elif plot_type=='vmd': density_plot = density_vsini
+# 	plot(density_plot, cmap_hot, textstr, plot_type, 'density_dist')

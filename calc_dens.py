@@ -56,7 +56,7 @@ for it in range(len(filelist)):
 	pr_Mini = (Mini**-2.35)[:, np.newaxis, np.newaxis, np.newaxis]
 	pr_inc = np.sin(inc)[np.newaxis, np.newaxis, np.newaxis, :]
 	# overall prior without the omega distribution: prior on r is flat
-	pr0 = pr_Mini * pr_inc * (w_Mini * w_r * w_omega0 *  w_inc)
+	pr0 = pr_Mini * pr_inc * (w_Mini * w_r * w_omega0 * w_inc)
 	# omega distribution prior; 
 	# dimensions: rotational population, omega
 	pr_om = np.exp(-0.5*((omega0[np.newaxis, :] - cf.om_mean[:, np.newaxis]) / cf.om_sigma[:, np.newaxis])**2)

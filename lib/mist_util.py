@@ -275,22 +275,10 @@ class Grid:
 	# 	all comments that used to be program code and have the 'age' boolean variable in them
 	def interp(self):
 		st = self.st
-		# age = (np.unique(self.st.t).shape[0] > 1) # true if age is an independent variable in interpolation
 		points = [ st.Mini, st.omega0 ] # points from which to interpolate
 		xi = [ self.Mini, self.omega0 ] # points at which to interpolate
 		dims = [ 0, 1 ] # corresponding dimensions
-		# if age: 
-		# 	points += [ st.t ]
-		# 	xi += [ self.t ]
-		# 	dims += [ 2 ]
 		xi = np.meshgrid( *xi, sparse=True, indexing='ij' )
-		# if age:
-		# 	# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
-		# 	EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
-		# 	# replace the ages with the EEPs in the points from which we interpolate
-		# 	points[-1] = st.EEP
-		# 	# replace age with EEP in the points at which we interpolate 
-		# 	xi[-1] = EEP
 		
 		## calculate the dependent variables via interpolation in the independent variables; 
 		## use the linear method because there are small discontinuities at a limited range of masses
@@ -303,25 +291,15 @@ class Grid:
 			var = getattr(self, self.ivars[i]) # get this parameter grid (e.g. Mini, omega0)
 			setattr(self, self.ivars[i], var[m]) # delete the NaN grid points
 			M = np.compress(m, M, axis=i) # delete the NaN grid points from the mass array
-			# if age: EEP = np.compress(m, EEP, axis=i) # delete the NaN grid points from the EEP array
 		self.M = M
 		# re-calculate the points at which we interpolate
 		xi = [ self.Mini, self.omega0 ]
-		# if age: xi += [ self.t ]
 		xi = np.meshgrid( *xi, sparse=True, indexing='ij' )
-		# if age: xi[-1] = EEP
 		# calculate the rest of the dependent variables
 		self.L = 10**griddata( tuple(points), st.logL, tuple(xi), method='linear' )
 		oM = griddata( tuple(points), st.oM, tuple(xi), method='linear' )
 		logL_div_Ledd = griddata( tuple(points), st.logL_div_Ledd, tuple(xi), method='linear' )
 		R = griddata( tuple(points), st.R, tuple(xi), method='linear' )
-		# if not age: # add the age dimension back
-		# 	self.M = np.expand_dims(self.M, 2)
-		# 	self.L = np.expand_dims(self.L, 2)
-		# 	oM = np.expand_dims(oM, 2)
-		# 	logL_div_Ledd = np.expand_dims(logL_div_Ledd, 2)
-		# 	R = np.expand_dims(R, 2)
-		# present-day omega_MESA, without the Eddington luminosity correction 
 		oMc = oM * np.sqrt(1 - 10**logL_div_Ledd)
 		# mitigate round-off error from interpolation
 		notnan = ~np.isnan(oMc)
@@ -344,8 +322,8 @@ class Grid:
 	def calc_obs(self, verbose=False):
 		if verbose:
 			print('Calculating the observables for ' + str(len(self.Mini)) + ' x ' +\
-				str(len(self.omega0)) + ' x ' + str(len(self.t)) + ' x ' + str(len(self.inc)) + ' = ' +\
-				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc) * len(self.t)) + ' models...')
+				str(len(self.omega0)) + ' x ' + str(len(self.inc)) + ' = ' +\
+				'{:,}'.format(len(self.Mini) * len(self.omega0) * len(self.inc)) + ' models...')
 			start = time.time()
 		self.interp() # calculate the dependent model variables
 		# construct points for interpolating from the PARS grid;
@@ -558,19 +536,7 @@ class Grid:
 # Note: when you are certain you don't need to interpolate in age here, remove the 
 #	comments that have the age boolean in them, which used to be program code
 def companion_grid(r, Mini, st, pars, A_V, modulus):
-	# age = (np.unique(st.t).shape[0] > 1) # true if age is an independent variable in interpolation
 	Mc = Mini[:, np.newaxis] * r[np.newaxis, :] # companion mass on a grid of primary mass and binary ratio
-	# if age: 
-	# 	points = [ st.Mini, st.t ]
-	# 	xi = np.meshgrid( Mc.flatten(order='C'), np.array([t]), sparse=True, indexing='ij' ) 
-	# 	# calculate the EEP on a 3D grid for each combination of initial mass, initial rotation and age
-	# 	EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
-	# 	# replace age with EEP in the points from which we interpolate
-	# 	points[-1] = st.EEP; points = tuple(points)
-	# 	# replace age with EEP in the points at which we interpolate 
-	# 	xi[-1] = EEP; xi = tuple(xi)
-	# 	shape = Mc.shape
-	# else:
 	points = ( st.Mini, ) # points from which to interpolate
 	xi = Mc # points at which to interpolate
 
@@ -582,11 +548,6 @@ def companion_grid(r, Mini, st, pars, A_V, modulus):
 	L = 10**griddata( points, st.logL, xi, method='linear' )
 	logL_div_Ledd = griddata( points, st.logL_div_Ledd, xi, method='linear' )
 	R = griddata( points, st.R, xi, method='linear' )
-	# if age: # squeeze out the age dimension, reshape back
-	# 	M = np.squeeze(M).reshape(shape)
-	# 	L = np.squeeze(L).reshape(shape)
-	# 	logL_div_Ledd = np.squeeze(logL_div_Ledd).reshape(shape)
-	# 	R = np.squeeze(R).reshape(shape)
 	# PARS grid variables
 	tau = ut.tau(L, R) 
 	gamma = ut.gamma(M, R) 

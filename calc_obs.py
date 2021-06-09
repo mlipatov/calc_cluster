@@ -1,4 +1,4 @@
-# CAUTION: only run this if you have ~100 GB of space on the hard drive
+# CAUTION: only run this if you have ~100 GB of space on the hard drive for the output
 # Conduct all the operations on models grids that produce 
 # 	observables on (t, M, r, omega, i).
 # This includes 
@@ -45,7 +45,7 @@ st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 if ages == 1:
 	nt = 9 # number of ages to take from the MIST grid
 	it = 100 # first index of the MIST ages to take
-else: 
+elif ages == 2: 
 	nt = 9 # number of ages to take from the MIST grid
 	it = 108 # first index of the MIST ages to take
 
@@ -97,7 +97,7 @@ for it in range(it_0, len(t)):
 		grid = mu.refine_coarsen(st1, o0=omega0_grid, inc=inc_grid)
 	print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
 
-	# print plots of maximum differences versus model parameter
+	# plot maximum differences versus model parameter
 	if plot_model_grids:
 		grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini' + t_str + cf.z_str + '.png')
 		grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0' + t_str + cf.z_str + '.png')
