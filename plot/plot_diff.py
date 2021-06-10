@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 import config as cf
 
-import glob
+import glob, pickle
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib as mpl
@@ -11,7 +11,7 @@ import matplotlib as mpl
 # import pickle, glob, os
 # from scipy.interpolate import interp1d
 
-mpl.rcParams['font.size'] = 12
+mpl.rcParams['font.size'] = 18
 
 # labels of the independent variables
 xlabels = [r'M_0', 'r', r'\omega_0', r'i']
@@ -26,34 +26,35 @@ def get_maxdiff(axis, obs):
 		# flatten all but the focal axis
 		diff = diff.reshape(diff.shape[0], -1)
 		# suppress the error for all-NAN slices, which can happen at the edges of the grid
-		warnings.filterwarnings('ignore') 
+		# warnings.filterwarnings('ignore') 
 		# maximum difference across observables and non-focal model dimensions
 		maxdiff = np.nanmax(diff, axis=1)
 		# go back to default error reports
-		warnings.filterwarnings('default')
+		# warnings.filterwarnings('default')
 	else:
 		maxdiff = np.array([0])
 	return maxdiff
 
-def plot_diff(axis, x, filename):
+def plot_diff(axis, x, obs, filename):
 	xlabel = xlabels[axis]
 	# set it to midpoints between models
 	x = (x[1:] + x[:-1]) / 2
 	# difference with maximum modulus in sigmas along the axis
-	maxdiff = get_maxdiff(axis)
-	plt.scatter(x, maxdiff, s=2)
+	maxdiff = get_maxdiff(axis, obs)
+	plt.scatter(x, maxdiff, s=5)
 	plt.xlabel(r'$' + xlabel + r'$')
 	plt.ylabel(r'$\max{\left|\,\Delta x / \sigma_x\,\right|}$')
+	plt.tight_layout()
 	plt.savefig(filename, dpi=200)
 	plt.close()
 
 filelist = list(np.sort(glob.glob('../' + cf.obs_dir + '*.pkl'))) # observables 
 for it in range(len(filelist)):
 	with open(filelist[it], 'rb') as f: 
-		obs_binary, age, Mini, r, omega0, inc = pickle.load(f)
+		obs, age, Mini, r, omega0, inc = pickle.load(f)
 	t_str = '_t' + ('%.4f' % age).replace('.', 'p')
 	# plot maximum differences versus model parameter
-	plot_diff(0, '../data/model_grids/png/diff_vs_Mini' + t_str + cf.z_str + '.png')
-	plot_diff(1, '../data/model_grids/png/diff_vs_omega0' + t_str + cf.z_str + '.png')
-	plot_diff(2, '../data/model_grids/png/diff_vs_inc' + t_str + cf.z_str + '.png')
-	plot_diff(3, '../data/model_grids/png/diff_vs_inc' + t_str + cf.z_str + '.png')
+	plot_diff(0, Mini, obs, '../data/model_grids/png/diff_vs_Mini' + t_str + cf.z_str + '.png')
+	plot_diff(1, r, obs, '../data/model_grids/png/diff_vs_r' + t_str + cf.z_str + '.png')
+	plot_diff(2, omega0, obs, '../data/model_grids/png/diff_vs_omega0' + t_str + cf.z_str + '.png')
+	plot_diff(3, inc, obs, '../data/model_grids/png/diff_vs_inc' + t_str + cf.z_str + '.png')
