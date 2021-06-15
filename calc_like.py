@@ -235,7 +235,7 @@ while run < 2:
 					# also update the likelihood factors of individual data points here
 					if run == 1:
 						if llmax > LLmax: 
-							LLmax = llmax; LF_max = lf_max
+							LLmax = llmax; LF_max = lf_max * back
 						
 					# likelihood vs q and b, divided by the maximum likelihood
 					l = np.prod(lf, axis=-1)

@@ -23,7 +23,6 @@ import numpy as np
 import gc 
 
 ages = 1 # 1 or 2
-plot_model_grids = True # whether to plot the mass, omega and inclination refined grids
 
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
@@ -34,24 +33,40 @@ sf.calcom()
 print('Loading MIST...', end='')
 start = time.time()
 st = mu.Set('data/mist_grid.npy')
-print('%.2f' % (time.time() - start) + ' seconds.')
 
 st.select_MS() # select main sequence
 st.select_Z(cf.Z) # select metallicity
 st.select_valid_rotation() # select rotation with omega < 1
 st.set_omega0() # set omega from omega_M; ignore the L_edd factor
+
 # choose isochrone ages so that the space of age prior parameters with appreciable likelihoods
 # is covered sufficiently finely
-if ages == 1:
-	nt = 9 # number of ages to take from the MIST grid
-	it = 100 # first index of the MIST ages to take
-elif ages == 2: 
-	nt = 9 # number of ages to take from the MIST grid
-	it = 108 # first index of the MIST ages to take
+nt = 17
+it = 100
+
+# use the following if the program stalls
+# if ages == 1:
+# 	nt = 9 # number of ages to take from the MIST grid
+# 	it = 100 # first index of the MIST ages to take
+# elif ages == 2: 
+# 	nt = 9 # number of ages to take from the MIST grid
+# 	it = 108 # first index of the MIST ages to take
 
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.159
 st.select(np.isin(st.t, t)) # select the ages
+
+# check that initial masses aren't multi-valued at constant (EEP, omega0, age)
+EEP = np.unique(st.EEP)
+oM0 = np.unique(st.oM0)
+for tv in t:
+	for eep in EEP:
+		for o0 in oM0:
+			x = st.Mini[(st.EEP == eep) & (st.oM0 == o0) & (st.t == tv)]
+			if len(x) > 1: print('multivalued initial masses:', tv, eep, o0, x)
+
+print('%.2f' % (time.time() - start) + ' seconds.')
+
 # split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
 ts = [np.linspace(t[i], t[i+1], splits[i]) for i in range(nt - 1)]
 t_orig = [True]

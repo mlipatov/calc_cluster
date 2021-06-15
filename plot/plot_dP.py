@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 
-mpl.rcParams['font.size'] = 12
+mpl.rcParams['font.size'] = 16
 dims = ['mag', 'col']
 dimensions = ['magnitude', 'color']
 
@@ -29,21 +29,23 @@ for filepath in filelist: # for each combination of age and metallicity
 						ax.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
 						ax.plot(xplot, dP_spline(xplot), c='g')
 						ax.scatter(x, y, facecolors='w', edgecolors='k')
-						ax.set_ylabel(r'$\Delta P$', labelpad=20)
-						ax.set_xlabel(r'$\sigma$')
+						ax.set_ylabel(r'$\delta$') #, labelpad=20)
+						ax.set_xlabel(r"$\sigma'$")
 						ax.spines["top"].set_visible(False)
 						ax.spines["right"].set_visible(False)
 						textstr = '\n'.join((
-						    r'$log_{10}{t}=' + '%.4f' % density.age + '$',
+							r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 						    r'$[M/H]_{MIST}=' + str(cf.Z) + '$',
+						    r'$log_{10}{t}=' + '%.4f' % density.age + '$',
 							str(cf.rot_pop[j]) + r' rotation',
-							r'$\sigma_{\rm \omega} = ' + '%.4f' % cf.om_sigma[j] + '$',
+							r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
 							str(cf.mul_pop[k]),
 							r'Dimension: ' + dimensions[axis] ))
 						if y[-1] > y[0]: txt_x = 0.15
 						else: txt_x = 0.70
 						ax.text(txt_x, 1.05, textstr, fontsize=12, transform=ax.transAxes, horizontalalignment='left',
 						        verticalalignment='top', bbox=dict(facecolor='w', alpha=0.0, edgecolor='w'))
+						plt.tight_layout()
 						# write plot file
 						suffix = ('%.4f' % density.age).replace('.', '') + '_om' + str(j) + '_mul' + str(k)
 						plt.savefig(prefix + dims[axis] + '/dP' + suffix + '.png', dpi=300)
