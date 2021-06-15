@@ -212,7 +212,7 @@ while run < 2:
 					if sol.success:
 						qmax, bmax = sol.x
 					else:
-						print('maximization of log-likelihood failed.')
+						print('maximization of log-likelihood failed.', flush=True)
 					qm[i, j, itm, its] = qmax
 					bm[i, j, itm, its] = bmax
 
@@ -272,14 +272,14 @@ while run < 2:
 					'%.2f' % (time.time() - start) + ' seconds since last time check.' )
 				start = time.time()
 
-	print('this run code: ' + str(run))
-	print('fine area bounds used in this run:', q0, q1, b0, b1)
+	print('this run code: ' + str(run), flush=True)
+	print('fine area bounds used in this run:', q0, q1, b0, b1, flush=True)
 
 	if run == 0: # if this was a narrowing run
-		print('fine area bounds found in this run:', q0n, q1n, b0n, b1n)
+		print('fine area bounds found in this run:', q0n, q1n, b0n, b1n, flush=True)
 		# distance between the fine area bounds determined in this run and the previous ones
 		dist = np.sqrt(np.sum(np.subtract([q0n, q1n, b0n, b1n], [q0, q1, b0, b1])**2) / 4)
-		print('distance between the two sets of bounds: ' + str(dist))
+		print('distance between the two sets of bounds: ' + str(dist), flush=True)
 		# if the fine area bounds determined in this run 
 		# did not change significantly from the previous run, 
 		# indicate that the next run should be the final one
@@ -290,7 +290,7 @@ while run < 2:
 		# indicate that no more runs are necessary
 		run = 2
 
-	print('next run code: ' + str(run))
+	print('next run code: ' + str(run), flush=True)
 
 # print('marginalization in q on a grid of w_0, w_1 and b: ' + '%.2f' % (time.time() - start) + ' seconds.')
 w0i, w1i, ti, si = np.unravel_index(np.nanargmax(ll),ll.shape)
