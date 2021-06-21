@@ -12,8 +12,10 @@ from scipy.special import erf
 from scipy.ndimage import map_coordinates
 from scipy.interpolate import interp1d
 
-eps = np.finfo(float).eps
-# eps = 1e-300
+eps = np.finfo(float).eps # 1e-300
+# strategy to use in preventing overflow when multiplying
+# likelihood factors: either take the nth root or the log of each factor 
+overflow = 'root' # 'root' (faster) or 'log' (slower)
 
 nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
 npts = ld.obs.shape[0] # number of data points
@@ -208,39 +210,64 @@ while run < 2:
 					# coefficients of q and qb in the likelihood factors (the remaining term is 1)
 					A = f0 / back - 1
 					B = (f1 - f0) / back
+
+					# compute precise likelihood at a local maximum on (q, b)
+					# we believe that it is always unimodal in these variables, though we haven't proven this
 					sol = root(dlogL, [0.5, 0.5], args=(A, B))
 					if sol.success:
 						qmax, bmax = sol.x
 					else:
 						print('maximization of log-likelihood failed.', flush=True)
-					qm[i, j, itm, its] = qmax
-					bm[i, j, itm, its] = bmax
+					# likelihood factors at maximum-likelihood q and b at individual data points
+					lf_max = L(qmax, bmax, A, B)
 
-					## each factor in the likelihood expression could be so small that the product 
-					## experiences underflow; thus, we take the root of each factor before taking the product
-					lf_max = L(qmax, bmax, A, B) # likelihood factors at individual data points
-					# nth root of maximum likelihood at x = (q, b), where n is the number of data points;
-					nLmax = np.prod(np.power(lf_max, 1. / npts ))
-					# total log likelihood that is maximum on the grid of q and b,
-					# for these values of tm, ts, w0 and w1
-					llmax = npts * np.log(nLmax)
+					# locally maximum likelihood; should be a bit higher than that on the grid if L is unimodal
+					if np.any(lf_max == 0): # if any of the factors is zero
+						llmax = 0 # maximum likelihood is zero
+					else: 
+						if overflow == 'log': 
+							llmax = np.sum(np.log(lf_max))
+						elif overflow == 'root':
+							# compute the nth root of maximum likelihood at x = (q, b), 
+							# where n is the number of data points;
+							nLmax = np.prod(np.power(lf_max, 1. / npts ))
+							# total log likelihood that is maximum on the grid of q and b,
+							# for these values of tm, ts, w0 and w1
+							llmax = npts * np.log(nLmax)
 
 					# likelihood factors on a grid of q, b, and data points, 
-					# each divided by the nth root of maximum likelihood; this step and the next take the most time
+					# each divided by the nth root of maximum likelihood; this step and the next take the most time;
 					# dimensions: q, b, data point
 					lf = L( q[:, np.newaxis, np.newaxis], b[np.newaxis, :, np.newaxis], \
-							A[np.newaxis, np.newaxis, :], B[np.newaxis, np.newaxis, :]) / nLmax
-					# update the global highest likelihood 
-					# if the highest likelihood at these tm, ts, w0 and w1 is higher;
-					# also update the likelihood factors of individual data points here
-					if run == 1:
-						if llmax > LLmax: 
-							LLmax = llmax; LF_max = lf_max * back
+							A[np.newaxis, np.newaxis, :], B[np.newaxis, np.newaxis, :])
 						
-					# likelihood vs q and b, divided by the maximum likelihood
-					l = np.prod(lf, axis=-1)
+					### likelihood vs q and b, divided by the maximum likelihood; 
+					### two options to prevent overflow
+					if overflow == 'log': 
+						l = np.zeros( (len(q), len(b)) )
+						# mask where the likelihoods are non-zero because none of the data point factors is zero
+						m = ~np.any(lf == 0, axis=-1)
+						## to prevent overflow when multiplying factors,
+						## compute the exponent of the sum of logarithms of the factors, instead of a product; 
+						## to prevent overflow when exponentiating, 
+						## subtract the maximum of the sum before taking the exponent;
+						# log-likelihood on the q-b grid, at locations where likelihood is non-zero
+						ll_qb = np.sum(np.log(lf[m]), axis=-1)
+						# correction to be added to log likelihood later is the maximum log likelihood on the q-b grid
+						ll_corr = ll_qb.max()
+						ll_qb -= ll_corr # subtract the maximum log likelihood
+						l[m] = np.exp(ll_qb) # compute the likelihood where it is non-zero
+					elif overflow == 'root':
+						# reduce the factors by the approximate nth root of maximum likelihood
+						lf /= nLmax 
+						# multiply the reduced factors together to get the likelihood 
+						# divided by maximum likelihood; to reduce the effect of underflow,
+						# oder the elements from largest to smallest before taking the product
+						l = np.prod(np.flip(np.sort(lf, axis=-1)), axis=-1)
+						# correction to be added to log of the likelihood integral later
+						ll_corr = llmax	
 
-					lp = 0.9999 # proportion of likelihood that should be within the fine integration area
+					lp = 0.999 # proportion of likelihood that should be within the fine integration area
 					if run == 0: # if this is one of the narrowing runs
 						# get new, possibly narrower bounds on q and b between which the 
 						# likelihood integrates to a high proportion of its total 
@@ -251,8 +278,20 @@ while run < 2:
 						b0n = min(b0n, b0new)
 						b1n = max(b1n, b1new)
 					elif run == 1: # if this is the final run
-						lw = l * wq * wb # weighted likelihood
-						lint = np.sum( lw ) # total integrated likelihood
+						# update the global highest likelihood 
+						# if the highest likelihood at these tm, ts, w0 and w1 is higher;
+						# also update the maximum-likelihood factors of individual data points here
+						if l.max() > LLmax: 
+							LLmax = l.max(); LF_max = lf_max * back 
+						# set the maximum-likelihood q and b to those where
+						# likelihood is maximum on the grid
+						iq, ib = np.unravel_index(np.argmax(l), l.shape)
+						qm[i, j, itm, its] = q[iq]
+						bm[i, j, itm, its] = b[ib]
+						# weighted likelihood
+						lw = l * wq * wb 
+						# total integrated likelihood
+						lint = np.sum( lw ) 
 						## check the proportion of likelihood within the fine integration area
 						# indices corresponding the the fine integration area
 						q0i = np.argwhere(q == q0)[0][0]
@@ -263,8 +302,8 @@ while run < 2:
 						if lprop < lp:
 							print('\t proportion of likelihood within integration area is too small.')
 						# record the logarithm of the integral, with logarithm of maximum likelihood added back;
-						# skip the multiplication by steps
-						ll[i, j, itm, its] = np.log(lint) + llmax
+						# add back the likelihood that is maximum on the q-b grid
+						ll[i, j, itm, its] = np.log(lint) + ll_corr
 
 			count += 1
 			if count % 100 == 0:

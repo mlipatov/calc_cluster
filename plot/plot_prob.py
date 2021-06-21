@@ -75,7 +75,7 @@ def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	plt.close()
 
 # filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/ll*.pkl')))
-filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/*.pkl')))
+filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/ll*.pkl')))
 for filepath in filelist: 
 	# load the log likelihood and the maximum q
 	with open(filepath, 'rb') as f:
@@ -105,12 +105,12 @@ for filepath in filelist:
 	textstr = '\n'.join((		
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',	
-		r'$\widehat{\mu}_{\log_{10}{t}}=' + '%.4f' % t_mean[tmm] + '$',
-		r'$\widehat{\sigma}_{\log_{10}{t}}=' + '%.4f' % t_std[tsm] + '$',
+		r'$\widehat{\mu}_{\log_{10}{t}}=' + '%.3f' % t_mean[tmm] + '$',
+		r'$\widehat{\sigma}_{\log_{10}{t}}=' + '%.3f' % t_std[tsm] + '$',
 		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
 		r'$\widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w1[w1m]) +\
 			', ' + '%.2f' % w1[w1m] + '\}$',
-		r'$\widehat{q} = $' + '%.3f' % qm[tmm, tsm] + \
+		r'$\widehat{q} = $' + '%.2f' % qm[tmm, tsm] + \
 			r'$\in$[' + '%.3f' % np.nanmin(qm_4d) + ', ' + '%.3f' % np.nanmax(qm_4d) + ']',
 		r'$\widehat{b} = $' + '%.2f' % bm[tmm, tsm] + \
 			r'$\in$[' + '%.2f' % np.nanmin(bm_4d) + ', ' + '%.2f' % np.nanmax(bm_4d) + ']'))

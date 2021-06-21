@@ -40,7 +40,7 @@ def plot(lf, cmap, textstr, plot_type, base):
 			xlab = 'c = F435W - F814W'; xp = ld.color; xi = 1; 
 			ROI = np.delete(cf.ROI, 2, axis=0)
 		elif plot_type=='vmd':
-			xlab = r'$v_r = v\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; xi = 2; 
+			xlab = r'$v = v_{\rm e}\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; xi = 2; 
 			ROI = np.delete(cf.ROI, 1, axis=0)
 
 		cmap_min = lf.min(); cmap_max = lf.max(); cb_format = '%.1f'
@@ -65,7 +65,7 @@ def plot(lf, cmap, textstr, plot_type, base):
 		ticks = ticker.LinearLocator(5)
 		cb = fig.colorbar(mappable=scatter_plot, ax=ax1, cax=cax, norm=norm, orientation='vertical', ticks=ticks, \
 			format=cb_format, alpha=1.0, shrink=0.6)
-		cb.set_label(label=r'$\ln{{\cal L}_i}$', fontsize=18, rotation=0, labelpad=18, y=0.65)
+		cb.set_label(label=r'$\Delta\ln{f_{\rm i}}$', fontsize=18, rotation=0, labelpad=18, y=0.65)
 
 		# text box
 		ax.text(1.0, 1.0, textstr, transform=ax.transAxes, fontsize=12,
@@ -91,13 +91,13 @@ for filepath in filelist:
 	textstr = '\n'.join((
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',	
-		r'$\widehat{\mu}_{\log_{10}{t}}=' + '%.4f' % tmax + '$',
-		r'$\widehat{\sigma}_{\log_{10}{t}}=' + '%.4f' % smax + '$',
+		r'$\mu_{\log_{10}{t}} = \widehat{\mu}_{\log_{10}{t}}=' + '%.3f' % tmax + '$',
+		r'$\sigma_{\log_{10}{t}} = \widehat{\sigma}_{\log_{10}{t}}=' + '%.3f' % smax + '$',
 		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
-		r'$\widehat{w} = \{' + '%.2f' % w0max + ', ' + '%.2f' % (1 - w0max - w1max) +\
+		r'w = $\widehat{w} = \{' + '%.2f' % w0max + ', ' + '%.2f' % (1 - w0max - w1max) +\
 			', ' + '%.2f' % w1max + '\}$',
-		r'$\widehat{q} = $' + '%.3f' % qmax,
-		r'$\widehat{b} = $' + '%.2f' % bmax))
+		r'q = $\widehat{q} = $' + '%.2f' % qmax,
+		r'b = $\widehat{b} = $' + '%.2f' % bmax))
 
 	print('Plotting...')
 	for plot_type in ['cmd', 'vmd']:
