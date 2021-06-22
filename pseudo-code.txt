@@ -1,0 +1,139 @@
+(x, y, z) = 3D grid in parameters x, y and z
+(x,) = 1D grid in parameter x
+
+t = age
+M = initial mass
+r = binary ratio
+omega = initial omega
+i = inclination
+model parameters = (t, M, r, omega, i)
+
+magnitudes = (m0, m1, m2)
+m = m1
+c = m0 - m2
+v = v sin i
+observables = (m, c, v)
+v_0 = 0 km/s
+v_1 = 280 km/s
+ROI = region of interest = ([m_0, m_1], [c_0, c_1], [v_0, v_1])
+RON = region of normalization = ([m_0, m_1], [c_0, c_1], [-inf, inf])
+
+rotation = slow, intermediate or fast
+multiplicity = unary or binary
+
+w_0 = proportion of slow rotation
+w_1 = proportion of fast rotation
+mu_t = mean of the t prior
+sigma_t = standard deviation of the t prior
+b = proportion of binaries
+q = proportion of data points described by cluster model
+cluster parameters = (w_0, w_1, mu_t, sigma_t)
+L = likelihood
+ll = log likelihood
+
+n = ~2300 data points, i.e. observed stars in the ROI
+
+## observables at star parameters
+for every t:
+	refine primary magnitudes and vsini on (M, omega, i)
+	get secondary magnitudes on (M, r)
+	combine primary and secondary magnitudes and vsini to get observables on (M, r, omega, i)
+	check observable differences in the r dimension on (M, r, omega, i)
+	if this is not the first t:
+		check the difference in observables on (M, r, omega, i) between this t and the previous t
+save observables on (t, M, r, omega, i)
+=> hard disk space: 60 ages * 1 Gb = 60 Gb
+=> time: 60 ages * 20 seconds = 20 minutes
+
+for every data point:
+	get the residual error kernel for this data point and map it on (m, c, v)
+
+# function to compute minimum-error densities 
+def minimum_error_densities(prior_obs):
+	density = convolve prior_obs on (m, c, v) with the minimum-error kernel
+	normalize density on the RON
+	density_cm = marginalize density in v
+	for dimension in (m, c):
+		get the dependence of density_cm de-normalization 
+			on the sigma of the residual error kernel in this dimension
+	density_v0 = convolve density with the residual error kernel for v = v_0
+	density_v0 = integrate density_v0 from v = -inf to v = v_0
+	return [density, density_cm, density_v0]
+
+## densities at data points
+for every t:
+	map (M, r, omega, i) to (m, c, v)
+	for each rotation:
+		prior_mod = the prior on (M, r, omega, i)
+		initialize prior_obs, the prior on (m, c, v), to zero
+		
+		# compute unary minimum-error densities
+		add prior_mod from (M, r = 0, omega, i) to prior_obs on (m, c, v)
+		dens[unary], dens_cm[unary], dens_v0[unary] = minimum_error_densities(prior_obs)
+		
+		# compute binary minimum-error densities
+		add the prior from (M, r > 0, omega, i) to the prior on (m, c, v)
+		dens[binary], dens_cm[binary], dens_v0[binary] = minimum_error_densities(prior_obs)
+		
+		# compute densities at data points
+		for each multiplicity:
+			for each datum:
+				if v[datum] == NAN:
+					dens = dens_cm[multiplicity]
+				elif v[s] = v_0:
+					dens = dens_v0[multiplicity]
+				else:
+					dens = dens[multiplicity]
+				density = integrate dens times the data point's residual error kernel
+				density[t, rotation, multiplicity, datum] = density, corrected for de-normalization
+				
+save density on (t, rotation, multiplicity, datum)
+=> hard disk space: 8 Mb
+=> time: 60 ages * 1 minute = 1 hour
+
+## L at cluster parameters
+compute background probabilities on (datum, )
+for each mu_t:
+	for each sigma_t:
+		integrate density (t, rotation, multiplicity, datum) times Gaussian(t; mu_t, sigma_t) in t,
+				resulting in density on (mu_t, sigma_t, rotation, multiplicity, datum)
+# narrow down the q and b range where L is appreciable (with narrow == 0), 
+# then integrate L on a fine grid (with narrow == 1)
+narrow = 0
+while narrow < 2:
+	if narrow == 0:
+		downsample factor for (mu_t, sigma_t, w_0, w_1, q, b) = 2
+		initialize new bounds on q and b where L is appreciable
+	elif narrow == 1:
+		downsample factor for (mu_t, sigma_t, w_0, w_1, q, b) = 1
+	for each combination of downsampled {mu_t, sigma_t, w_0, w_1}:
+		compute coefficients of q and qb in L factors on (datum, )
+				from density on (rotation, multiplicity, datum) for these mu_t and sigma_t,
+				with these w_0 and w_1
+		
+		# find the nth root of locally maximum L
+		find q_max and b_max that locally maximize L 
+		take the nth root of each L factor at q_max and b_max on (datum, )
+		multiply nth roots of factors together to get the nth root of locally maximum L
+		ll_max = log(L_max) = locally maximum ll = n * log(nth root of locally maximum L)
+		
+		# compute L divided by locally maximum L
+		compute L factors on (q, b, datum), divided by the nth root of locally maximum L
+		sort the factors from largest down and multiply them in the datum dimension,
+				resulting in L / L_max on (q, b)
+
+		if narrow = 0:
+			update new bounds in q and b where L is appreciable
+		elif narrow = 1:
+			record q and b that maximize L / L_max on (q, b)
+			update L factors at highest-likelihood (mu_t, sigma_t, w_0, w_1, q, b) on (datum,)
+			integrate L / L_max on (q, b), take the logarithm and add ll_max
+	if narrow == 0 and new bounds on q and b are not significantly different from old bounds:
+		narrow = 1
+	if narrow == 1:
+		narrow = 2
+
+save integrated L and {q, b} that maximize it on (mu_t, sigma_t, w_0, w_1)
+save highest-likelihood L factors on (datum, )
+=> hard disk space: 5 Mb
+=> time: 21^4 (mu_t, sigma_t, w_0, w_1) points * 0.01 sec per 28^2 (q, b) grid = 30 minutes
