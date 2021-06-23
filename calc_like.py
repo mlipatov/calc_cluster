@@ -13,9 +13,6 @@ from scipy.ndimage import map_coordinates
 from scipy.interpolate import interp1d
 
 eps = np.finfo(float).eps # 1e-300
-# strategy to use in preventing overflow when multiplying
-# likelihood factors: either take the nth root or the log of each factor 
-overflow = 'root' # 'root' (faster) or 'log' (slower)
 
 nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
 npts = ld.obs.shape[0] # number of data points
@@ -211,30 +208,6 @@ while run < 2:
 					A = f0 / back - 1
 					B = (f1 - f0) / back
 
-					# compute precise likelihood at a local maximum on (q, b)
-					# we believe that it is always unimodal in these variables, though we haven't proven this
-					sol = root(dlogL, [0.5, 0.5], args=(A, B))
-					if sol.success:
-						qmax, bmax = sol.x
-					else:
-						print('maximization of log-likelihood failed.', flush=True)
-					# likelihood factors at maximum-likelihood q and b at individual data points
-					lf_max = L(qmax, bmax, A, B)
-
-					# locally maximum likelihood; should be a bit higher than that on the grid if L is unimodal
-					if np.any(lf_max == 0): # if any of the factors is zero
-						llmax = 0 # maximum likelihood is zero
-					else: 
-						if overflow == 'log': 
-							llmax = np.sum(np.log(lf_max))
-						elif overflow == 'root':
-							# compute the nth root of maximum likelihood at x = (q, b), 
-							# where n is the number of data points;
-							nLmax = np.prod(np.power(lf_max, 1. / npts ))
-							# total log likelihood that is maximum on the grid of q and b,
-							# for these values of tm, ts, w0 and w1
-							llmax = npts * np.log(nLmax)
-
 					# likelihood factors on a grid of q, b, and data points, 
 					# each divided by the nth root of maximum likelihood; this step and the next take the most time;
 					# dimensions: q, b, data point
@@ -243,7 +216,7 @@ while run < 2:
 						
 					### likelihood vs q and b, divided by the maximum likelihood; 
 					### two options to prevent overflow
-					if overflow == 'log': 
+					if cf.overflow == 'log': 
 						l = np.zeros( (len(q), len(b)) )
 						# mask where the likelihoods are non-zero because none of the data point factors is zero
 						m = ~np.any(lf == 0, axis=-1)
@@ -257,26 +230,39 @@ while run < 2:
 						ll_corr = ll_qb.max()
 						ll_qb -= ll_corr # subtract the maximum log likelihood
 						l[m] = np.exp(ll_qb) # compute the likelihood where it is non-zero
-					elif overflow == 'root':
+					elif cf.overflow == 'root':
+						# compute precise likelihood at a local maximum on (q, b)
+						# it is probably always unimodal in these variables, though we haven't proven this
+						sol = root(dlogL, [0.5, 0.5], args=(A, B))
+						if sol.success: qmax, bmax = sol.x
+						else: print('maximization of log-likelihood failed.', flush=True)
+						# likelihood factors at maximum-likelihood q and b at individual data points
+						lf_max = L(qmax, bmax, A, B)
+						# the nth root of locally maximum likelihood on (q, b), 
+						# where n is the number of data points;
+						nLmax = np.prod(np.power(lf_max, 1. / npts ))	
 						# reduce the factors by the approximate nth root of maximum likelihood
-						lf /= nLmax 
+						lf /= nLmax
 						# multiply the reduced factors together to get the likelihood 
-						# divided by maximum likelihood; to reduce the effect of underflow,
-						# oder the elements from largest to smallest before taking the product
-						l = np.prod(np.flip(np.sort(lf, axis=-1)), axis=-1)
+						# divided by maximum likelihood; to further reduce the effect of underflow,
+						# take products in groups
+						N = 10
+						products = [np.prod(x, axis=-1) for x in np.array_split(lf, N, axis=-1)]
+						l = np.prod(np.stack(products), axis=0)
 						# correction to be added to log of the likelihood integral later
-						ll_corr = llmax	
+						ll_corr = npts * np.log(nLmax)	
 
 					lp = 0.999 # proportion of likelihood that should be within the fine integration area
 					if run == 0: # if this is one of the narrowing runs
-						# get new, possibly narrower bounds on q and b between which the 
-						# likelihood integrates to a high proportion of its total 
-						q0new, q1new, b0new, b1new = bounds(l, wq * wb, q, b, lp)
-						# update the bounds determined by this run
-						q0n = min(q0n, q0new)
-						q1n = max(q1n, q1new)
-						b0n = min(b0n, b0new)
-						b1n = max(b1n, b1new)
+						if np.count_nonzero(l > 0):
+							# get new, possibly narrower bounds on q and b between which the 
+							# likelihood integrates to a high proportion of its total 
+							q0new, q1new, b0new, b1new = bounds(l, wq * wb, q, b, lp)
+							# update the bounds determined by this run
+							q0n = min(q0n, q0new)
+							q1n = max(q1n, q1new)
+							b0n = min(b0n, b0new)
+							b1n = max(b1n, b1new)
 					elif run == 1: # if this is the final run
 						# update the global highest likelihood 
 						# if the highest likelihood at these tm, ts, w0 and w1 is higher;

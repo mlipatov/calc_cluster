@@ -11,8 +11,8 @@ modulus = 18.45
 Z = -0.45 # MIST metallicity 
 z_str = '_Z' + str(Z).replace('-', 'm').replace('.', 'p') # metallicity string for printing
 
-
 ## parameters for the point density calculations
+mix = True # whether to mix grids of different ages or to implement a Gaussian age prior
 
 # minimum standard deviations of the observables:
 # magnitude F555W, color F435W - F814W and vsini in km/s
@@ -76,6 +76,7 @@ rot_pop = ['Slow', 'Intermediate', 'Fast']
 mul_pop = ['Unaries', 'Binaries']
 
 ## parameters for the likelihood calculations
+overflow = 'root' # 'root' or 'log': strategy for dealing with product overflow
 n = 21 # number of steps in each dimension
 
 # target ranges
