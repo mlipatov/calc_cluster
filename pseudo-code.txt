@@ -86,7 +86,7 @@ for every t:
 					dens = dens[multiplicity]
 				density = integrate dens times the data point's residual error kernel
 				density[t, rotation, multiplicity, datum] = density, corrected for de-normalization
-				
+
 save density on (t, rotation, multiplicity, datum)
 => hard disk space: 8 Mb
 => time: 60 ages * 1 minute = 1 hour
@@ -137,3 +137,39 @@ save integrated L and {q, b} that maximize it on (mu_t, sigma_t, w_0, w_1)
 save highest-likelihood L factors on (datum, )
 => hard disk space: 5 Mb
 => time: 21^4 (mu_t, sigma_t, w_0, w_1) points * 0.01 sec per 28^2 (q, b) grid = 30 minutes
+
+------------------------------------------
+
+	Enhanced Mixing
+
+------------------------------------------
+
+t0 = a subset of all ages
+a = an array from 0 to 0.5
+
+# densities at data points
+for each t0:
+	for each a:
+		initialize the prior at all multiplicities and rotations, on (m, c, v), to zero
+		for each t relevant to these t0 and a:
+			extract (M, r, omega, i) where omega = (t0 - t) / (a / ln(10))
+			map (M, r, omega, i) to (m, c, v)
+
+			for each rotation:
+				prior_mod = the prior on (M, r, omega, i)	
+				add prior_mod from (M, r = 0, omega, i) to prior[unary][rotation] on (m, c, v)
+				add prior_mod from (M, r >= 0, omega, i) to prior[binary][rotation] on (m, c, v)
+			
+		# compute densities at data points
+		for each rotation:
+			for each multiplicity:
+				dens, dens_cm, dens_v0 = minimum_error_densities(prior[multiplicity][rotation])
+				for each datum:
+					if v[datum] == NAN:
+						dens = dens_cm
+					elif v[s] = v_0:
+						dens = dens_v0
+					else:
+						dens = dens
+					density = integrate dens times the data point's residual error kernel
+					density[t0, a, rotation, multiplicity, datum] = density, corrected for de-normalization

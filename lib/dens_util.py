@@ -38,7 +38,7 @@ def trap(x):
 		# array of averaged differentials for the trapezoidal rule
 		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
 	else:
-		d = np.array([1])
+		d = np.array([0.0])
 	return d
 
 class ConvolutionException(Exception):
