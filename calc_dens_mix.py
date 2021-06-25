@@ -35,17 +35,20 @@ sigma = np.sqrt(res) / (ld.step[np.newaxis, :] * cf.downsample)
 
 filelist = list(np.sort(glob.glob(cf.obs_dir + '*.pkl'))) # observables 
 # get the ages; this should be optimized later
-start = time.time(); print('Getting the ages...', end='')
+start = time.time(); print('Getting the ages...', end='', flush=True)
 t_ar = []
 for file in filelist:
 	with open(file, 'rb') as f: 
 		obs_binary, age, Mini, r, omega0, inc = pickle.load(f)
 		t_ar.append(age)
 t_ar = np.array(t_ar)
-print(str(time.time() - start) + ' seconds.')
+omax = omega0[-1] # maximum omega0 on the grids
+print(str(time.time() - start) + ' seconds.', flush=True)
 # set the parameters for the combining of isochrones
-t0_ar = t_ar[int(len(t_ar)/2):] # t0 parameters
-a_ar = np.linspace(0, 0.5, len(t0_ar)) # the number of slope parameters is the same
+amax = 0.4 # maximum slope parameter
+t0min = t_ar[0] + amax * omax / np.log(10) # minimum intercept parameter
+t0_ar = t_ar[t_ar > t0min] # t0 parameters
+a_ar = np.linspace(0, 0.4, 5) # slope parameters
 
 # bins in omega according to the age as a function of omega
 def om_bins(t, t0, a):
@@ -73,7 +76,7 @@ for it0 in range(len(t0_ar)):
 	for ia in reversed(range(len(a_ar))):
 		a = a_ar[ia]
 		a_str = '_a' + ('%.3f' % a).replace('.', 'p')
-		print('t-intercept = ' + '%.4f' % t0 + ', slope = ' + '%.2f' % a)
+		print('t-intercept = ' + '%.4f' % t0 + ', slope = ' + '%.2f' % a, flush=True)
 		start = time.time()
 		# set the priors on the observables grid to zero
 		for j in range(nrot): 
@@ -148,7 +151,7 @@ for it0 in range(len(t0_ar)):
 					# transfer the binary prior from the model grid to the grid of observables
 					indices = tuple([ind[..., i][mask] for i in range(ind.shape[-1])])
 					np.add.at(pr_obs[j][1], indices, pr[mask])
-		print('Putting the priors on the observables grid: ' + '%.2f' % (time.time() - start) + ' seconds.')
+		print('Putting the priors on the observables grid: ' + '%.2f' % (time.time() - start) + ' seconds.', flush=True)
 		start = time.time()
 		## package the prior density with the grids of observables for these t0 and a
 		for j in range(nrot): # for each rotation
@@ -220,7 +223,7 @@ for it0 in range(len(t0_ar)):
 						# cluster model density at this data point for this rotational and multiplicity populations
 						# dimensions: age, multiplicity population, rotational population, data point
 						points[it0, ia, k, j, i] = float(dens * norm)
-		print('Computing point densities: ' + '%.2f' % (time.time() - start) + ' seconds.')
+		print('Computing point densities: ' + '%.2f' % (time.time() - start) + ' seconds.', flush=True)
 	# save the data point densities at these ages for these rotational population distributions; 
 	# do this at every age, in case the program crashes; delete the previously saved file every time
 	file = points_dir + 'points_os' + ('_'.join(['%.2f' % n for n in cf.om_sigma])).replace('.','') + \
