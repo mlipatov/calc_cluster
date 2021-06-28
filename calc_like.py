@@ -357,11 +357,11 @@ suffix = str(cf.Z).replace('-', 'm').replace('.', 'p') + \
 
 # package the likelihoods, the ML q values and the rotational distribution standard deviations
 # replace cf.om_sigma with om_sigma when these are inherited
-with open(like_dir + 'll_' + suffix, 'wb') as f:
+with open(like_dir + 'pkl/ll_' + suffix, 'wb') as f:
 	pickle.dump([ll, qm, bm, t0_ar, t1_ar, cf.w0, cf.w1, cf.om_sigma], f)
 
 # package the likelihood factors of individual data points with the corresponding cluster model parameters
-with open(like_dir + 'lf_' + suffix, 'wb') as f:
+with open(like_dir + 'pkl/lf_' + suffix, 'wb') as f:
 	pickle.dump([LF_max, \
 		qm[w0i, w1i, t0i, t1i], bm[w0i, w1i, t0i, t1i], \
 		t0_ar[t0i], t1_ar[t1i], cf.w0[w0i], cf.w1[w1i], cf.om_sigma], f)

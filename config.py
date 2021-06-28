@@ -4,7 +4,7 @@ import numpy as np
 dens_dir = 'data/densities/pkl/'
 obs_dir = 'data/observables/'
 points_dir = 'data/points/'
-like_dir = 'data/likelihoods/pkl/'
+like_dir = 'data/likelihoods/'
 
 # cluster parameters
 A_V = 0.26315789 # should be one of the A_V values on the PARS grid 
@@ -82,11 +82,15 @@ mul_pop = ['Unaries', 'Binaries']
 overflow = 'root' # 'root' or 'log': strategy for dealing with product overflow
 n = 21 # number of steps in each dimension
 
-# target ranges
+## target ranges
 tmin, tmax = [9.154, 9.165] # age
 smin, smax = [0.036, 0.047] # sigma_age
+# for the basic analysis
 w0min, w0max = [0.025, 0.225] # slow rotator proportion
 w1min, w1max = [0.4, 0.9] # fast rotator proportion
+# for the enhanced mixing analysis
+w0min, w0max = [0., 1.] # slow rotator proportion
+w1min, w1max = [0., 1.] # fast rotator proportion
 
 # grids (age parameter grids determined elsewhere)
 w0 = np.linspace(w0min, w0max, n, dtype=float) 

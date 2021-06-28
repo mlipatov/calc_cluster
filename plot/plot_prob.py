@@ -17,6 +17,10 @@ cmap = plt.cm.get_cmap("Dark2")
 # level and corresponding color bar tick labels
 levels = [0.95, 0.65, 0.35]
 level_text = ['95%', '65%', '35%']
+if cf.mix:
+	like_dir = '../data/mix/likelihoods/'
+else:
+	like_dir = '../data/likelihoods/'
 
 def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	## estimate the total probability outside the boundaries
@@ -75,11 +79,11 @@ def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	plt.close()
 
 # filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/ll*.pkl')))
-filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/ll*.pkl')))
+filelist = list(np.sort(glob.glob(like_dir + 'pkl/ll*.pkl')))
 for filepath in filelist: 
 	# load the log likelihood and the maximum q
 	with open(filepath, 'rb') as f:
-		ll_4d, qm_4d, bm_4d, t_mean, t_std, w0, w1, om_sigma = pickle.load(f)
+		ll_4d, qm_4d, bm_4d, t0_ar, t1_ar, w0, w1, om_sigma = pickle.load(f)
 
 	# get base file name
 	base = os.path.basename(filepath).split('.')[0]
@@ -105,8 +109,8 @@ for filepath in filelist:
 	textstr = '\n'.join((		
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',	
-		r'$\widehat{\mu}_{\log_{10}{t}}=' + '%.3f' % t_mean[tmm] + '$',
-		r'$\widehat{\sigma}_{\log_{10}{t}}=' + '%.3f' % t_std[tsm] + '$',
+		r'$\widehat{\mu}_{\log_{10}{t}}=' + '%.3f' % t0_ar[tmm] + '$',
+		r'$\widehat{\sigma}_{\log_{10}{t}}=' + '%.3f' % t1_ar[tsm] + '$',
 		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
 		r'$\widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w1[w1m]) +\
 			', ' + '%.2f' % w1[w1m] + '\}$',
@@ -115,8 +119,8 @@ for filepath in filelist:
 		r'$\widehat{b} = $' + '%.2f' % bm[tmm, tsm] + \
 			r'$\in$[' + '%.2f' % np.nanmin(bm_4d) + ', ' + '%.2f' % np.nanmax(bm_4d) + ']'))
 
-	filename = '../data/likelihoods/png/' + base + '_age_prob' + '.png'
-	plot(t_std, t_mean, p_age, r'$\sigma_{\log_{10}{t}}$', r'$\mu_{\log_{10}{t}}$', textstr, filename)
+	filename = like_dir + 'png/' + base + '_age_prob' + '.png'
+	plot(t1_ar, t0_ar, p_age, r'$\sigma_{\log_{10}{t}}$', r'$\mu_{\log_{10}{t}}$', textstr, filename)
 
-	filename = '../data/likelihoods/png/' + base + '_rotation_prob' + '.png'
+	filename = like_dir + 'png/' + base + '_rotation_prob' + '.png'
 	plot(w1, w0, p_rot, r'$w_1$', r'$w_0$', textstr, filename)
