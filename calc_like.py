@@ -18,14 +18,21 @@ nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
 npts = ld.obs.shape[0] # number of data points
 ndim = ld.obs.shape[1] # number of observable dimensions
 
+if cf.mix: 
+	points_dir = 'data/mix/points/'
+	like_dir = 'data/mix/likelihoods'
+else:
+	points_dir = cf.points_dir
+	like_dir = cf.like_dir
+
 # load the data point densities
 # dimensions: age, multiplicity population, rotational population, data point
-filelist = list(np.sort(glob.glob(cf.points_dir + '*.pkl')))
+filelist = list(np.sort(glob.glob(points_dir + '*.pkl')))
 t = None
 for filepath in filelist:
 	with open(filepath, 'rb') as f: 
-		# pts1, t1, om_sigma = pickle.load(f)
-		pts1, t1 = pickle.load(f)
+		if cf.mix: pts1, t1, om_sigma = pickle.load(f)
+		else: pts1, t1 = pickle.load(f)
 		if t is None: # if there are no ages from before
 			points = pts1; t = t1
 		else:
@@ -45,44 +52,51 @@ back[m0] = cf.v0err * cf.std[-1] / (np.sqrt(2 * np.pi) * cf.volume)
 # everywhere else
 back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * ld.std[mv, -1])) ) / (2 * cf.volume)
 
-## compute likelihoods on a grid of age, metallicity, 
-## rotational population and multiplicity population proportions
-## a range of age priors
-# smaller of the two distances between range boundaries and available age grid boundaries,
-# divided by the number of standard deviations in half the Gaussian age prior;
-# this is the largest possible standard deviation of this prior
-sigma_max = np.minimum( cf.tmin - t[0], t[-1] - cf.tmax ) / nsig
-# means of the priors
-if t[-1] <= cf.tmin: # if the largest age is below the target range
-	t_mean = np.array([t[-1]]) # compute for the largest age only
-elif t[0] >= cf.tmax: # if the smallest age is above the target range
-	t_mean = np.array([t[0]]) # compute for the smallest age only
-else: # else, compute on the intersection of the target range and allowed range
-	t_mean = np.linspace(np.maximum(cf.tmin, t[0]), np.minimum(cf.tmax, t[-1]), cf.n, dtype=float)
-# standard deviations of the priors
-if sigma_max <= cf.smin: # if maximum sigma is below the target sigma range
-	t_sigma = np.array([sigma_max]) # compute for the one value of maximum sigma
-else: # else, compute on the intersection of the target range and allowed range
-	t_sigma = np.linspace(cf.smin, np.minimum(sigma_max, cf.smax), cf.n)
+if cf.mix:
+	ft = points # the points are already on a grid of age parameters
+	t0_ar = t # the first age-related parameter is the age intercept
+	t1_ar = cf.a_ar # the second age-related parameter is related to the slope
+else:
+	## compute likelihoods on a grid of age, metallicity, 
+	## rotational population and multiplicity population proportions
+	## a range of age priors
+	# smaller of the two distances between range boundaries and available age grid boundaries,
+	# divided by the number of standard deviations in half the Gaussian age prior;
+	# this is the largest possible standard deviation of this prior
+	sigma_max = np.minimum( cf.tmin - t[0], t[-1] - cf.tmax ) / nsig
+	# means of the priors
+	if t[-1] <= cf.tmin: # if the largest age is below the target range
+		t_mean = np.array([t[-1]]) # compute for the largest age only
+	elif t[0] >= cf.tmax: # if the smallest age is above the target range
+		t_mean = np.array([t[0]]) # compute for the smallest age only
+	else: # else, compute on the intersection of the target range and allowed range
+		t_mean = np.linspace(np.maximum(cf.tmin, t[0]), np.minimum(cf.tmax, t[-1]), cf.n, dtype=float)
+	# standard deviations of the priors
+	if sigma_max <= cf.smin: # if maximum sigma is below the target sigma range
+		t_sigma = np.array([sigma_max]) # compute for the one value of maximum sigma
+	else: # else, compute on the intersection of the target range and allowed range
+		t_sigma = np.linspace(cf.smin, np.minimum(sigma_max, cf.smax), cf.n)
 
-print( 'age means: ' + ', '.join(['%.4f' % t for t in t_mean]) )
-print( 'age standard deviations: ' + ', '.join(['%.4f' % t for t in t_sigma]) )
-print( 'data point age grid step: ' + '%.5f' % (t[1] - t[0]) )
-print( 'means grid step: ' + '%.5f' % (t_mean[1] - t_mean[0]) )
-print( 'deviations grid step: ' + '%.5f' % (t_sigma[1] - t_sigma[0]) )
-print( 'slow rotator proportion step: ' + '%.5f' % (cf.w0[1] - cf.w0[0]) )
-print( 'fast rotator proportion step: ' + '%.5f' % (cf.w1[1] - cf.w1[0]) )
+	print( 'age means: ' + ', '.join(['%.4f' % t for t in t_mean]) )
+	print( 'age standard deviations: ' + ', '.join(['%.4f' % t for t in t_sigma]) )
+	print( 'data point age grid step: ' + '%.5f' % (t[1] - t[0]) )
+	print( 'means grid step: ' + '%.5f' % (t_mean[1] - t_mean[0]) )
+	print( 'deviations grid step: ' + '%.5f' % (t_sigma[1] - t_sigma[0]) )
+	print( 'slow rotator proportion step: ' + '%.5f' % (cf.w0[1] - cf.w0[0]) )
+	print( 'fast rotator proportion step: ' + '%.5f' % (cf.w1[1] - cf.w1[0]) )
 
-# construct age priors, normalized up to the same factor
-# dimensions: age, prior mean, prior sigma
-t_pr = np.exp( -0.5 * (t[:, np.newaxis, np.newaxis] - t_mean[np.newaxis, :, np.newaxis])**2 \
-						 / t_sigma[np.newaxis, np.newaxis, :]**2 )
-t_pr /= np.sum(t_pr, axis=0)
-# marginalize probability densities at data point locations by the age prior,
-# correct by age step if the densities have to be normalized to 1; assume age step size is constant
-# dimensions of output: age prior mean, age prior sigma, multiplicity, rotational population, data point 
-ft = np.sum(t_pr[..., np.newaxis, np.newaxis, np.newaxis] * points[:, np.newaxis, np.newaxis, ...], axis=0) \
-						/ (t[1] - t[0])
+	# construct age priors, normalized up to the same factor
+	# dimensions: age, prior mean, prior sigma
+	t_pr = np.exp( -0.5 * (t[:, np.newaxis, np.newaxis] - t_mean[np.newaxis, :, np.newaxis])**2 \
+							 / t_sigma[np.newaxis, np.newaxis, :]**2 )
+	t_pr /= np.sum(t_pr, axis=0)
+	# marginalize probability densities at data point locations by the age prior,
+	# correct by age step if the densities have to be normalized to 1; assume age step size is constant
+	# dimensions of output: age prior mean, age prior sigma, multiplicity, rotational population, data point 
+	ft = np.sum(t_pr[..., np.newaxis, np.newaxis, np.newaxis] * points[:, np.newaxis, np.newaxis, ...], axis=0) \
+							/ (t[1] - t[0])
+	t0_ar = t_mean # the first age-related parameter is the mean of the distribution
+	t1_ar = t_sigma # the second parameter is the standard deviation
 
 # derivatives of log likelihood w.r.t. q and w.r.t. b at (q, b) = x
 # likelihood is the product of (1 + Ai * q + Bi * q * b) over i
@@ -104,7 +118,16 @@ def dlogL(x, A, B):
 	dlogL_db = np.sum(1 / (b + (1 / q + A[m]) / B[m]) )
 	return [dlogL_dq, dlogL_db]
 
-# likelihood as a function of q, b, A and B
+# derivative of log likelihood w.r.t q at fixed b
+def dlogL_dq(q, b, A, B):
+	return dlogL([q, b], A, B)[0]
+
+# derivative of log likelihood w.r.t b at fixed q
+# (b is the first argument)
+def dlogL_db(b, q, A, B):
+	return dlogL([q, b], A, B)[1]
+
+# likelihood factors as a function of q, b, A and B
 def L(q, b, A, B):
 	return 1 + (A + B * b) * q
 
@@ -126,7 +149,7 @@ def grid(x0, x1, nin=11, nout=11):
 		coarse1 = np.array([1])
 	return np.concatenate( (coarse0[:-1], fine, coarse1[1:]) )
 
-# given a likelihood and its integration weights on a grid of q and b and a requested proportion,
+# given a likelihood and it1 integration weights on a grid of q and b and a requested proportion,
 # return bounds on both parameters that ensure that the likelihood integrated 
 # between these bounds is above the requested proportion
 def bounds(l, w, q, b, lp):
@@ -155,7 +178,7 @@ def ds(l, n):
 	return x
 
 ## marginalize in q under uniform prior for combinations of population proportions and age prior parameters
-ll = np.full( (len(cf.w0), len(cf.w1), len(t_mean), len(t_sigma)), np.nan )
+ll = np.full( (len(cf.w0), len(cf.w1), len(t0_ar), len(t1_ar)), np.nan )
 qm = np.full_like( ll, np.nan ) # array of maximum-likelihood q
 bm = np.full_like( ll, np.nan ) # array of maximum-likelihood b
 
@@ -183,18 +206,18 @@ while run < 2:
 		b = grid(b0, b1, nin=21, nout=6)
 		# downsample factor of parameter arrays
 		n = 1
-		# global highest log likelihood on q, b, w_0, w_1, t_mean and t_sigma
+		# global highest log likelihood on q, b, w_0, w_1, t0_ar and t1_ar
 		LLmax = -np.inf
 	# construct q and b weights according to the variable-step trapezoidal rule;
 	# dimensions: q, b
 	wq = du.trap(q)[:, np.newaxis]
 	wb = du.trap(b)[np.newaxis, :]
 	count = 0 # count of the age priors
-	t_ind = ds(len(t_mean), n)
-	s_ind = ds(len(t_sigma), n)
-	for itm in t_ind:
-		for its in s_ind:
-			f = ft[itm, its]
+	t0_ind = ds(len(t0_ar), n)
+	t1_ind = ds(len(t1_ar), n)
+	for it0 in t0_ind:
+		for it1 in t1_ind:
+			f = ft[it0, it1]
 			for i in ds(len(cf.w0), n):
 				w0 = cf.w0[i]
 				j_range = np.searchsorted(cf.w1, 1 - w0, side='right')
@@ -204,7 +227,7 @@ while run < 2:
 					f0 = f[0, 0, :] * w0 + f[0, 1, :] * (1 - w0 - w1) + f[0, 2, :] * w1
 					# binary probability densities for all data points
 					f1 = f[1, 0, :] * w0 + f[1, 1, :] * (1 - w0 - w1) + f[1, 2, :] * w1
-					# coefficients of q and qb in the likelihood factors (the remaining term is 1)
+					# coefficients of q and q * b in the likelihood factors (the remaining term is 1)
 					A = f0 / back - 1
 					B = (f1 - f0) / back
 
@@ -234,8 +257,12 @@ while run < 2:
 						# compute precise likelihood at a local maximum on (q, b)
 						# it is probably always unimodal in these variables, though we haven't proven this
 						sol = root(dlogL, [0.5, 0.5], args=(A, B))
-						if sol.success: qmax, bmax = sol.x
-						else: print('maximization of log-likelihood failed.', flush=True)
+						qmax, bmax = sol.x
+						# bring the maximum likelihood parameters back into their range
+						if bmax > 1: bmax = 1 
+						elif bmax <= 0: bmax = eps
+						if qmax >= 1: qmax = 1 - eps 
+						elif qmax <= 0: qmax = eps
 						# likelihood factors at maximum-likelihood q and b at individual data points
 						lf_max = L(qmax, bmax, A, B)
 						# the nth root of locally maximum likelihood on (q, b), 
@@ -256,7 +283,7 @@ while run < 2:
 					if run == 0: # if this is one of the narrowing runs
 						if np.count_nonzero(l > 0):
 							# get new, possibly narrower bounds on q and b between which the 
-							# likelihood integrates to a high proportion of its total 
+							# likelihood integrates to a high proportion of it1 total 
 							q0new, q1new, b0new, b1new = bounds(l, wq * wb, q, b, lp)
 							# update the bounds determined by this run
 							q0n = min(q0n, q0new)
@@ -272,8 +299,8 @@ while run < 2:
 						# set the maximum-likelihood q and b to those where
 						# likelihood is maximum on the grid
 						iq, ib = np.unravel_index(np.argmax(l), l.shape)
-						qm[i, j, itm, its] = q[iq]
-						bm[i, j, itm, its] = b[ib]
+						qm[i, j, it0, it1] = q[iq]
+						bm[i, j, it0, it1] = b[ib]
 						# weighted likelihood
 						lw = l * wq * wb 
 						# total integrated likelihood
@@ -289,11 +316,11 @@ while run < 2:
 							print('\t proportion of likelihood within integration area is too small.')
 						# record the logarithm of the integral, with logarithm of maximum likelihood added back;
 						# add back the likelihood that is maximum on the q-b grid
-						ll[i, j, itm, its] = np.log(lint) + ll_corr
+						ll[i, j, it0, it1] = np.log(lint) + ll_corr
 
 			count += 1
 			if count % 100 == 0:
-				print(str(count) + ' / ' + str(len(t_ind) * len(s_ind)) + ' age priors; ' + \
+				print(str(count) + ' / ' + str(len(t0_ind) * len(t1_ind)) + ' age-related priors; ' + \
 					'%.2f' % (time.time() - start) + ' seconds since last time check.' )
 				start = time.time()
 
@@ -318,10 +345,10 @@ while run < 2:
 	print('next run code: ' + str(run), flush=True)
 
 # print('marginalization in q on a grid of w_0, w_1 and b: ' + '%.2f' % (time.time() - start) + ' seconds.')
-w0i, w1i, ti, si = np.unravel_index(np.nanargmax(ll),ll.shape)
+w0i, w1i, t0i, t1i = np.unravel_index(np.nanargmax(ll),ll.shape)
 print('max ln likelihood: ' + str(np.nanmax(ll)) + ' at w_0 = ' + '%.4f' % cf.w0[w0i] + \
 	', 1 - w_0 - w_1 = ' + '%.4f' % (1 - cf.w0[w0i] - cf.w1[w1i]) + ', w_1 = ' + '%.4f' % cf.w1[w1i] +\
-	', t_mean = ' + '%.4f' % t_mean[ti] + ', t_sigma = ' + '%.4f' % t_sigma[si])
+	', t0_ar = ' + '%.4f' % t0_ar[t0i] + ', t1_ar = ' + '%.4f' % t1_ar[t1i])
 print('min ln likelihood: ' + str(np.nanmin(ll)))
 
 suffix = str(cf.Z).replace('-', 'm').replace('.', 'p') + \
@@ -330,11 +357,11 @@ suffix = str(cf.Z).replace('-', 'm').replace('.', 'p') + \
 
 # package the likelihoods, the ML q values and the rotational distribution standard deviations
 # replace cf.om_sigma with om_sigma when these are inherited
-with open('data/likelihoods/pkl/ll_' + suffix, 'wb') as f:
-	pickle.dump([ll, qm, bm, t_mean, t_sigma, cf.w0, cf.w1, cf.om_sigma], f)
+with open(like_dir + 'll_' + suffix, 'wb') as f:
+	pickle.dump([ll, qm, bm, t0_ar, t1_ar, cf.w0, cf.w1, cf.om_sigma], f)
 
 # package the likelihood factors of individual data points with the corresponding cluster model parameters
-with open('data/likelihoods/pkl/lf_' + suffix, 'wb') as f:
+with open(like_dir + 'lf_' + suffix, 'wb') as f:
 	pickle.dump([LF_max, \
-		qm[w0i, w1i, ti, si], bm[w0i, w1i, ti, si], \
-		t_mean[ti], t_sigma[si], cf.w0[w0i], cf.w1[w1i], cf.om_sigma], f)
+		qm[w0i, w1i, t0i, t1i], bm[w0i, w1i, t0i, t1i], \
+		t0_ar[t0i], t1_ar[t1i], cf.w0[w0i], cf.w1[w1i], cf.om_sigma], f)

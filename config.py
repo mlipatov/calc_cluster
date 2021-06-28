@@ -4,6 +4,7 @@ import numpy as np
 dens_dir = 'data/densities/pkl/'
 obs_dir = 'data/observables/'
 points_dir = 'data/points/'
+like_dir = 'data/likelihoods/pkl/'
 
 # cluster parameters
 A_V = 0.26315789 # should be one of the A_V values on the PARS grid 
@@ -13,6 +14,8 @@ z_str = '_Z' + str(Z).replace('-', 'm').replace('.', 'p') # metallicity string f
 
 ## parameters for the point density calculations
 mix = True # whether to mix grids of different ages or to implement a Gaussian age prior
+amax = 0.4
+a_ar = np.linspace(0, amax, 5)
 
 # minimum standard deviations of the observables:
 # magnitude F555W, color F435W - F814W and vsini in km/s
