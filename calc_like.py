@@ -20,7 +20,7 @@ ndim = ld.obs.shape[1] # number of observable dimensions
 
 if cf.mix: 
 	points_dir = 'data/mix/points/'
-	like_dir = 'data/mix/likelihoods'
+	like_dir = 'data/mix/likelihoods/'
 else:
 	points_dir = cf.points_dir
 	like_dir = cf.like_dir
