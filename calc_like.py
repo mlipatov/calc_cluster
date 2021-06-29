@@ -53,8 +53,9 @@ back[m0] = cf.v0err * cf.std[-1] / (np.sqrt(2 * np.pi) * cf.volume)
 back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * ld.std[mv, -1])) ) / (2 * cf.volume)
 
 if cf.mix:
-	ft = points # the points are already on a grid of age parameters
-	t0_ar = t # the first age-related parameter is the age intercept
+	m = (t >= cf.t0min) & (t <= cf.t0max)
+	ft = points[m] # the points are already on a grid of age parameters
+	t0_ar = t[m] # the first age-related parameter is the age intercept 
 	t1_ar = cf.a_ar # the second age-related parameter is related to the slope
 else:
 	## compute likelihoods on a grid of age, metallicity, 
@@ -361,7 +362,7 @@ with open(like_dir + 'pkl/ll_' + suffix, 'wb') as f:
 	pickle.dump([ll, qm, bm, t0_ar, t1_ar, cf.w0, cf.w1, cf.om_sigma], f)
 
 # package the likelihood factors of individual data points with the corresponding cluster model parameters
-with open(like_dir + 'pkl/lf_' + suffix, 'wb') as f:
+with open(like_dir + 'pkl/	lf_' + suffix, 'wb') as f:
 	pickle.dump([LF_max, \
 		qm[w0i, w1i, t0i, t1i], bm[w0i, w1i, t0i, t1i], \
 		t0_ar[t0i], t1_ar[t1i], cf.w0[w0i], cf.w1[w1i], cf.om_sigma], f)

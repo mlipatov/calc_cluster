@@ -19,8 +19,16 @@ levels = [0.95, 0.65, 0.35]
 level_text = ['95%', '65%', '35%']
 if cf.mix:
 	like_dir = '../data/mix/likelihoods/'
+	t0_label = r'$\log_{10}{t_0}$'
+	t1_label = r'$a$'
+	t0_hat = r'$\log_{10}{\widehat{t}_0}$'
+	t1_hat = r'$\widehat{a}$'
 else:
 	like_dir = '../data/likelihoods/'
+	t0_label = r'$\mu_{\log_{10}{t}}$'
+	t1_label = r'$\sigma_{\log_{10}{t}}$'
+	t0_hat = r'$\widehat{\mu}_{\log_{10}{t}}$'
+	t1_hat = r'$\widehat{\sigma}_{\log_{10}{t}}$'
 
 def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	## estimate the total probability outside the boundaries
@@ -92,7 +100,7 @@ for filepath in filelist:
 	# set maximum log likelihood to zero, convert it to likelihood
 	p_4d = np.exp( ll_4d - np.nanmax(ll_4d) )
 	# indices of ML parameters
-	w0m, w1m, tmm, tsm = np.unravel_index(np.nanargmax(p_4d), p_4d.shape)  
+	w0m, w1m, t0m, t1m = np.unravel_index(np.nanargmax(p_4d), p_4d.shape)  
 	# marginalize the probability over age / rotational parameters in sampled space under uniform prior;
 	# use Riemann sum; treat NAN values as zeros
 	p_rot = np.nansum(p_4d, axis=(2, 3))
@@ -109,18 +117,18 @@ for filepath in filelist:
 	textstr = '\n'.join((		
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',	
-		r'$\widehat{\mu}_{\log_{10}{t}}=' + '%.3f' % t0_ar[tmm] + '$',
-		r'$\widehat{\sigma}_{\log_{10}{t}}=' + '%.3f' % t1_ar[tsm] + '$',
+	    t0_hat + ' = ' + '%.3f' % t0_ar[t0m],
+	    t1_hat + ' = ' + '%.3f' % t1_ar[t1m],
 		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
 		r'$\widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w1[w1m]) +\
 			', ' + '%.2f' % w1[w1m] + '\}$',
-		r'$\widehat{q} = $' + '%.2f' % qm[tmm, tsm] + \
+		r'$\widehat{q} = $' + '%.2f' % qm[t0m, t1m] + \
 			r'$\in$[' + '%.3f' % np.nanmin(qm_4d) + ', ' + '%.3f' % np.nanmax(qm_4d) + ']',
-		r'$\widehat{b} = $' + '%.2f' % bm[tmm, tsm] + \
+		r'$\widehat{b} = $' + '%.2f' % bm[t0m, t1m] + \
 			r'$\in$[' + '%.2f' % np.nanmin(bm_4d) + ', ' + '%.2f' % np.nanmax(bm_4d) + ']'))
 
 	filename = like_dir + 'png/' + base + '_age_prob' + '.png'
-	plot(t1_ar, t0_ar, p_age, r'$\sigma_{\log_{10}{t}}$', r'$\mu_{\log_{10}{t}}$', textstr, filename)
+	plot(t1_ar, t0_ar, p_age, t1_label, t0_label, textstr, filename)
 
 	filename = like_dir + 'png/' + base + '_rotation_prob' + '.png'
 	plot(w1, w0, p_rot, r'$w_1$', r'$w_0$', textstr, filename)

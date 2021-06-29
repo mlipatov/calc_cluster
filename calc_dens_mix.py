@@ -46,7 +46,7 @@ omax = omega0[-1] # maximum omega0 on the grids
 print(str(time.time() - start) + ' seconds.', flush=True)
 # set the parameters for the combining of isochrones
 t0min = t_ar[0] + cf.amax * omax / np.log(10) # minimum intercept parameter
-t0_ar = t_ar[t_ar > t0min] # t0 parameters
+t0_ar = t_ar[(t_ar > t0min) & (t_ar >= cf.t0min) & (t_ar <= cf.t0max)] # t0 parameters
 a_ar = cf.a_ar # slope parameters
 
 # bins in omega according to the age as a function of omega
