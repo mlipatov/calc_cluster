@@ -175,11 +175,12 @@ for each t0:
 						dens = dens
 					density = integrate dens times the data point's residual error kernel
 					density[t0, a, rotation, multiplicity, datum] = density, corrected for de-normalization
+
+save density on (t0, a, rotation, multiplicity, datum)
 => hard disk space:
 	complete densities: 20 Mb x 6 populations x 35 t0 values x 5 a values = 20 Gb
 	point densities: 19 Mb
 => time: 67 seconds x 35 t0 values x 5 a values = 3.3 hours
-
 
 ## L at cluster parameters
 the same as before, except {mu_t, sigma_t} are replaced with {t_0, a}

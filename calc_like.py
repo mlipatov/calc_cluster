@@ -272,8 +272,8 @@ while run < 2:
 						# reduce the factors by the approximate nth root of maximum likelihood
 						lf /= nLmax
 						# multiply the reduced factors together to get the likelihood 
-						# divided by maximum likelihood; to further reduce the effect of underflow,
-						# take products in groups
+						# divided by a constant that is probably the maximum likelihood; 
+						# to further reduce the effect of underflow, take products in groups
 						N = 10
 						products = [np.prod(x, axis=-1) for x in np.array_split(lf, N, axis=-1)]
 						l = np.prod(np.stack(products), axis=0)
@@ -295,8 +295,9 @@ while run < 2:
 						# update the global highest likelihood 
 						# if the highest likelihood at these tm, ts, w0 and w1 is higher;
 						# also update the maximum-likelihood factors of individual data points here
-						if l.max() > LLmax: 
-							LLmax = l.max(); LF_max = lf_max * back 
+						llmax = np.log(l.max()) + ll_corr
+						if llmax > LLmax: 
+							LLmax = llmax; LF_max = lf_max * back 
 						# set the maximum-likelihood q and b to those where
 						# likelihood is maximum on the grid
 						iq, ib = np.unravel_index(np.argmax(l), l.shape)
@@ -347,10 +348,12 @@ while run < 2:
 
 # print('marginalization in q on a grid of w_0, w_1 and b: ' + '%.2f' % (time.time() - start) + ' seconds.')
 w0i, w1i, t0i, t1i = np.unravel_index(np.nanargmax(ll),ll.shape)
-print('max ln likelihood: ' + str(np.nanmax(ll)) + ' at w_0 = ' + '%.4f' % cf.w0[w0i] + \
+print('max ln marginalized likelihood: ' + str(np.nanmax(ll)) + ' at w_0 = ' + '%.4f' % cf.w0[w0i] + \
 	', 1 - w_0 - w_1 = ' + '%.4f' % (1 - cf.w0[w0i] - cf.w1[w1i]) + ', w_1 = ' + '%.4f' % cf.w1[w1i] +\
 	', t0_ar = ' + '%.4f' % t0_ar[t0i] + ', t1_ar = ' + '%.4f' % t1_ar[t1i])
-print('min ln likelihood: ' + str(np.nanmin(ll)))
+print('min ln marginalized likelihood: ' + str(np.nanmin(ll)))
+print('max ln likelihood: ' + '%.4f' % LLmax + ', at q = ' + '%.4f' % qm[w0i, w1i, t0i, t1i] + \
+	' and b = ' +  '%.4f' % bm[w0i, w1i, t0i, t1i])
 
 suffix = str(cf.Z).replace('-', 'm').replace('.', 'p') + \
 	'_os' + '_'.join([('%.2f' % n).replace('.','') for n in cf.om_sigma]) + '.pkl'

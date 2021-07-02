@@ -13,7 +13,7 @@ Z = -0.45 # MIST metallicity
 z_str = '_Z' + str(Z).replace('-', 'm').replace('.', 'p') # metallicity string for printing
 
 ## parameters for the point density calculations
-mix = True # whether to mix grids of different ages or to implement a Gaussian age prior
+mix = True # True if mixing grids of different ages, False if implementing a Gaussian age prior
 
 # minimum standard deviations of the observables:
 # magnitude F555W, color F435W - F814W and vsini in km/s
@@ -80,21 +80,20 @@ mul_pop = ['Unaries', 'Binaries']
 overflow = 'root' # 'root' or 'log': strategy for dealing with product overflow
 
 ## target ranges
-# for the MIST analysis
-# n = 21 # number of steps in each dimension
-# tmin, tmax = [9.154, 9.165] # age
-# smin, smax = [0.036, 0.047] # sigma_age
-# w0min, w0max = [0.025, 0.225] # slow rotator proportion
-# w1min, w1max = [0.4, 0.9] # fast rotator proportion
+if mix: # the enhanced mixing analysis
+	n = 11 # number of steps in each dimension
+	t0min, t0max = [9.224, 9.284]
+	amin, amax = [0, 0.4]
+	a_ar = np.linspace(amin, amax, n)
+	w0min, w0max = [0., 0.1] # slow proportion, mixing
+	w1min, w1max = [0., 0.4] # fast proportion, mixing
+else: # the MIST analysis
+	n = 11 # 21 number of steps in each dimension
+	tmin, tmax = [9.154, 9.165] # age
+	smin, smax = [0.036, 0.047] # sigma_age
+	w0min, w0max = [0.025, 0.225] # slow proportion, age spread
+	w1min, w1max = [0.4, 0.9] # fast proportion, age spread
 
-# for the enhanced mixing analysis
-n = 11 # number of steps in each dimension
-t0min, t0max = [9.224, 9.284]
-amin, amax = [0.2, 0.4]
-a_ar = np.linspace(amin, amax, n)
-w0min, w0max = [0., 0.1] # slow rotator proportion
-w1min, w1max = [0., 0.4] # fast rotator proportion
-
-# grids (age parameter grids determined elsewhere)
+# rotational proportion grids (age parameter grids determined elsewhere)
 w0 = np.linspace(w0min, w0max, n, dtype=float) 
 w1 = np.linspace(w1min, w1max, n, dtype=float)
