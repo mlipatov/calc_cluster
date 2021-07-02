@@ -53,21 +53,27 @@ denorm_err = 9
 # number of coarse vsini grid steps in the standard deviation of kernels assumed for plotting
 plot_err = 1
 
-# slowest rotational population is centered on omega = 0, fastest on omega = 1
-# standard deviations of the rotational populations
-s_slow = 0.5 
-s_middle = 0.2
-s_fast = 0.05 
-a = s_fast / s_slow
-# medium rotating population: 
-# mean is the location where the slow and fast distributions are equal
-if a == 1:
-	om_middle = 1./2
-else:
-	om_middle = ( 1 - a * np.sqrt(1 - 2*(1 - a**2)*np.log(a)*s_slow**2) ) / (1 - a**2)
-om_mean = np.array([0, om_middle, 1])
-om_sigma = np.array([s_slow, s_middle, s_fast])
-om_str = '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma])
+if mix: # if enhanced rotational longevity analysis
+	# implement a single rotational population, with a flat prior
+	om_mean = np.array([1.])
+	om_sigma = np.array([np.inf])
+	om_str = ''
+else: # implement three rotational populations 
+	# slowest rotational population is centered on omega = 0, fastest on omega = 1
+	# standard deviations of the rotational populations
+	s_slow = 0.5 
+	s_middle = 0.2
+	s_fast = 0.05 
+	a = s_fast / s_slow
+	# medium rotating population: 
+	# mean is the location where the slow and fast distributions are equal
+	if a == 1:
+		om_middle = 1./2
+	else:
+		om_middle = ( 1 - a * np.sqrt(1 - 2*(1 - a**2)*np.log(a)*s_slow**2) ) / (1 - a**2)
+	om_mean = np.array([0, om_middle, 1])
+	om_sigma = np.array([s_slow, s_middle, s_fast])
+	om_str = '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma])
 
 # multiplicity populations
 mult = ['unary', 'binary']

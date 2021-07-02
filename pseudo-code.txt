@@ -140,14 +140,13 @@ save highest-likelihood L factors on (datum, )
 
 ------------------------------------------
 
-	Enhanced Mixing
+	Enhanced Rotational Longevity
 
 ------------------------------------------
 
 t0 = the subset of all ages that ensures all omegas are covered (35 ages)
 a = 5 values from 0 to 0.4
-cluster parameters = (w_0, w_1, t0, a)
-
+cluster parameters = (t0, a) + optionally (w_0, w_1)
 
 # densities at data points
 for each t0:
