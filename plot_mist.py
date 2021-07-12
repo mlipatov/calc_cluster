@@ -64,13 +64,21 @@ def plot(texstr, x, y, xlabel, ylabel, filename):
 	for i in range(len(oM0)):
 		sc = ax.scatter(x[:, i, 1], y[:, i, 1], s=1, color=cmap_colors[i], alpha=1.0, label=str(oM0[i]))
 		sideon.append(sc)
-	first_legend = ax.legend(title=r'$\omega_{{\rm MIST},0}$', loc='upper left', bbox_to_anchor=(1.05, 0.55), \
+	first_legend = ax.legend(title=r'$\omega_{\rm Mi}$', loc='upper left', bbox_to_anchor=(1.05, 0.55), \
 		markerscale=5, frameon=False, handles=sideon)
 	ax.add_artist(first_legend)
 	first_legend._legend_box.align = "left"
 	second_legend = ax.legend(title='Inclination', loc='upper left', bbox_to_anchor=(1.05, 0.75), markerscale=5, \
 		frameon=False, handles=[poleon[0], sideon[0]], labels=[str(0), r'$\pi / 2$'])
 	second_legend._legend_box.align = "left"
+	# # sample error bars: these are rather small
+	# if 'v' in xlabel: 
+	# 	x = 200
+	# 	xerr = cf.std[2]
+	# else: 
+	# 	x = 0.9
+	# 	xerr = cf.std[1]
+	# ax.errorbar(x, 19.7, xerr=xerr, yerr=cf.std[0], ecolor='k')
 
 	plot_region(ax, ROI, ROI_kwargs)
 	ax.spines["top"].set_visible(False)
@@ -105,7 +113,8 @@ st.select_age(t)
 
 print('Loading PARS...', end='', flush=True)
 start = time.time()
-with open('data/pars_grid_2.pkl', 'rb') as f: pars = pickle.load(f)
+with open('data/pars_grid_ZM' + str(cf.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'rb') as f: 
+	pars = pickle.load(f)
 print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
 mu.Grid.pars = pars # give a PARS grid reference to the grid class
 # apply the lower mass cut-off for the primaries according the region of interest on the CMD 
@@ -130,7 +139,7 @@ oM0_3d = np.broadcast_to(oM0_3d, sh)
 
 textstr = '\n'.join((
 	r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
-	r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',	
+	r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',	
 	r'$\log_{10}{t}=' + '%.4f' % t + '$',
 	r'$\sigma_{\rm m} = ' + '%.3f' % cf.std[0] + '$',
 	r'$\sigma_{\rm c} = ' + '%.3f' % cf.std[1] + '$'))
@@ -139,9 +148,9 @@ plot(textstr, col,  mag, 'c = F435W - F814W', r'$m = {\rm F555W}$', filename)
 
 textstr = '\n'.join((
 	r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
-	r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',	
+	r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',	
 	r'$\log_{10}{t}=' + '%.4f' % t + '$',
 	r'$\sigma_{\rm m} = ' + '%.3f' % cf.std[0] + '$',
 	r'$\sigma_{\rm v} = ' + '%.0f' % cf.std[2] + '$ km/s'))
 filename = 'mist_vmd_t' + ('%.4f' % t).replace('.', 'p') + '.png'
-plot(textstr, vsini, mag, r'v = $v_{\rm e}\,\sin{i}$', r'$m = {\rm F555W}$', filename)
+plot(textstr, vsini, mag, r'v = $v_{\rm e}\,\sin{i}$, km/s', r'$m = {\rm F555W}$', filename)

@@ -11,7 +11,7 @@ from matplotlib.ticker import FormatStrFormatter
 import pickle, glob, os
 from scipy.interpolate import interp1d
 
-mpl.rcParams['font.size'] = 12
+mpl.rcParams['font.size'] = 14
 # color map
 cmap = plt.cm.get_cmap("Dark2")
 # level and corresponding color bar tick labels
@@ -25,10 +25,10 @@ if cf.mix:
 	t1_hat = r'$\widehat{a}$'
 else:
 	like_dir = '../data/likelihoods/'
-	t0_label = r'$\mu_{\log_{10}{t}}$'
-	t1_label = r'$\sigma_{\log_{10}{t}}$'
-	t0_hat = r'$\widehat{\mu}_{\log_{10}{t}}$'
-	t1_hat = r'$\widehat{\sigma}_{\log_{10}{t}}$'
+	t0_label = r'$\mu_{\rm t}$'
+	t1_label = r'$\sigma_{\rm t}$'
+	t0_hat = r'$\widehat{\mu}_{\rm t}$'
+	t1_hat = r'$\widehat{\sigma}_{\rm t}$'
 
 def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	## estimate the total probability outside the boundaries
@@ -131,4 +131,4 @@ for filepath in filelist:
 	plot(t1_ar, t0_ar, p_age, t1_label, t0_label, textstr, filename)
 
 	filename = like_dir + 'png/' + base + '_rotation_prob' + '.png'
-	plot(w1, w0, p_rot, r'$w_1$', r'$w_0$', textstr, filename)
+	plot(w1, w0, p_rot, r'$w_2$', r'$w_0$', textstr, filename)

@@ -22,8 +22,6 @@ import config as cf
 import numpy as np
 import gc 
 
-ages = 1 # 1 or 2
-
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
 sf.calcVA()
@@ -45,6 +43,7 @@ nt = 17
 it = 100
 
 # use the following if the program stalls
+# ages = 1 # 1 or 2
 # if ages == 1:
 # 	nt = 9 # number of ages to take from the MIST grid
 # 	it = 100 # first index of the MIST ages to take
@@ -77,7 +76,8 @@ stc = st.copy(); stc.select(stc.omega0 == 0)
 
 print('Loading PARS...', end='', flush=True)
 start = time.time()
-with open('data/pars_grid_2.pkl', 'rb') as f: pars = pickle.load(f)
+with open('data/pars_grid_ZM' + str(cf.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'rb') as f: 
+	pars = pickle.load(f)
 print('%.2f' % (time.time() - start) + ' seconds.' + '\n', flush=True)
 mu.Grid.pars = pars # give a PARS grid reference to the grid class
 # apply the lower mass cut-off for the primaries according the region of interest on the CMD 

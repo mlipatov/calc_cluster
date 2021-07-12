@@ -14,7 +14,7 @@ import matplotlib as mpl
 mpl.rcParams['font.size'] = 18
 
 # labels of the independent variables
-xlabels = [r'M_0', 'r', r'\omega_0', r'i']
+xlabels = [r'M_{\rm i}', 'r', r'\omega_{\rm i}', r'i']
 
 # Get the maximum (observable difference / std) in a focal model dimension 
 def get_maxdiff(axis, obs):
@@ -41,7 +41,7 @@ def plot_diff(axis, x, obs, filename):
 	x = (x[1:] + x[:-1]) / 2
 	# difference with maximum modulus in sigmas along the axis
 	maxdiff = get_maxdiff(axis, obs)
-	plt.scatter(x, maxdiff, s=5)
+	plt.scatter(x, maxdiff, s=6)
 	plt.xlabel(r'$' + xlabel + r'$')
 	plt.ylabel(r'$\max{\left|\,\Delta x / \sigma_x\,\right|}$')
 	plt.tight_layout()

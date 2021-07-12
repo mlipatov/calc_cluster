@@ -115,9 +115,11 @@ class Set:
 		self.select(m)
 
 	def select_Z(self, Z):
-		m = (self.logZm == Z)
-		self.select(m)
 		self.Z = Z
+		if Z in self.logZm:		
+			m = (self.logZm == Z)
+			self.select(m)
+		# else: # interpolate in metallicity, possibly keeping age, EEP and omega0 constant			
 
 	def select_age(self, age):
 		self.age = age
