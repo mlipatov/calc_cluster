@@ -83,7 +83,7 @@ rot_pop = ['Slow', 'Intermediate', 'Fast']
 mul_pop = ['Unaries', 'Binaries']
 
 ## parameters for the likelihood calculations
-overflow = 'root' # 'root' or 'log': strategy for dealing with product overflow
+overflow = 'root' # 'root' or 'log': strategy for dealing with product overflow, 'log' takes about twice the time of 'root'
 
 ## target ranges
 if mix: # the enhanced mixing analysis

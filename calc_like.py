@@ -12,6 +12,8 @@ from scipy.special import erf
 from scipy.ndimage import map_coordinates
 from scipy.interpolate import interp1d
 
+print('overflow strategy: ' + cf.overflow)
+
 eps = np.finfo(float).eps # 1e-300
 
 nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
@@ -233,7 +235,7 @@ while run < 2:
 					B = (f1 - f0) / back
 
 					# likelihood factors on a grid of q, b, and data points, 
-					# each divided by the nth root of maximum likelihood; this step and the next take the most time;
+					# this step and the next take the most time;
 					# dimensions: q, b, data point
 					lf = L( q[:, np.newaxis, np.newaxis], b[np.newaxis, :, np.newaxis], \
 							A[np.newaxis, np.newaxis, :], B[np.newaxis, np.newaxis, :])
@@ -255,8 +257,8 @@ while run < 2:
 						ll_qb -= ll_corr # subtract the maximum log likelihood
 						l[m] = np.exp(ll_qb) # compute the likelihood where it is non-zero
 					elif cf.overflow == 'root':
-						# compute precise likelihood at a local maximum on (q, b)
-						# it is probably always unimodal in these variables, though we haven't proven this
+						# compute precise likelihood at a local maximum on (q, b),
+						# assuming likelihood is unimodal in these variables
 						sol = root(dlogL, [0.5, 0.5], args=(A, B))
 						qmax, bmax = sol.x
 						# bring the maximum likelihood parameters back into their range
@@ -266,8 +268,8 @@ while run < 2:
 						elif qmax <= 0: qmax = eps
 						# likelihood factors at maximum-likelihood q and b at individual data points
 						lf_max = L(qmax, bmax, A, B)
-						# the nth root of locally maximum likelihood on (q, b), 
-						# where n is the number of data points;
+						# the nth root of maximum likelihood on (q, b), 
+						# where n is the number of data points
 						nLmax = np.prod(np.power(lf_max, 1. / npts ))	
 						# reduce the factors by the approximate nth root of maximum likelihood
 						lf /= nLmax
@@ -284,7 +286,7 @@ while run < 2:
 					if run == 0: # if this is one of the narrowing runs
 						if np.count_nonzero(l > 0):
 							# get new, possibly narrower bounds on q and b between which the 
-							# likelihood integrates to a high proportion of it1 total 
+							# likelihood integrates to a high proportion of its total 
 							q0new, q1new, b0new, b1new = bounds(l, wq * wb, q, b, lp)
 							# update the bounds determined by this run
 							q0n = min(q0n, q0new)
@@ -295,9 +297,10 @@ while run < 2:
 						# update the global highest likelihood 
 						# if the highest likelihood at these tm, ts, w0 and w1 is higher;
 						# also update the maximum-likelihood factors of individual data points here
-						llmax = np.log(l.max()) + ll_corr
+						qi, bi = np.unravel_index(np.nanargmax(l), l.shape)
+						llmax = np.log(l[qi, bi]) + ll_corr
 						if llmax > LLmax: 
-							LLmax = llmax; LF_max = lf_max * back 
+							LLmax = llmax; LF_max = lf[qi, bi] * back 
 						# set the maximum-likelihood q and b to those where
 						# likelihood is maximum on the grid
 						iq, ib = np.unravel_index(np.argmax(l), l.shape)

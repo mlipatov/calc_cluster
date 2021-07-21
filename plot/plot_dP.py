@@ -36,7 +36,7 @@ for filepath in filelist: # for each combination of age and metallicity
 						textstr = '\n'.join((
 							r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 						    r'$[M/H]_{MIST}=' + str(cf.Z) + '$',
-						    r'$log_{10}{t}=' + '%.4f' % density.age + '$',
+						    r'$t=' + '%.4f' % density.age + '$',
 							str(cf.rot_pop[j]) + r' rotation',
 							r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
 							str(cf.mul_pop[k]),

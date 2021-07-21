@@ -35,7 +35,7 @@ def plot_region(ax, region, region_kwargs):
 	ax.vlines(x, ymin, ymax, **kwargs)
 
 # generic plotting function
-def plot(lf, cmap, textstr, plot_type, base):
+def plot(lf, mask, cmap, textstr, plot_type, base):
 		if plot_type=='cmd':
 			xlab = 'c = F435W - F814W'; xp = ld.color; xi = 1; 
 			ROI = np.delete(cf.ROI, 2, axis=0)
@@ -53,7 +53,7 @@ def plot(lf, cmap, textstr, plot_type, base):
 		ax.invert_yaxis()
 		ax.set_ylabel(r'$m = {\rm F555W}$')
 		ax.set_xlabel(xlab)
-		scatter_plot = ax.scatter(xp, ld.f555w, s=1, c=lf, cmap=cmap, norm=norm, alpha=1.0)
+		scatter_plot = ax.scatter(xp[mask], ld.f555w[mask], s=1, c=lf, cmap=cmap, norm=norm, alpha=1.0)
 		plot_region(ax, ROI, ROI_kwargs)
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
@@ -65,7 +65,7 @@ def plot(lf, cmap, textstr, plot_type, base):
 		ticks = ticker.LinearLocator(5)
 		cb = fig.colorbar(mappable=scatter_plot, ax=ax1, cax=cax, norm=norm, orientation='vertical', ticks=ticks, \
 			format=cb_format, alpha=1.0, shrink=0.6)
-		cb.set_label(label=r'$\Delta\ln{f_{\rm i}}$', fontsize=18, rotation=0, labelpad=18, y=0.65)
+		cb.set_label(label=r'$\Delta\ln{\rho_p}$', fontsize=18, rotation=0, labelpad=18, y=0.65)
 
 		# text box
 		ax.text(1.0, 1.0, textstr, transform=ax.transAxes, fontsize=12,
@@ -80,6 +80,8 @@ for filepath in filelist:
 	with open(filepath, 'rb') as f:
 		LF_max, qmax, bmax, tmax, smax, w0max, w1max, om_sigma = pickle.load(f)
 
+	mask = ld.obs[:, -1] > 0
+	LF_max = LF_max[mask] # plot only the factors for v > 0 measurements
 	LF_max[LF_max == 0] = 1e-300
 	lf = np.log(LF_max)
 	lf -= lf.max()
@@ -90,10 +92,10 @@ for filepath in filelist:
 	# text 
 	textstr = '\n'.join((
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
-		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',	
-		r'$\mu_{\log_{10}{t}} = \widehat{\mu}_{\log_{10}{t}}=' + '%.3f' % tmax + '$',
-		r'$\sigma_{\log_{10}{t}} = \widehat{\sigma}_{\log_{10}{t}}=' + '%.3f' % smax + '$',
-		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
+		r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',	
+		r'$\mu_{t} = \widehat{\mu}_{t}=' + '%.3f' % tmax + '$',
+		r'$\sigma_{t} = \widehat{\sigma}_{t}=' + '%.3f' % smax + '$',
+		r'$\sigma_{\omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
 		r'w = $\widehat{w} = \{' + '%.2f' % w0max + ', ' + '%.2f' % (1 - w0max - w1max) +\
 			', ' + '%.2f' % w1max + '\}$',
 		r'q = $\widehat{q} = $' + '%.2f' % qmax,
@@ -101,4 +103,4 @@ for filepath in filelist:
 
 	print('Plotting...')
 	for plot_type in ['cmd', 'vmd']:
-		plot(lf, cmap, textstr, plot_type, base)
+		plot(lf, mask, cmap, textstr, plot_type, base)

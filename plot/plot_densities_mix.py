@@ -37,11 +37,11 @@ def plot_region(ax, region, region_kwargs):
 def plot(density, cmap, textstr, plot_type, base):
 	if plot_type=='cmd':
 		xlab = 'c = F435W - F814W'; xp = ld.color; xi = 1 
-		cmap_lab = r'$\ln{\frac{dp}{dm\,dc}}$'
+		cmap_lab = r'$\ln{\frac{{\rm d}\rho}{{\rm d}m\,{\rm d}c}}$'
 		cmap_min = np.log(0.01); cmap_max = np.log(35); cb_format = '%.1f'
 	elif plot_type=='vmd':
 		xlab = r'$v = v_{\rm e}\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; xi = 2 
-		cmap_lab = r'$\ln{\frac{dp}{dm\,dv}}$'
+		cmap_lab = r'$\ln{\frac{{\rm d}\rho}{{\rm d}m\,{\rm d}v}}$'
 		cmap_min = np.log(1e-10); cmap_max = np.log(0.2); cb_format = '%.1f'
 	dens = density.density();
 	dens[dens == 0] = 1e-300
@@ -100,7 +100,7 @@ for filepath in filelist:
 		'Enhanced mixing',
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
-	    r'$\log_{10}{t_0}=' + str(t0) + '$',
+	    r'$\t_0=' + str(t0) + '$',
 	    r'$a=' + str(a) + '$',
 		str(cf.rot_pop[j]) + r' rotation',
 		r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
