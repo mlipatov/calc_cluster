@@ -113,7 +113,7 @@ for filepath in filelist:
 			textstr = '\n'.join((
 				r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 				r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
-			    r'$t=' + base.split('_')[1].replace('p','.')[1:] + '$',
+			    r'$\log{\,t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
 				str(cf.rot_pop[j]) + r' rotation',
 				r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
 				str(cf.mul_pop[k])))

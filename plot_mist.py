@@ -140,7 +140,7 @@ oM0_3d = np.broadcast_to(oM0_3d, sh)
 textstr = '\n'.join((
 	r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 	r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',	
-	r'$\log_{10}{t}=' + '%.4f' % t + '$',
+	r'$\log{\,t}=' + '%.4f' % t + '$',
 	r'$\sigma_{\rm m} = ' + '%.3f' % cf.std[0] + '$',
 	r'$\sigma_{\rm c} = ' + '%.3f' % cf.std[1] + '$'))
 filename = 'mist_cmd_t' + ('%.4f' % t).replace('.', 'p') + '.png'
@@ -149,7 +149,7 @@ plot(textstr, col,  mag, 'c = F435W - F814W', r'$m = {\rm F555W}$', filename)
 textstr = '\n'.join((
 	r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 	r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',	
-	r'$\log_{10}{t}=' + '%.4f' % t + '$',
+	r'$\log{\,t}=' + '%.4f' % t + '$',
 	r'$\sigma_{\rm m} = ' + '%.3f' % cf.std[0] + '$',
 	r'$\sigma_{\rm v} = ' + '%.0f' % cf.std[2] + '$ km/s'))
 filename = 'mist_vmd_t' + ('%.4f' % t).replace('.', 'p') + '.png'

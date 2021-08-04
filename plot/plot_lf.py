@@ -65,7 +65,7 @@ def plot(lf, mask, cmap, textstr, plot_type, base):
 		ticks = ticker.LinearLocator(5)
 		cb = fig.colorbar(mappable=scatter_plot, ax=ax1, cax=cax, norm=norm, orientation='vertical', ticks=ticks, \
 			format=cb_format, alpha=1.0, shrink=0.6)
-		cb.set_label(label=r'$\Delta\ln{\rho_p}$', fontsize=18, rotation=0, labelpad=18, y=0.65)
+		cb.set_label(label=r'$\Delta\ln{\varrho_p}$', fontsize=18, rotation=0, labelpad=18, y=0.65)
 
 		# text box
 		ax.text(1.0, 1.0, textstr, transform=ax.transAxes, fontsize=12,
@@ -80,8 +80,9 @@ for filepath in filelist:
 	with open(filepath, 'rb') as f:
 		LF_max, qmax, bmax, tmax, smax, w0max, w1max, om_sigma = pickle.load(f)
 
-	mask = ld.obs[:, -1] > 0
-	LF_max = LF_max[mask] # plot only the factors for v > 0 measurements
+	mask = np.ones(len(ld.obs[:, -1]), dtype=bool) # plot all the factors
+	# mask = ld.obs[:, -1] > 0 # plot only the factors for v > 0 measurements
+	LF_max = LF_max[mask] 
 	LF_max[LF_max == 0] = 1e-300
 	lf = np.log(LF_max)
 	lf -= lf.max()

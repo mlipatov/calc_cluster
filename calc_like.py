@@ -12,8 +12,6 @@ from scipy.special import erf
 from scipy.ndimage import map_coordinates
 from scipy.interpolate import interp1d
 
-print('overflow strategy: ' + cf.overflow)
-
 eps = np.finfo(float).eps # 1e-300
 
 nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
@@ -160,7 +158,7 @@ def bounds(l, w, q, b, lp):
 	fcp = du.CI_func(l, weights=w)
 	# if the domain of the spline function includes the requested likelihood proportion
 	if fcp.x.min() < lp and fcp.x.max() > lp:  
-		# indices of points above a certain likelihood that contain 99.99% of likelihood
+		# indices of points above a certain likelihood that contain the likelihood proportion
 		ind = np.where(l >= float(fcp(lp)))
 		iq = [ind[0].min(), ind[0].max()]
 		ib = [ind[1].min(), ind[1].max()]
@@ -211,6 +209,7 @@ while run < 2:
 		n = 1
 		# global highest log likelihood on q, b, w_0, w_1, t0_ar and t1_ar
 		LLmax = -np.inf
+
 	# construct q and b weights according to the variable-step trapezoidal rule;
 	# dimensions: q, b
 	wq = du.trap(q)[:, np.newaxis]
@@ -239,7 +238,7 @@ while run < 2:
 					# dimensions: q, b, data point
 					lf = L( q[:, np.newaxis, np.newaxis], b[np.newaxis, :, np.newaxis], \
 							A[np.newaxis, np.newaxis, :], B[np.newaxis, np.newaxis, :])
-						
+
 					### likelihood vs q and b, divided by the maximum likelihood; 
 					### two options to prevent overflow
 					if cf.overflow == 'log': 
@@ -284,7 +283,7 @@ while run < 2:
 
 					lp = 0.999 # proportion of likelihood that should be within the fine integration area
 					if run == 0: # if this is one of the narrowing runs
-						if np.count_nonzero(l > 0):
+						if np.count_nonzero(l > 0) > 0:
 							# get new, possibly narrower bounds on q and b between which the 
 							# likelihood integrates to a high proportion of its total 
 							q0new, q1new, b0new, b1new = bounds(l, wq * wb, q, b, lp)

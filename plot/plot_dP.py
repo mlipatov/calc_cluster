@@ -9,7 +9,7 @@ import matplotlib as mpl
 
 mpl.rcParams['font.size'] = 16
 dims = ['mag', 'col']
-dimensions = ['magnitude', 'color']
+dimensions = ['m', 'c']
 
 filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
 prefix = '../data/normalization/'
@@ -30,20 +30,20 @@ for filepath in filelist: # for each combination of age and metallicity
 						ax.plot(xplot, dP_spline(xplot), c='g')
 						ax.scatter(x, y, facecolors='w', edgecolors='k')
 						ax.set_ylabel(r'$\delta$') #, labelpad=20)
-						ax.set_xlabel(r"$\sigma'$")
+						ax.set_xlabel(r"$\sigma'_{\!\!" + dimensions[axis] + "}$")
 						ax.spines["top"].set_visible(False)
 						ax.spines["right"].set_visible(False)
 						textstr = '\n'.join((
 							r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 						    r'$[M/H]_{MIST}=' + str(cf.Z) + '$',
-						    r'$t=' + '%.4f' % density.age + '$',
+						    r'$\log{\,t}=' + '%.4f' % density.age + '$',
 							str(cf.rot_pop[j]) + r' rotation',
 							r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
-							str(cf.mul_pop[k]),
-							r'Dimension: ' + dimensions[axis] ))
+							str(cf.mul_pop[k]) ))
+							# r'Dimension: ' + dimensions[axis] ))
 						if y[-1] > y[0]: txt_x = 0.15
 						else: txt_x = 0.70
-						ax.text(txt_x, 1.05, textstr, fontsize=12, transform=ax.transAxes, horizontalalignment='left',
+						ax.text(txt_x, 1.05, textstr, transform=ax.transAxes, horizontalalignment='left',
 						        verticalalignment='top', bbox=dict(facecolor='w', alpha=0.0, edgecolor='w'))
 						plt.tight_layout()
 						# write plot file

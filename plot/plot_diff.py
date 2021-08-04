@@ -11,7 +11,14 @@ import matplotlib as mpl
 # import pickle, glob, os
 # from scipy.interpolate import interp1d
 
-mpl.rcParams['font.size'] = 18
+# mpl.rcParams['font.size'] = 18
+
+plt.rcParams.update({
+	"text.usetex": True,
+	"font.family": "serif", 
+	"font.serif": "Computer Modern",
+    "font.size": 20
+})
 
 # labels of the independent variables
 xlabels = [r'M_{\rm i}', 'r', r'\omega_{\rm i}', r'i']

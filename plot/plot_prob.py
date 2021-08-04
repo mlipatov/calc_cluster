@@ -39,10 +39,10 @@ def plot(x, y, p, xlabel, ylabel, textstr, filename):
 		c += len(p0.flatten()); c += len(p1.flatten())
 	# the 2D normal distribution with zero covariance is p(x) = (1 / (2 pi)) exp(-x^2 / 2)
 	# and the cumulative probability within x is F(x) = 1 - exp(-x^2 / 2), so that the cumulative density
-	# as a function of the probability density is F(p) = 1 - 2 pi p;
+	# as a function of the probability density is F(p / p_max) = 1 - p / p_max;
 	# assume that the domain is 2D, and estimate the probability outside the boundaries as that which 
 	# we expect from a 2D normal distribution outside the boundaries' average relative probability density
-	out = 2 * np.pi * (s / c) / p.max()
+	out = (s / c) / p.max()
 	f = du.CI_func(p, outside=out)
 
 	fig, [ax, ax1] = plt.subplots(ncols=2, gridspec_kw={'width_ratios': [8, 3]})
@@ -75,7 +75,7 @@ def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	ax1.axis('off')
 	cax = fig.add_axes([0.7, 0.17, 0.03, 0.3])	
 	cb = fig.colorbar(cs, ax=ax1, cax=cax, orientation='vertical', extendfrac=0.5) # format='%.1f',
-	cb.set_label(label=r'$\int{d P}$', fontsize=18, rotation=0, labelpad=25, y=0.65)
+	cb.set_label(label=r'$\int{{\rm d} P}$', fontsize=18, rotation=0, labelpad=25, y=0.65)
 	cb.ax.set_yticklabels(level_text)  # vertically oriented colorbar
 	cb.ax.invert_yaxis()
 
