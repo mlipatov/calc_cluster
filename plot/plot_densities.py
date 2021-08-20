@@ -10,7 +10,7 @@ import matplotlib as mpl
 from matplotlib import ticker
 import pickle, glob, os
 
-mpl.rcParams['font.size'] = 12
+mpl.rcParams['font.size'] = 14
 ROI_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
 # color maps
 cmapBig = mpl.cm.get_cmap('afmhot_r', 512)
@@ -71,7 +71,7 @@ def plot(density, cmap, textstr, plot_type, base):
 		cb.set_label(label=cmap_lab, fontsize=18, rotation=0, labelpad=35, y=0.65)
 
 		# text box
-		ax.text(1.0, 1.0, textstr, transform=ax.transAxes, fontsize=14,
+		ax.text(1.0, 1.0, textstr, transform=ax.transAxes, # fontsize=14,
 		        verticalalignment='top', bbox=dict(facecolor='w', alpha=1.0, edgecolor='w'))
 
 		plt.savefig('../data/densities/' + plot_type + '/' + base + '_om' + \

@@ -12,7 +12,7 @@ import matplotlib as mpl
 from matplotlib import ticker
 import pickle, glob, os
 
-mpl.rcParams['font.size'] = 12
+mpl.rcParams['font.size'] = 14
 ROI_kwargs = {'facecolor':'none', 'edgecolor':'grey', 'alpha':0.5, 'lw':1}
 # color maps
 cmapBig = mpl.cm.get_cmap('viridis', 512)

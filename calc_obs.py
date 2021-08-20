@@ -185,6 +185,8 @@ for it in range(it_0, len(t)):
 		d = np.nansum(diff * numbers[:, np.newaxis], axis=0) / np.nansum(numbers)
 		print('magnitude, color, vsini minimum-error distances from the previous isochrone: ' +\
 			', '.join('%.4f' % x for x in d/cf.std))
+		print('EEPs: ' + np.array2string(EEPrange))
+		print('distances from the previous isochrone at all EEPs: ' + np.array2string(diff))
 
 	# make copies of observables and EEPs for the next iteration
 	if it > it_0: del obs_binary_prev # mark the old version of previous observables for garbage collection

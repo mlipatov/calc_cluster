@@ -11,7 +11,7 @@ from matplotlib.ticker import FormatStrFormatter
 import pickle, glob, os
 from scipy.interpolate import interp1d
 
-mpl.rcParams['font.size'] = 14
+mpl.rcParams['font.size'] = 16
 # color map
 cmap = plt.cm.get_cmap("Dark2")
 # level and corresponding color bar tick labels
@@ -66,8 +66,8 @@ def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	line = ax.plot([x.max(), x.max()], [y.min() + eps, yv_max], 'k--', lw=1)[0]
 	line.set_clip_on(False)
 
-	ax.set_xlabel(xlabel, fontsize=14)
-	ax.set_ylabel(ylabel, fontsize=14)
+	ax.set_xlabel(xlabel)
+	ax.set_ylabel(ylabel)
 	ax.spines["top"].set_visible(False)
 	ax.spines["right"].set_visible(False)
 
