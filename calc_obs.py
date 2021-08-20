@@ -22,6 +22,8 @@ import config as cf
 import numpy as np
 import gc 
 
+plot_model_grids = False # whether to plot spacing in each theta-prime dimension
+
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
 sf.calcVA()
