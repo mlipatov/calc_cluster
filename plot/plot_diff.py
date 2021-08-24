@@ -6,12 +6,6 @@ import glob, pickle
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib as mpl
-# from matplotlib import ticker
-# from matplotlib.ticker import FormatStrFormatter
-# import pickle, glob, os
-# from scipy.interpolate import interp1d
-
-# mpl.rcParams['font.size'] = 18
 
 plt.rcParams.update({
 	"text.usetex": True,

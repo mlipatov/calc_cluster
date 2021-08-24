@@ -41,7 +41,7 @@ def plot(density, cmap, textstr, plot_type, base):
 		elif plot_type=='vmd':
 			xlab = r'$v = v_{\rm e}\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; xi = 2 
 			cmap_lab = r'$\ln{\frac{{\rm d}\rho}{{\rm d}m\,{\rm d}v}}$'
-			cmap_min = np.log(1e-10); cmap_max = np.log(0.2); cb_format = '%.1f'
+			cmap_min = np.log(5.5e-05); cmap_max = np.log(0.2); cb_format = '%.1f'
 		dens = density.density();
 		dens[dens == 0] = 1e-300
 		dens = np.log(dens)
