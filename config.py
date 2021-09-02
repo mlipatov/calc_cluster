@@ -82,6 +82,9 @@ mult = ['unary', 'binary']
 rot_pop = ['Slow', 'Intermediate', 'Fast']
 mul_pop = ['Unaries', 'Binaries']
 
+# boundaries between vsini values roughly corresponding to boundaries between rotational populations
+vsini_bins = [0, 25, 75, np.inf]
+
 ## parameters for the likelihood calculations
 overflow = 'root' # 'root' or 'log': strategy for dealing with product overflow, 'log' takes about twice the time of 'root'
 

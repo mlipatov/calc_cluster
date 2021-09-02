@@ -33,15 +33,19 @@ def plot_region(ax, region, region_kwargs):
 	ax.vlines(x, ymin, ymax, **kwargs)
 
 # generic plotting function
-def plot(density, cmap, textstr, plot_type, base):
+def plot(density, cmap, textstr, j, plot_type, base):
 		if plot_type=='cmd':
 			xlab = 'c = F435W - F814W'; xp = ld.color; xi = 1 
 			cmap_lab = r'$\ln{\frac{{\rm d}\rho}{{\rm d}m\,{\rm d}c}}$'
 			cmap_min = np.log(0.01); cmap_max = np.log(35); cb_format = '%.1f'
 		elif plot_type=='vmd':
-			xlab = r'$v = v_{\rm e}\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; xi = 2 
+			xlab = r'$v = v_{\rm e}\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; 
+			xp[xp == -1] = 0; xi = 2 
 			cmap_lab = r'$\ln{\frac{{\rm d}\rho}{{\rm d}m\,{\rm d}v}}$'
 			cmap_min = np.log(5.5e-05); cmap_max = np.log(0.2); cb_format = '%.1f'
+		# mask for scatter that depends on rotational population
+		mask = (ld.vsini >= cf.vsini_bins[j]) & (ld.vsini < cf.vsini_bins[j+1])
+
 		dens = density.density();
 		dens[dens == 0] = 1e-300
 		dens = np.log(dens)
@@ -56,14 +60,14 @@ def plot(density, cmap, textstr, plot_type, base):
 		ax.invert_yaxis()
 		ax.set_ylabel(r'$m = {\rm F555W}$')
 		ax.set_xlabel(xlab)
-		ax.scatter(xp, ld.f555w, s=1, c='k', alpha=1.0, lw=0, marker=',')
+		ax.scatter(xp[mask], ld.f555w[mask], s=3, c='k', alpha=1.0, lw=0, marker='o')
 		plot_region(ax, density.ROI, ROI_kwargs)
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
 		
 		# color bar
 		ax1.axis('off')
-		cax = fig.add_axes([0.7, 0.15, 0.03, 0.4])
+		cax = fig.add_axes([0.7, 0.13, 0.03, 0.4])
 		
 		ticks = ticker.LinearLocator(5)
 		cb = fig.colorbar(mappable=pcm, ax=ax1, cax=cax, norm=norm, orientation='vertical', ticks=ticks, \
@@ -109,14 +113,24 @@ for filepath in filelist:
 			density_vsini.normalize()
 			densities_vsini[j][k][it] = density_vsini
 
-			# text 
+			## text 
+			# text for scatter that depends on rotational population
+			if np.isinf(cf.vsini_bins[j+1]): 
+				upper_bound_text = '\infty'
+			else:
+				upper_bound_text = str(cf.vsini_bins[j+1])
+			vsini_text = r'$v_{\rm e}\,\sin{i}\, \in \,[' + str(cf.vsini_bins[j]) + ',' + \
+				upper_bound_text + ')\,$' + 'km/s'
+
 			textstr = '\n'.join((
 				r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 				r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
 			    r'$\log{\,t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
 				str(cf.rot_pop[j]) + r' rotation',
 				r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
-				str(cf.mul_pop[k])))
+				str(cf.mul_pop[k]),
+				vsini_text
+				))
 				#, $\omega = $' + str(densities[k][3])))
 			    # r'$A_V=%.2f$' % (cf.A_V, )))
 
@@ -124,7 +138,7 @@ for filepath in filelist:
 			for plot_type in ['cmd', 'vmd']:
 				if plot_type=='cmd': density_plot = density_cmd
 				elif plot_type=='vmd': density_plot = density_vsini
-				plot(density_plot, cmap_hot, textstr, plot_type, base)
+				plot(density_plot, cmap_hot, textstr, j, plot_type, base)
 	it += 1
 
 ## plot the minimum-error density at maximum-likelihood cluster age parameters
@@ -142,7 +156,16 @@ for j in range(len(densities_cmd)):
 			densities_vsini[j][k][it].dens *= t_pr[it]
 		density_cmd = du.add(densities_cmd[j][k])
 		density_vsini = du.add(densities_vsini[j][k])
-		# text 
+		
+		## text
+		# text for scatter that depends on rotational population
+		if np.isinf(cf.vsini_bins[j+1]): 
+			upper_bound_text = '\infty'
+		else:
+			upper_bound_text = str(cf.vsini_bins[j+1])
+		vsini_text = r'$v_{\rm e}\,\sin{i}\, \in \,[' + str(cf.vsini_bins[j]) + ',' + \
+			upper_bound_text + ')\,$' + 'km/s'
+
 		textstr = '\n'.join((
 		    r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 		    r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
@@ -150,10 +173,12 @@ for j in range(len(densities_cmd)):
 		    r'$\sigma_{t}=' + '%.3f' % t_std + '$',
 			str(cf.rot_pop[j]) + r' rotation',
 			r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
-			str(cf.mul_pop[k])))
+			str(cf.mul_pop[k]),
+			vsini_text
+			))
 
 		print('Plotting...')
 		for plot_type in ['cmd', 'vmd']:
 			if plot_type=='cmd': density_plot = density_cmd
 			elif plot_type=='vmd': density_plot = density_vsini
-			plot(density_plot, cmap_hot, textstr, plot_type, 'density_dist')
+			plot(density_plot, cmap_hot, textstr, j, plot_type, 'density_dist')

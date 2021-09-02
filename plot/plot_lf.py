@@ -40,7 +40,8 @@ def plot(lf, mask, cmap, textstr, plot_type, base):
 			xlab = 'c = F435W - F814W'; xp = ld.color; xi = 1; 
 			ROI = np.delete(cf.ROI, 2, axis=0)
 		elif plot_type=='vmd':
-			xlab = r'$v = v_{\rm e}\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; xi = 2; 
+			xlab = r'$v = v_{\rm e}\,\sin{i}, \,\mathrm{km/s}$'; xp = ld.vsini; 
+			xp[xp == -1] == 0; xi = 2; 
 			ROI = np.delete(cf.ROI, 1, axis=0)
 
 		cmap_min = lf.min(); cmap_max = lf.max(); cb_format = '%.1f'

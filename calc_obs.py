@@ -180,7 +180,7 @@ for it in range(it_0, len(t)):
 			obs1 = obs1[~np.isnan(obs1[:, 0])]
 			if obs0.shape[0] > 0 and obs1.shape[0] > 0: 
 				diff_means = np.mean(obs1, axis=0) - np.mean(obs0, axis=0)
-				numbers.append(obs0.shape[0] + obs1.shape[0])
+				numbers.append(obs0.shape[0] * obs1.shape[0]) # number of model pairs
 				diff.append(diff_means)
 		numbers = np.array(numbers)
 		diff = np.array(diff)
