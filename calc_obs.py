@@ -42,7 +42,7 @@ st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 nt = 17
 it = 100
 
-use the following if the program stalls
+# use the following if the program stalls
 ages = 1 # 1 or 2
 if ages == 1:
 	nt = 9 # number of ages to take from the MIST grid

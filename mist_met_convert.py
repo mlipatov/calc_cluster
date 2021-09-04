@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 iodir = './data/'
 
 ## this code is for interpolating at one specific MIST metallicity value on the PARS grid
-
+print("solar metallicity is " + str(ut.Zsun))
 # Load the original PARS grid
 print('Loading PARS...')
 start = time.time()
