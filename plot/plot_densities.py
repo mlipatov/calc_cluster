@@ -43,8 +43,9 @@ def plot(density, cmap, textstr, j, plot_type, base):
 			xp[xp == -1] = 0; xi = 2 
 			cmap_lab = r'$\ln{\frac{{\rm d}\rho}{{\rm d}m\,{\rm d}v}}$'
 			cmap_min = np.log(5.5e-05); cmap_max = np.log(0.2); cb_format = '%.1f'
-		# mask for scatter that depends on rotational population
-		mask = (ld.vsini >= cf.vsini_bins[j]) & (ld.vsini < cf.vsini_bins[j+1])
+
+		# # mask for scatter that depends on rotational population
+		# mask = (ld.vsini >= cf.vsini_bins[j]) & (ld.vsini < cf.vsini_bins[j+1])
 
 		dens = density.density();
 		dens[dens == 0] = 1e-300
@@ -60,7 +61,8 @@ def plot(density, cmap, textstr, j, plot_type, base):
 		ax.invert_yaxis()
 		ax.set_ylabel(r'$m = {\rm F555W}$')
 		ax.set_xlabel(xlab)
-		ax.scatter(xp[mask], ld.f555w[mask], s=3, c='k', alpha=1.0, lw=0, marker='o')
+		# ax.scatter(xp[mask], ld.f555w[mask], s=3, c='k', alpha=1.0, lw=0, marker='o')
+		ax.scatter(xp, ld.f555w, s=1, c='k', alpha=1.0, lw=0, marker=',')
 		plot_region(ax, density.ROI, ROI_kwargs)
 		ax.spines["top"].set_visible(False)
 		ax.spines["right"].set_visible(False)
@@ -128,8 +130,8 @@ for filepath in filelist:
 			    r'$\log{\,t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
 				str(cf.rot_pop[j]) + r' rotation',
 				r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
-				str(cf.mul_pop[k]),
-				vsini_text
+				str(cf.mul_pop[k]) #,
+				# vsini_text
 				))
 				#, $\omega = $' + str(densities[k][3])))
 			    # r'$A_V=%.2f$' % (cf.A_V, )))
@@ -173,8 +175,8 @@ for j in range(len(densities_cmd)):
 		    r'$\sigma_{t}=' + '%.3f' % t_std + '$',
 			str(cf.rot_pop[j]) + r' rotation',
 			r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
-			str(cf.mul_pop[k]),
-			vsini_text
+			str(cf.mul_pop[k]) #,
+			# vsini_text
 			))
 
 		print('Plotting...')

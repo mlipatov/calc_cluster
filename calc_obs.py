@@ -22,8 +22,6 @@ import config as cf
 import numpy as np
 import gc 
 
-plot_model_grids = False # whether to plot spacing in each theta-prime dimension
-
 # pre-compute Roche model volume versus PARS's omega
 # and PARS's omega versus MESA's omega
 sf.calcVA()
@@ -44,14 +42,14 @@ st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 nt = 17
 it = 100
 
-# use the following if the program stalls
-# ages = 1 # 1 or 2
-# if ages == 1:
-# 	nt = 9 # number of ages to take from the MIST grid
-# 	it = 100 # first index of the MIST ages to take
-# elif ages == 2: 
-# 	nt = 9 # number of ages to take from the MIST grid
-# 	it = 108 # first index of the MIST ages to take
+use the following if the program stalls
+ages = 1 # 1 or 2
+if ages == 1:
+	nt = 9 # number of ages to take from the MIST grid
+	it = 100 # first index of the MIST ages to take
+elif ages == 2: 
+	nt = 9 # number of ages to take from the MIST grid
+	it = 108 # first index of the MIST ages to take
 
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.159
@@ -114,12 +112,6 @@ for it in range(it_0, len(t)):
 		grid = mu.refine_coarsen(st1, o0=omega0_grid, inc=inc_grid)
 	print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
 
-	# plot maximum differences versus model parameter
-	if plot_model_grids:
-		grid.plot_diff(0, 'data/model_grids/png/diff_vs_Mini' + t_str + cf.z_str + '.png')
-		grid.plot_diff(1, 'data/model_grids/png/diff_vs_omega0' + t_str + cf.z_str + '.png')
-		grid.plot_diff(2, 'data/model_grids/png/diff_vs_inc' + t_str + cf.z_str + '.png')
-	# get the EEPs of models on the grid
 	EEP = grid.get_EEP()
 
 	start = time.time(); print('combining observables...', flush=True)

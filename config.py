@@ -1,5 +1,9 @@
 import numpy as np
 
+# helper function: convert a float to a string with a certain number of decimal places
+def fstr(x, d):
+	return ('%.' + str(d) + 'f') % np.around(x, d)
+
 # directories
 dens_dir = 'data/densities/pkl/'
 obs_dir = 'data/observables/'

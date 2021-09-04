@@ -120,12 +120,12 @@ for filepath in filelist:
 	    t0_hat + ' = ' + '%.3f' % t0_ar[t0m],
 	    t1_hat + ' = ' + '%.3f' % t1_ar[t1m],
 		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
-		r'$\widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w1[w1m]) +\
-			', ' + '%.2f' % w1[w1m] + '\}$',
-		r'$\widehat{q} = $' + '%.2f' % qm[t0m, t1m] + \
-			r'$\in$[' + '%.3f' % np.nanmin(qm_4d) + ', ' + '%.3f' % np.nanmax(qm_4d) + ']',
-		r'$\widehat{b} = $' + '%.2f' % bm[t0m, t1m] + \
-			r'$\in$[' + '%.2f' % np.nanmin(bm_4d) + ', ' + '%.2f' % np.nanmax(bm_4d) + ']'))
+		r'$\widehat{w} = \{' + cf.fstr(w0[w0m], 2) + ', ' + cf.fstr(1 - w0[w0m] - w1[w1m], 2) +\
+			', ' + cf.fstr(w1[w1m], 2) + '\}$',
+		r'$\widehat{q} = $' + cf.fstr(qm[t0m, t1m], 2) + \
+			r'$\in$[' + cf.fstr(np.nanmin(qm_4d), 3) + ', ' + cf.fstr(np.nanmax(qm_4d), 3) + ']',
+		r'$\widehat{b} = $' + cf.fstr(bm[t0m, t1m], 2) + \
+			r'$\in$[' + cf.fstr(np.nanmin(bm_4d), 2) + ', ' + cf.fstr(np.nanmax(bm_4d), 2) + ']'))
 
 	filename = like_dir + 'png/' + base + '_age_prob' + '.png'
 	plot(t1_ar, t0_ar, p_age, t1_label, t0_label, textstr, filename)

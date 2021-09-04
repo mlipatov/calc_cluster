@@ -512,20 +512,6 @@ class Grid:
 		EEP = griddata( tuple(points), st.EEP, tuple(xi), method='linear')
 		return EEP
 
-	def plot_diff(self, axis, filename):
-		label = self.lvars[axis]
-		varname = self.ivars[axis]
-		var = getattr(self, varname) # get the model parameter list
-		# set it to midpoints between models
-		var = (var[1:] + var[:-1]) / 2
-		# difference with maximum modulus in sigmas along the axis
-		maxdiff = self.get_maxdiff(axis)
-		plt.scatter(var, maxdiff, s=2)
-		plt.xlabel(r'$' + label + r'$')
-		plt.ylabel(r'$\max{\left|\,\Delta x / \sigma_x\,\right|}$')
-		plt.savefig(filename, dpi=200)
-		plt.close()
-
 # companion magnitudes on a grid of initial mass of the primary and binary mass ratio
 # Inputs:
 #	mass ratio grid

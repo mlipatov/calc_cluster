@@ -93,15 +93,15 @@ for filepath in filelist:
 		
 	# text 
 	textstr = '\n'.join((
-		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
+		r'$A_{\rm V}=' + cf.fstr(cf.A_V, 2) + '$',
 		r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',	
-		r'$\mu_{t} = \widehat{\mu}_{t}=' + '%.3f' % tmax + '$',
-		r'$\sigma_{t} = \widehat{\sigma}_{t}=' + '%.3f' % smax + '$',
-		r'$\sigma_{\omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
-		r'w = $\widehat{w} = \{' + '%.2f' % w0max + ', ' + '%.2f' % (1 - w0max - w1max) +\
-			', ' + '%.2f' % w1max + '\}$',
-		r'q = $\widehat{q} = $' + '%.2f' % qmax,
-		r'b = $\widehat{b} = $' + '%.2f' % bmax))
+		r'$\mu_{t} = \widehat{\mu}_{t}=' + cf.fstr(tmax, 3) + '$',
+		r'$\sigma_{t} = \widehat{\sigma}_{t}=' + cf.fstr(smax, 3) + '$',
+		r'$\sigma_{\omega} = \{' + ', '.join([cf.fstr(n, 2) for n in om_sigma]) + '\}$',
+		r'w = $\widehat{w} = \{' + cf.fstr(w0max, 2) + ', ' + cf.fstr(1 - w0max - w1max, 2) +\
+			', ' + cf.fstr(w1max, 2) + '\}$',
+		r'q = $\widehat{q} = $' + cf.fstr(qmax, 2),
+		r'b = $\widehat{b} = $' + cf.fstr(bmax, 2)))
 
 	print('Plotting...')
 	for plot_type in ['cmd', 'vmd']:

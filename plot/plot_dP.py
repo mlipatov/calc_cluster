@@ -35,7 +35,7 @@ for filepath in filelist: # for each combination of age and metallicity
 						ax.spines["right"].set_visible(False)
 						textstr = '\n'.join((
 							r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
-						    r'$[M/H]_{MIST}=' + str(cf.Z) + '$',
+						    r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
 						    r'$\log{\,t}=' + '%.4f' % density.age + '$',
 							str(cf.rot_pop[j]) + r' rotation',
 							r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
