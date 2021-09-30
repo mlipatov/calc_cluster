@@ -72,9 +72,9 @@ t_orig = [True]
 for i in range(nt - 1): t_orig = [True] + [False]*(lt - 2) + t_orig
 t = np.unique(np.concatenate(ts)) # refined ages
 # further refine the age grid:
-# split the first 7 intervals [t_M, t_M + delta_t], such that t_M is an original MIST age
+# split the first 5 intervals [t_M, t_M + delta_t], such that t_M is an original MIST age
 ind_orig = np.where(t_orig)[0]
-t_new = (t[ind_orig[:-1] + 1][:7] + t[ind_orig][:7]) / 2
+t_new = (t[ind_orig[:-1] + 1][:5] + t[ind_orig][:5]) / 2
 t = np.sort(np.concatenate((t, t_new)))
 # non-rotating models at these ages and full mass range
 stc = st.copy(); stc.select(stc.omega0 == 0)  

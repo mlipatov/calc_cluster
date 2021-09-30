@@ -151,7 +151,7 @@ t = np.array(t)
 delta_t = np.concatenate((np.array([t[1] - t[0]]), (t[2:] - t[:-2])/2, np.array([t[-1] - t[-2]])))
 # parameters of the prior and the prior itself
 t_mean = 9.1589
-t_std = 0.0414
+t_std = 0.0230
 t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
 # assume integration is Riemann, with the given delta ages; multiply by the deltas
 t_pr *= delta_t
