@@ -68,15 +68,15 @@ print('%.2f' % (time.time() - start) + ' seconds.')
 
 # split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
 ts = [np.linspace(t[i], t[i+1], splits[i]) for i in range(nt - 1)]
-t_orig = [True]
-for i in range(nt - 1): t_orig = [True] + [False]*(lt - 2) + t_orig
 t = np.unique(np.concatenate(ts)) # refined ages
+t_orig = np.isin(t_new, t) # check which ones are the original MIST ages
 # further refine the age grid:
 # split the first 5 intervals [t_M, t_M + delta_t], such that t_M is an original MIST age,
 # put the new age a fourth of the way from t_M to t_M + delta_t
 ind_orig = np.where(t_orig)[0]
 t_new = (3./4) * t[ind_orig][:5] + (1./4) * t[ind_orig[:-1] + 1][:5]
 t = np.sort(np.concatenate((t, t_new)))
+t_orig = np.isin(t_new, t) # update which ages are the original ones
 # non-rotating models at these ages and full mass range
 stc = st.copy(); stc.select(stc.omega0 == 0)  
 
