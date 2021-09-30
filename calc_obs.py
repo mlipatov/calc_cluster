@@ -39,17 +39,17 @@ st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 
 # choose isochrone ages so that the space of age prior parameters with appreciable likelihoods
 # is covered sufficiently finely
-nt = 17
-it = 100
+nt = 11
+it = 102
 
-# use the following if the program stalls
-ages = 1 # 1 or 2
-if ages == 1:
-	nt = 9 # number of ages to take from the MIST grid
-	it = 100 # first index of the MIST ages to take
-elif ages == 2: 
-	nt = 9 # number of ages to take from the MIST grid
-	it = 108 # first index of the MIST ages to take
+# # use the following if the program stalls
+# ages = 1 # 1 or 2
+# if ages == 1:
+# 	nt = 9 # number of ages to take from the MIST grid
+# 	it = 100 # first index of the MIST ages to take
+# elif ages == 2: 
+# 	nt = 9 # number of ages to take from the MIST grid
+# 	it = 108 # first index of the MIST ages to take
 
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.159

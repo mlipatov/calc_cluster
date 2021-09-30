@@ -98,7 +98,7 @@ for filepath in filelist: # for each combination of age and metallicity
 		r'$\widehat{q} = $' + '%.3f' % qm[w0m, w2m],
 		r'$\widehat{b} = $' + '%.2f' % bm[w0m, w2m]))
 	filename = like_dir + 'png/' + base + '_rotation' + '.png'
-	plot(cf.w2, cf.w0, qm, bm, ll, r'$w_1$', r'$w_0$', textstr, filename)
+	plot(cf.w2, cf.w0, qm, bm, ll, r'$w_2$', r'$w_0$', textstr, filename)
 
 	# plot likelihood vs. age priors, 
 	# at maximum-likelihood binaries proportion and rotational population proportions
