@@ -53,7 +53,7 @@ elif ages == 2:
 
 lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
 t = np.unique(st.t)[it : it + nt] # ages around 9.159
-st.select(np.isin(st.t, t)) # select the ages
+st.select(np.isin(st.t, t)) # select the ages in the model set
 
 # check that initial masses aren't multi-valued at constant (EEP, omega0, age)
 EEP = np.unique(st.EEP)
@@ -71,6 +71,11 @@ ts = [np.linspace(t[i], t[i+1], splits[i]) for i in range(nt - 1)]
 t_orig = [True]
 for i in range(nt - 1): t_orig = [True] + [False]*(lt - 2) + t_orig
 t = np.unique(np.concatenate(ts)) # refined ages
+# further refine the age grid:
+# split the first 7 intervals [t_M, t_M + delta_t], such that t_M is an original MIST age
+ind_orig = np.where(t_orig)[0]
+t_new = (t[ind_orig[:-1] + 1][:7] + t[ind_orig][:7]) / 2
+t = np.sort(np.concatenate((t, t_new)))
 # non-rotating models at these ages and full mass range
 stc = st.copy(); stc.select(stc.omega0 == 0)  
 

@@ -39,6 +39,8 @@ for filepath in filelist:
 			m = ~np.isin(t1, t) # where the new ages are not in exisiting ages
 			points = np.concatenate((points, pts1[m]), axis=0)
 			t = np.concatenate((t, t1[m]))
+# age steps for mid-point Riemann sum integration; dimension: age
+delta_t = np.concatenate((np.array([t[1] - t[0]]), (t[2:] - t[:-2])/2, np.array([t[-1] - t[-2]])))
 
 # background probability density
 back = np.empty(npts)
@@ -80,22 +82,23 @@ else:
 
 	print( 'age means: ' + ', '.join(['%.4f' % t for t in t_mean]) )
 	print( 'age standard deviations: ' + ', '.join(['%.4f' % t for t in t_sigma]) )
-	print( 'data point age grid step: ' + '%.5f' % (t[1] - t[0]) )
+	print( 'average age grid step: ' + '%.5f' % np.mean(delta_t) )
 	print( 'means grid step: ' + '%.5f' % (t_mean[1] - t_mean[0]) )
 	print( 'deviations grid step: ' + '%.5f' % (t_sigma[1] - t_sigma[0]) )
 	print( 'slow rotator proportion step: ' + '%.5f' % (cf.w0[1] - cf.w0[0]) )
-	print( 'fast rotator proportion step: ' + '%.5f' % (cf.w1[1] - cf.w1[0]) )
+	print( 'fast rotator proportion step: ' + '%.5f' % (cf.w2[1] - cf.w2[0]) )
 
-	# construct age priors, normalized up to the same factor
+	# construct the normalized age priors
 	# dimensions: age, prior mean, prior sigma
 	t_pr = np.exp( -0.5 * (t[:, np.newaxis, np.newaxis] - t_mean[np.newaxis, :, np.newaxis])**2 \
 							 / t_sigma[np.newaxis, np.newaxis, :]**2 )
+	# assume integration is Riemann, with the given delta ages; multiply by the deltas
+	t_pr *= delta_t[:, np.newaxis, np.newaxis]
+	# normalize so that the sum is equal to 1
 	t_pr /= np.sum(t_pr, axis=0)
 	# marginalize probability densities at data point locations by the age prior,
-	# correct by age step if the densities have to be normalized to 1; assume age step size is constant
 	# dimensions of output: age prior mean, age prior sigma, multiplicity, rotational population, data point 
-	ft = np.sum(t_pr[..., np.newaxis, np.newaxis, np.newaxis] * points[:, np.newaxis, np.newaxis, ...], axis=0) \
-							/ (t[1] - t[0])
+	ft = np.sum(t_pr[..., np.newaxis, np.newaxis, np.newaxis] * points[:, np.newaxis, np.newaxis, ...], axis=0)
 	t0_ar = t_mean # the first age-related parameter is the mean of the distribution
 	t1_ar = t_sigma # the second parameter is the standard deviation
 
@@ -179,7 +182,7 @@ def ds(l, n):
 	return x
 
 ## marginalize in q under uniform prior for combinations of population proportions and age prior parameters
-ll = np.full( (len(cf.w0), len(cf.w1), len(t0_ar), len(t1_ar)), np.nan )
+ll = np.full( (len(cf.w0), len(cf.w2), len(t0_ar), len(t1_ar)), np.nan )
 qm = np.full_like( ll, np.nan ) # array of maximum-likelihood q
 bm = np.full_like( ll, np.nan ) # array of maximum-likelihood b
 
@@ -222,13 +225,13 @@ while run < 2:
 			f = ft[it0, it1]
 			for i in ds(len(cf.w0), n):
 				w0 = cf.w0[i]
-				j_range = np.searchsorted(cf.w1, 1 - w0, side='right')
+				j_range = np.searchsorted(cf.w2, 1 - w0, side='right')
 				for j in ds(j_range, n):
-					w1 = cf.w1[j]
+					w2 = cf.w2[j]
 					# unary probability densities for all data points
-					f0 = f[0, 0, :] * w0 + f[0, 1, :] * (1 - w0 - w1) + f[0, 2, :] * w1
+					f0 = f[0, 0, :] * w0 + f[0, 1, :] * (1 - w0 - w2) + f[0, 2, :] * w2
 					# binary probability densities for all data points
-					f1 = f[1, 0, :] * w0 + f[1, 1, :] * (1 - w0 - w1) + f[1, 2, :] * w1
+					f1 = f[1, 0, :] * w0 + f[1, 1, :] * (1 - w0 - w2) + f[1, 2, :] * w2
 					# coefficients of q and q * b in the likelihood factors (the remaining term is 1)
 					A = f0 / back - 1
 					B = (f1 - f0) / back
@@ -294,7 +297,7 @@ while run < 2:
 							b1n = max(b1n, b1new)
 					elif run == 1: # if this is the final run
 						# update the global highest likelihood 
-						# if the highest likelihood at these tm, ts, w0 and w1 is higher;
+						# if the highest likelihood at these tm, ts, w0 and w2 is higher;
 						# also update the maximum-likelihood factors of individual data points here
 						qi, bi = np.unravel_index(np.nanargmax(l), l.shape)
 						llmax = np.log(l[qi, bi]) + ll_corr
@@ -349,13 +352,13 @@ while run < 2:
 	print('next run code: ' + str(run), flush=True)
 
 # print('marginalization in q on a grid of w_0, w_1 and b: ' + '%.2f' % (time.time() - start) + ' seconds.')
-w0i, w1i, t0i, t1i = np.unravel_index(np.nanargmax(ll),ll.shape)
+w0i, w2i, t0i, t1i = np.unravel_index(np.nanargmax(ll),ll.shape)
 print('max ln marginalized likelihood: ' + str(np.nanmax(ll)) + ' at w_0 = ' + '%.4f' % cf.w0[w0i] + \
-	', 1 - w_0 - w_1 = ' + '%.4f' % (1 - cf.w0[w0i] - cf.w1[w1i]) + ', w_1 = ' + '%.4f' % cf.w1[w1i] +\
-	', t0_ar = ' + '%.4f' % t0_ar[t0i] + ', t1_ar = ' + '%.4f' % t1_ar[t1i])
+	', w_1 = ' + '%.4f' % (1 - cf.w0[w0i] - cf.w2[w2i]) + ', w_2 = ' + '%.4f' % cf.w2[w2i] +\
+	', t0_ar (e.g. mu_t) = ' + '%.4f' % t0_ar[t0i] + ', t1_ar (e.g. sigma_t) = ' + '%.4f' % t1_ar[t1i])
 print('min ln marginalized likelihood: ' + str(np.nanmin(ll)))
-print('max ln likelihood: ' + '%.4f' % LLmax + ', at q = ' + '%.4f' % qm[w0i, w1i, t0i, t1i] + \
-	' and b = ' +  '%.4f' % bm[w0i, w1i, t0i, t1i])
+print('max ln likelihood: ' + '%.4f' % LLmax + ', at q = ' + '%.4f' % qm[w0i, w2i, t0i, t1i] + \
+	' and b = ' +  '%.4f' % bm[w0i, w2i, t0i, t1i])
 
 suffix = str(cf.Z).replace('-', 'm').replace('.', 'p') + \
 	'_os' + '_'.join([('%.2f' % n).replace('.','') for n in cf.om_sigma]) + '.pkl'
@@ -364,10 +367,10 @@ suffix = str(cf.Z).replace('-', 'm').replace('.', 'p') + \
 # package the likelihoods, the ML q values and the rotational distribution standard deviations
 # replace cf.om_sigma with om_sigma when these are inherited
 with open(like_dir + 'pkl/ll_' + suffix, 'wb') as f:
-	pickle.dump([ll, qm, bm, t0_ar, t1_ar, cf.w0, cf.w1, cf.om_sigma], f)
+	pickle.dump([ll, qm, bm, t0_ar, t1_ar, cf.w0, cf.w2, cf.om_sigma], f)
 
 # package the likelihood factors of individual data points with the corresponding cluster model parameters
-with open(like_dir + 'pkl/	lf_' + suffix, 'wb') as f:
+with open(like_dir + 'pkl/lf_' + suffix, 'wb') as f:
 	pickle.dump([LF_max, \
-		qm[w0i, w1i, t0i, t1i], bm[w0i, w1i, t0i, t1i], \
-		t0_ar[t0i], t1_ar[t1i], cf.w0[w0i], cf.w1[w1i], cf.om_sigma], f)
+		qm[w0i, w2i, t0i, t1i], bm[w0i, w2i, t0i, t1i], \
+		t0_ar[t0i], t1_ar[t1i], cf.w0[w0i], cf.w2[w2i], cf.om_sigma], f)

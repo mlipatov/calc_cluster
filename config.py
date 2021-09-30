@@ -101,9 +101,13 @@ if mix: # the enhanced mixing analysis
 else: # the MIST analysis
 	n = 21 # number of steps in each dimension
 	tmin, tmax = [9.154, 9.165] # age
-	smin, smax = [0.036, 0.047] # sigma_age
-	w0min, w0max = [0.025, 0.225] # slow proportion, age spread
-	w1min, w1max = [0.4, 0.9] # fast proportion, age spread
+	smin, smax = [0.01, 0.03] # sigma_age
+	w0min, w0max = [0, 0.15] # slow proportion
+	w2min, w2max = [0, 0.3] # fast proportion
+	# tmin, tmax = [9.154, 9.165] # age
+	# smin, smax = [0.036, 0.047] # sigma_age
+	# w0min, w0max = [0.025, 0.225] # slow proportion
+	# w2min, w2max = [0.4, 0.9] # fast proportion
 	# rotational proportion grids (age parameter grids determined elsewhere)
 	w0 = np.linspace(w0min, w0max, n, dtype=float) 
-	w1 = np.linspace(w1min, w1max, n, dtype=float)
+	w2 = np.linspace(w2min, w2max, n, dtype=float)

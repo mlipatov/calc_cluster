@@ -71,7 +71,7 @@ filelist = list(np.sort(glob.glob(like_dir + 'pkl/ll*.pkl')))
 for filepath in filelist: # for each combination of age and metallicity
 	# load the log likelihood and the maximum q
 	with open(filepath, 'rb') as f:
-		ll_4d, qm_4d, bm_4d, t0_ar, t1_ar, w0, w1, om_sigma = pickle.load(f)
+		ll_4d, qm_4d, bm_4d, t0_ar, t1_ar, w0, w2, om_sigma = pickle.load(f)
 	# get base file name
 	base = os.path.basename(filepath).split('.')[0]
 	if len(base.split('p')[-1]) == 1:
@@ -79,7 +79,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	# set maximum likelihood to zero
 	ll_4d -= np.nanmax(ll_4d) 	
 	# indices of ML parameters
-	w0m, w1m, t0m, t1m = np.unravel_index(np.nanargmax(ll_4d), ll_4d.shape)  
+	w0m, w2m, t0m, t1m = np.unravel_index(np.nanargmax(ll_4d), ll_4d.shape)  
 
 	# plot likelihood vs. rotational proportions, 
 	# at maximum-likelihood binaries proportion and age priors
@@ -91,27 +91,27 @@ for filepath in filelist: # for each combination of age and metallicity
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',		
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
 	    r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in cf.om_sigma]) + '\}$',
-		r'$\widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w1[w1m]) +\
-			', ' + '%.2f' % w1[w1m] + '\}$',
+		r'$\widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w2[w2m]) +\
+			', ' + '%.2f' % w2[w2m] + '\}$',
 	    r'' + t0_label + ' = ' + t0_hat + ' = ' + '%.4f' % t0_ar[t0m],
 	    r'' + t1_label + ' = ' + t1_hat + ' = ' + '%.4f' % t1_ar[t1m],
-		r'$\widehat{q} = $' + '%.3f' % qm[w0m, w1m],
-		r'$\widehat{b} = $' + '%.2f' % bm[w0m, w1m]))
+		r'$\widehat{q} = $' + '%.3f' % qm[w0m, w2m],
+		r'$\widehat{b} = $' + '%.2f' % bm[w0m, w2m]))
 	filename = like_dir + 'png/' + base + '_rotation' + '.png'
-	plot(cf.w1, cf.w0, qm, bm, ll, r'$w_1$', r'$w_0$', textstr, filename)
+	plot(cf.w2, cf.w0, qm, bm, ll, r'$w_1$', r'$w_0$', textstr, filename)
 
 	# plot likelihood vs. age priors, 
 	# at maximum-likelihood binaries proportion and rotational population proportions
-	ll = ll_4d[w0m, w1m, ...] # log-likelihoods
-	qm = qm_4d[w0m, w1m, ...] # maximum q
-	bm = bm_4d[w0m, w1m, ...] # maximum b
+	ll = ll_4d[w0m, w2m, ...] # log-likelihoods
+	qm = qm_4d[w0m, w2m, ...] # maximum q
+	bm = bm_4d[w0m, w2m, ...] # maximum b
 	# text box text
 	textstr = '\n'.join((	
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',	
 		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',
 		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
-		r'$w = \widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w1[w1m]) +\
-			', ' + '%.2f' % w1[w1m] + '\}$',
+		r'$w = \widehat{w} = \{' + '%.2f' % w0[w0m] + ', ' + '%.2f' % (1 - w0[w0m] - w2[w2m]) +\
+			', ' + '%.2f' % w2[w2m] + '\}$',
 	    t0_hat + ' = ' + '%.4f' % t0_ar[t0m],
 	    t1_hat + ' = ' + '%.4f' % t1_ar[t1m],
 		r'$\widehat{q} = $' + '%.3f' % qm[t0m, t1m],

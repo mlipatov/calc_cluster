@@ -107,7 +107,7 @@ for it in range(len(filelist)):
 				# check that the kernel, evaluated at the ROI boundaries, fits within the grid
 				if density.check_roi(i, kernel): 
 					density.convolve(i, kernel, ds=cf.downsample) # convolve
-			# normalize
+			# normalize so that the density adds up to 1 over the RON
 			density.normalize() 
 			# calculate the dependence of probability change on standard deviation of further convolving kernel
 			density.dP_sigma(nsig)
@@ -149,7 +149,9 @@ for it in range(len(filelist)):
 				else: 						density1 = densities[j][k] # vsini > v_0 
 				# integration with the kernel, which is normalized up to the product of step sizes
 				dens = np.sum(kernels[i] * density1.dens[slices[i]])
-				dens /= np.prod(density1.step) # scale by density step sizes
+				# scale by density step sizes; 
+				# this normalizes the density to integrate to 1 over the RON, instead of summing to 1
+				dens /= np.prod(density1.step) 
 				# normalization correction for this data point in this density grid
 				norm = 1.
 				for d in range(density1.dim):

@@ -60,7 +60,8 @@ class Kernel:
 		self.n = n
 
 # run this function with the first convolved prior as the argument
-# to obtain the kernels and corresponding slices necessary for individual-star error integrations
+# to obtain the kernels and corresponding slices necessary for individual-star error integrations;
+# the kernels are normalized to sum to 1
 def calc_kernels(density, sigma, nsig):
 	npts = ld.obs.shape[0] # number of data points
 	ndim = ld.obs.shape[1] # number of observable dimensions
@@ -103,7 +104,6 @@ def calc_kernels(density, sigma, nsig):
 					kernel = kernel_j
 				else: 
 					kernel = np.multiply.outer(kernel, kernel_j)
-		# kernel /= np.sum(kernel)
 		kernels.append(kernel)
 		slices.append( tuple(slc) )
 	return [kernels, slices]

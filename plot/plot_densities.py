@@ -47,15 +47,16 @@ def plot(density, cmap, textstr, j, plot_type, base):
 		# # mask for scatter that depends on rotational population
 		# mask = (ld.vsini >= cf.vsini_bins[j]) & (ld.vsini < cf.vsini_bins[j+1])
 
-		dens = density.density();
+		dens = density.density() # this version integrates to 1 over RON, instead of summing to 1
 		dens[dens == 0] = 1e-300
 		dens = np.log(dens)
 		norm = mpl.colors.Normalize(vmin=cmap_min, vmax=cmap_max, clip=True)
 
 		fig, [ax, ax1] = plt.subplots(ncols=2, gridspec_kw={'width_ratios': [5, 1]})
 		plt.subplots_adjust(left=0.13, right=0.8, bottom=0.13, top=0.95)
+		# interpolated shading for smoother plot; for true density values, use shading='nearest' 
 		pcm = ax.pcolormesh(density.obs[1], density.obs[0], dens, cmap=cmap, norm=norm,\
-			shading='nearest') 
+			shading='gouraud') 
 		ax.set_xlim(left=ld.obmin_plot[xi], right=ld.obmax_plot[xi])
 		ax.set_ylim(bottom=ld.obmin_plot[0], top=ld.obmax_plot[0])
 		ax.invert_yaxis()
@@ -112,7 +113,7 @@ for filepath in filelist:
 			# VM density
 			density_vsini = density.copy()
 			density_vsini.marginalize(1)
-			density_vsini.normalize()
+			density_vsini.normalize() # so that the sum over the RON is 1
 			densities_vsini[j][k][it] = density_vsini
 
 			## text 
@@ -146,11 +147,16 @@ for filepath in filelist:
 ## plot the minimum-error density at maximum-likelihood cluster age parameters
 # define a prior in age
 t = np.array(t)
+# age steps for mid-point Riemann sum integration; dimension: age
+delta_t = np.concatenate((np.array([t[1] - t[0]]), (t[2:] - t[:-2])/2, np.array([t[-1] - t[-2]])))
+# parameters of the prior and the prior itself
 t_mean = 9.1589
 t_std = 0.0414
 t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
-t_pr /= np.sum(t_pr) # normalize
-# t_pr /= (t[1] - t[0]) # normalize so that the integral is 1
+# assume integration is Riemann, with the given delta ages; multiply by the deltas
+t_pr *= delta_t
+# normalize so that the prior adds up to 1
+t_pr /= np.sum(t_pr) 
 for j in range(len(densities_cmd)):
 	for k in range(len(densities_cmd[j])):
 		for it in range(len(densities_cmd[j][k])):
