@@ -41,8 +41,19 @@ st.set_omega0() # set omega from omega_M; ignore the L_edd factor
 # is covered sufficiently finely
 nt = 11
 it = 102
+tM = np.unique(st.t)[it : it + nt] # MIST ages around 9.159
+st.select(np.isin(st.t, tM)) # select the ages in the model set
+# split each interval between MIST ages into 4 equal parts
+ts = [np.linspace(tM[i], tM[i+1], 5) for i in range(nt - 1)] # this is a list of ndarrays
+# also split the first 5 intervals [t_M, t_M + delta_t], such that t_M is an original MIST age,
+# put the new age a fourth of the way from t_M to t_M + delta_t 
+for i in range(5):
+	ts_new = (3./4) * ts[i][0] + (1./4) * ts[i][1]
+	ts[i] = np.insert(ts[i], 1, ts_new) 
+t = np.unique(np.concatenate(ts)) # refined ages
+is_tM = np.isin(t, tM) # whether the refined age is an original MIST age
 
-# # use the following if the program stalls
+# # use something along the following lines if the program stalls
 # ages = 1 # 1 or 2
 # if ages == 1:
 # 	nt = 9 # number of ages to take from the MIST grid
@@ -50,10 +61,6 @@ it = 102
 # elif ages == 2: 
 # 	nt = 9 # number of ages to take from the MIST grid
 # 	it = 108 # first index of the MIST ages to take
-
-lt = 5; splits = [lt] * (nt - 1)  # number of ages for each interval to give linspace
-t = np.unique(st.t)[it : it + nt] # ages around 9.159
-st.select(np.isin(st.t, t)) # select the ages in the model set
 
 # check that initial masses aren't multi-valued at constant (EEP, omega0, age)
 EEP = np.unique(st.EEP)
@@ -66,18 +73,7 @@ for tv in t:
 
 print('%.2f' % (time.time() - start) + ' seconds.')
 
-# split time intervals: each array begins and ends with a MIST grid age, intermediate ages in between
-ts = [np.linspace(t[i], t[i+1], splits[i]) for i in range(nt - 1)]
-t = np.unique(np.concatenate(ts)) # refined ages
-t_orig = np.isin(t_new, t) # check which ones are the original MIST ages
-# further refine the age grid:
-# split the first 5 intervals [t_M, t_M + delta_t], such that t_M is an original MIST age,
-# put the new age a fourth of the way from t_M to t_M + delta_t
-ind_orig = np.where(t_orig)[0]
-t_new = (3./4) * t[ind_orig][:5] + (1./4) * t[ind_orig[:-1] + 1][:5]
-t = np.sort(np.concatenate((t, t_new)))
-t_orig = np.isin(t_new, t) # update which ages are the original ones
-# non-rotating models at these ages and full mass range
+# non-rotating models at full mass range
 stc = st.copy(); stc.select(stc.omega0 == 0)  
 
 print('Loading PARS...', end='', flush=True)
@@ -100,7 +96,7 @@ it_0 = 0 # first age index
 for it in range(it_0, len(t)):
 	### refinement of (M, omega, i) grids at r = 0 and different t
 	print('\nt = ' + '%.4f' % t[it], end=':')
-	if t_orig[it]: print(' original model grid age.')
+	if is_tM[it]: print(' original model grid age.')
 	else: print(' new intermediate age.')
 	t_str = '_t' + ('%.4f' % t[it]).replace('.', 'p')
 	# select age
@@ -108,7 +104,7 @@ for it in range(it_0, len(t)):
 	stc1 = stc.copy(); stc1.select_age( t[it] )	# non-rotating model set for the companions
 	# refine model grids
 	start = time.time(); print('refining the mass, omega and inclination grids...', flush=True)
-	if t_orig[it]:
+	if is_tM[it]:
 		grid = mu.refine_coarsen(st1)
 		# save the omega and inclination grids for the use in the next age
 		omega0_grid = grid.omega0
