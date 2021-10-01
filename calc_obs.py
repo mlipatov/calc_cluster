@@ -53,14 +53,10 @@ for i in range(5):
 t = np.unique(np.concatenate(ts)) # refined ages
 is_tM = np.isin(t, tM) # whether the refined age is an original MIST age
 
-# # use something along the following lines if the program stalls
-# ages = 1 # 1 or 2
-# if ages == 1:
-# 	nt = 9 # number of ages to take from the MIST grid
-# 	it = 100 # first index of the MIST ages to take
-# elif ages == 2: 
-# 	nt = 9 # number of ages to take from the MIST grid
-# 	it = 108 # first index of the MIST ages to take
+# use something along the following lines if the program stalls
+ages = 1 # 1 or 2
+if ages == 1: t = t[:23]
+elif ages == 2: t = [23:]
 
 # check that initial masses aren't multi-valued at constant (EEP, omega0, age)
 EEP = np.unique(st.EEP)

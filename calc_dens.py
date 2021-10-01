@@ -114,7 +114,7 @@ for it in range(len(filelist)):
 			densities[j][k] = density
 			# compute and save the CMD density
 			density_cmd = density.copy()
-			density_cmd.marginalize(2)
+			density_cmd.marginalize(2) # when marginalizing in vsini, don't need to normalize
 			densities_cmd[j][k] = density_cmd
 			# for data points where vsini is at the lower ROI boundary, convolve in vsini with the residual error kernel;
 			# do not re-normalize after the convolution; integrate the probability beyond the lower boundary

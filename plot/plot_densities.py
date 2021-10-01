@@ -108,7 +108,7 @@ for filepath in filelist:
 			density = densities[j][k]
 			# CM density
 			density_cmd = density.copy()
-			density_cmd.marginalize(2)
+			density_cmd.marginalize(2) # when marginalizing in vsini, don't need to normalize
 			densities_cmd[j][k][it] = density_cmd
 			# VM density
 			density_vsini = density.copy()
