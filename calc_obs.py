@@ -51,12 +51,13 @@ for i in range(5):
 	ts_new = (3./4) * ts[i][0] + (1./4) * ts[i][1]
 	ts[i] = np.insert(ts[i], 1, ts_new) 
 t = np.unique(np.concatenate(ts)) # refined ages
-is_tM = np.isin(t, tM) # whether the refined age is an original MIST age
 
 # use something along the following lines if the program stalls
 ages = 1 # 1 or 2
 if ages == 1: t = t[:23]
-elif ages == 2: t = [23:]
+elif ages == 2: t = t[23:]
+
+is_tM = np.isin(t, tM) # whether the refined age is an original MIST age
 
 # check that initial masses aren't multi-valued at constant (EEP, omega0, age)
 EEP = np.unique(st.EEP)
