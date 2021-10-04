@@ -54,12 +54,11 @@ t = np.unique(np.concatenate(ts)) # refined ages
 is_tM = np.isin(t, tM) # whether the refined age is an original MIST age
 
 # use something along the following lines if the program stalls
-ages = 1 # 1 or 2
+ages = 2 # 1 or 2
 ind = np.where(is_tM)[0] # indices of MIST ages
 i = ind[int(len(ind)/2)] # middle MIST index
 if ages == 1: t = t[:i]
 elif ages == 2: t = t[i:]
-
 is_tM = np.isin(t, tM) # whether the refined age is an original MIST age
 
 # check that initial masses aren't multi-valued at constant (EEP, omega0, age)

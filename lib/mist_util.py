@@ -393,18 +393,37 @@ class Grid:
 	#	standard deviations of the observables
 	#	refinement factor; make it smaller for a finer grid; default is 1.0
 	def refine(self, axis, dmin=1.0):
+		# get the number of intervals to split each interval into
+		def get_ns(axis, dmin):
+			maxdiff = self.get_maxdiff(axis)
+			# compute the number of intervals to split each interval into
+			notnan = ~np.isnan(maxdiff)
+			ns = np.ones_like(maxdiff, dtype=int) 
+			ns[notnan] = np.ceil(maxdiff[notnan] / dmin).astype(int)
+			return ns
+
+		vp = 1e-4 # precision below which model differences are treated as non-existent
 		var = getattr(self, self.ivars[axis]) # get the model parameter list
-		maxdiff = self.get_maxdiff(axis)
-		# compute number of intervals to split each interval into
-		notnan = ~np.isnan(maxdiff)
-		ns = np.ones_like(maxdiff, dtype=int) 
-		ns[notnan] = np.ceil(maxdiff[notnan] / dmin).astype(int)
+		vardiff = np.diff(var) # differences between neighboring models
+		ns = get_ns(axis, dmin)
 		# split intervals: reverse so that indices remain valid
-		for i in np.flip(np.where(ns > 1.)[0]): 
+		for i in np.flip(np.where((ns > 1.) & (vardiff >= vp))[0]): # indices where to split the array
 			# split the interval at each location and insert the result 
 			var = np.insert(var, i+1, np.linspace(var[i], var[i+1], ns[i]+1)[1:-1])
-		setattr(self, self.ivars[axis], var) # set the model parameter list
+		setattr(self, self.ivars[axis], var) # update the model parameter list
 		self.calc_obs() # calculate the observables
+		
+		# at the locations where the observable differences are large, but model differences are not,
+		# add models with intermediate observables
+		vardiff = np.diff(var) # differences between neighboring models
+		ns = get_ns(axis, dmin)
+		for i in np.flip(np.where((ns > 1.) & (vardiff < vp))[0]): # indices where to split the array
+			# split the interval at each location and insert the result 
+			var = np.insert(var, i+1, np.linspace(var[i], var[i+1], ns[i]+1)[1:-1])
+			self.mag = np.insert(self.mag, i+1, np.linspace(self.mag[i], self.mag[i+1], ns[i]+1)[1:-1], axis=axis)
+			self.vsini = np.insert(self.vsini, i+1, np.linspace(self.vsini[i], self.vsini[i+1], ns[i]+1)[1:-1], axis=axis)
+			self.obs = np.insert(self.obs, i+1, np.linspace(self.obs[i], self.obs[i+1], ns[i]+1)[1:-1], axis=axis)
+		setattr(self, self.ivars[axis], var) # update the model parameter list
 
 	# Coarsen the model grid in a given focal dimension 
 	def coarsen(self, axis, dmax=1.0):
