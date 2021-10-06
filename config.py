@@ -66,7 +66,7 @@ else: # implement three rotational populations
 	# slowest rotational population is centered on omega = 0, fastest on omega = 1
 	# standard deviations of the rotational populations
 	s_slow = 0.5 
-	s_middle = 0.2
+	s_middle = 0.15
 	s_fast = 0.05 
 	a = s_fast / s_slow
 	# medium rotating population: 

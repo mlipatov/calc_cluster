@@ -31,8 +31,7 @@ filelist = list(np.sort(glob.glob(points_dir + '*.pkl')))
 t = None
 for filepath in filelist:
 	with open(filepath, 'rb') as f: 
-		if cf.mix: pts1, t1, om_sigma = pickle.load(f)
-		else: pts1, t1 = pickle.load(f)
+		pts1, t1, om_sigma = pickle.load(f)
 		if t is None: # if there are no ages from before
 			points = pts1; t = t1
 		else:
@@ -361,16 +360,15 @@ print('max ln likelihood: ' + '%.4f' % LLmax + ', at q = ' + '%.4f' % qm[w0i, w2
 	' and b = ' +  '%.4f' % bm[w0i, w2i, t0i, t1i])
 
 suffix = str(cf.Z).replace('-', 'm').replace('.', 'p') + \
-	'_os' + '_'.join([('%.2f' % n).replace('.','') for n in cf.om_sigma]) + '.pkl'
+	'_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma]) + '.pkl'
 	# '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma]) + '.pkl', 'wb') as f:
 
 # package the likelihoods, the ML q values and the rotational distribution standard deviations
-# replace cf.om_sigma with om_sigma when these are inherited
 with open(like_dir + 'pkl/ll_' + suffix, 'wb') as f:
-	pickle.dump([ll, qm, bm, t0_ar, t1_ar, cf.w0, cf.w2, cf.om_sigma], f)
+	pickle.dump([ll, qm, bm, t0_ar, t1_ar, cf.w0, cf.w2, om_sigma], f)
 
 # package the likelihood factors of individual data points with the corresponding cluster model parameters
 with open(like_dir + 'pkl/lf_' + suffix, 'wb') as f:
 	pickle.dump([LF_max, \
 		qm[w0i, w2i, t0i, t1i], bm[w0i, w2i, t0i, t1i], \
-		t0_ar[t0i], t1_ar[t1i], cf.w0[w0i], cf.w2[w2i], cf.om_sigma], f)
+		t0_ar[t0i], t1_ar[t1i], cf.w0[w0i], cf.w2[w2i], om_sigma], f)
