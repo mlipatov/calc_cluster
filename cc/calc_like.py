@@ -327,7 +327,7 @@ while run < 2:
 			count += 1
 			if count % 100 == 0:
 				print(str(count) + ' / ' + str(len(t0_ind) * len(t1_ind)) + ' age-related priors; ' + \
-					'%.2f' % (time.time() - start) + ' seconds since last time check.' )
+					'%.2f' % (time.time() - start) + ' seconds since last time check.', flush=True )
 				start = time.time()
 
 	print('this run code: ' + str(run), flush=True)

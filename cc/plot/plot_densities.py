@@ -125,23 +125,23 @@ for filepath in filelist:
 			vsini_text = r'$v_{\rm e}\,\sin{i}\, \in \,[' + str(cf.vsini_bins[j]) + ',' + \
 				upper_bound_text + ')\,$' + 'km/s'
 
-			textstr = '\n'.join((
-				r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
-				r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
-			    r'$\log{\,t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
-				str(cf.rot_pop[j]) + r' rotation',
-				r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
-				str(cf.mul_pop[k]) #,
-				# vsini_text
-				))
-				#, $\omega = $' + str(densities[k][3])))
-			    # r'$A_V=%.2f$' % (cf.A_V, )))
+			# textstr = '\n'.join((
+			# 	r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
+			# 	r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
+			#     r'$\log{\,t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
+			# 	str(cf.rot_pop[j]) + r' rotation',
+			# 	r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
+			# 	str(cf.mul_pop[k]) #,
+			# 	# vsini_text
+			# 	))
+			# 	#, $\omega = $' + str(densities[k][3])))
+			#     # r'$A_V=%.2f$' % (cf.A_V, )))
 
-			print('Plotting...')
-			for plot_type in ['cmd', 'vmd']:
-				if plot_type=='cmd': density_plot = density_cmd
-				elif plot_type=='vmd': density_plot = density_vsini
-				plot(density_plot, cmap_hot, textstr, j, plot_type, base)
+			# print('Plotting...')
+			# for plot_type in ['cmd', 'vmd']:
+			# 	if plot_type=='cmd': density_plot = density_cmd
+			# 	elif plot_type=='vmd': density_plot = density_vsini
+			# 	plot(density_plot, cmap_hot, textstr, j, plot_type, base)
 	it += 1
 
 ## plot the minimum-error density at maximum-likelihood cluster age parameters
@@ -150,8 +150,8 @@ t = np.array(t)
 # age steps for mid-point Riemann sum integration; dimension: age
 delta_t = np.concatenate((np.array([t[1] - t[0]]), (t[2:] - t[:-2])/2, np.array([t[-1] - t[-2]])))
 # parameters of the prior and the prior itself
-t_mean = 9.1589
-t_std = 0.0230
+t_mean = 9.160
+t_std = 0.0225
 t_pr = np.exp( -0.5 * (t - t_mean)**2 / t_std**2 )
 # assume integration is Riemann, with the given delta ages; multiply by the deltas
 t_pr *= delta_t
@@ -177,10 +177,10 @@ for j in range(len(densities_cmd)):
 		textstr = '\n'.join((
 		    r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 		    r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
-		    r'$\mu_{t}=' + '%.3f' % t_mean + '$',
-		    r'$\sigma_{t}=' + '%.3f' % t_std + '$',
+		    r'$\mu_{t}=' + cf.fstr(t_mean, 3) + '$',
+		    r'$\sigma_{t}=' + cf.fstr(t_std, 3) + '$',
 			str(cf.rot_pop[j]) + r' rotation',
-			r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
+			r'$\sigma_{\rm \omega} = ' + cf.fstr(cf.om_sigma[j], 2) + '$',
 			str(cf.mul_pop[k]) #,
 			# vsini_text
 			))

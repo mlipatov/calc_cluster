@@ -65,9 +65,9 @@ if mix: # if enhanced rotational longevity analysis
 else: # implement three rotational populations 
 	# slowest rotational population is centered on omega = 0, fastest on omega = 1
 	# standard deviations of the rotational populations
-	s_slow = 0.5 
-	s_middle = 0.15
-	s_fast = 0.05 
+	s_slow = 0.6 
+	s_middle = 0.05
+	s_fast = 0.15 
 	a = s_fast / s_slow
 	# medium rotating population: 
 	# mean is the location where the slow and fast distributions are equal
@@ -100,10 +100,10 @@ if mix: # the enhanced mixing analysis
 	a_ar = np.linspace(amin, amax, n)
 else: # the MIST analysis
 	n = 21 # number of steps in each dimension
-	tmin, tmax = [9.155, 9.163] # age
-	smin, smax = [0.018, 0.028] # sigma_age
-	w0min, w0max = [0, 0.15] # slow proportion
-	w2min, w2max = [0, 0.3] # fast proportion
+	tmin, tmax = [9.156, 9.165] # age
+	smin, smax = [0.018, 0.027] # sigma_age
+	w0min, w0max = [0, 0.2] # slow proportion
+	w2min, w2max = [0.3, 0.5] # fast proportion
 	# tmin, tmax = [9.154, 9.165] # age
 	# smin, smax = [0.036, 0.047] # sigma_age
 	# w0min, w0max = [0.025, 0.225] # slow proportion
