@@ -9,7 +9,7 @@ from scipy import special
 from scipy import optimize
 
 dirname = os.path.dirname(__file__)
-datadir = os.path.join(dirname, 'data/')
+datadir = os.path.join(dirname, '../data/')
 
 # load data on stars with vsini
 file = datadir + 'ngc1846_vsini.txt'

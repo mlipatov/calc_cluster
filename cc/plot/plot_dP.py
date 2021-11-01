@@ -11,8 +11,8 @@ mpl.rcParams['font.size'] = 16
 dims = ['mag', 'col']
 dimensions = ['m', 'c']
 
-filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
-prefix = '../data/normalization/'
+filelist = list(np.sort(glob.glob('../../data/densities/pkl/*.pkl')))
+prefix = '../../data/normalization/'
 for filepath in filelist: # for each combination of age and metallicity
 	# load the pre-computed density on a grid of observables
 	with open(filepath, 'rb') as f:
@@ -48,5 +48,5 @@ for filepath in filelist: # for each combination of age and metallicity
 						plt.tight_layout()
 						# write plot file
 						suffix = ('%.4f' % density.age).replace('.', '') + '_om' + str(j) + '_mul' + str(k)
-						plt.savefig(prefix + dims[axis] + '/dP' + suffix + '.png', dpi=300)
+						plt.savefig(prefix + dims[axis] + '/dP' + suffix + '.pdf', dpi=300)
 						plt.close()

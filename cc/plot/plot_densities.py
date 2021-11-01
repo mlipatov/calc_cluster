@@ -81,12 +81,12 @@ def plot(density, cmap, textstr, j, plot_type, base):
 		ax.text(1.0, 1.0, textstr, transform=ax.transAxes, # fontsize=14,
 		        verticalalignment='top', bbox=dict(facecolor='w', alpha=1.0, edgecolor='w'))
 
-		plt.savefig('../data/densities/' + plot_type + '/' + base + '_om' + \
-			str(j) + 'mul' + str(k) + '.png', dpi=300)
+		plt.savefig('../../data/densities/' + plot_type + '/' + base + '_om' + \
+			str(j) + 'mul' + str(k) + '.pdf', dpi=300)
 		plt.close()
 
 # ages
-filelist = list(np.sort(glob.glob('../data/densities/pkl/*.pkl')))
+filelist = list(np.sort(glob.glob('../../data/densities/pkl/*.pkl')))
 t = [] 
 nrot = len(cf.om_mean) # number of rotational populations
 nmul = len(cf.mult) # number of multiplicity populations
@@ -125,23 +125,23 @@ for filepath in filelist:
 			vsini_text = r'$v_{\rm e}\,\sin{i}\, \in \,[' + str(cf.vsini_bins[j]) + ',' + \
 				upper_bound_text + ')\,$' + 'km/s'
 
-			# textstr = '\n'.join((
-			# 	r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
-			# 	r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
-			#     r'$\log{\,t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
-			# 	str(cf.rot_pop[j]) + r' rotation',
-			# 	r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
-			# 	str(cf.mul_pop[k]) #,
-			# 	# vsini_text
-			# 	))
-			# 	#, $\omega = $' + str(densities[k][3])))
-			#     # r'$A_V=%.2f$' % (cf.A_V, )))
+			textstr = '\n'.join((
+				r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
+				r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
+			    r'$\log{\,t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
+				str(cf.rot_pop[j]) + r' rotation',
+				r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
+				str(cf.mul_pop[k]) #,
+				# vsini_text
+				))
+				#, $\omega = $' + str(densities[k][3])))
+			    # r'$A_V=%.2f$' % (cf.A_V, )))
 
-			# print('Plotting...')
-			# for plot_type in ['cmd', 'vmd']:
-			# 	if plot_type=='cmd': density_plot = density_cmd
-			# 	elif plot_type=='vmd': density_plot = density_vsini
-			# 	plot(density_plot, cmap_hot, textstr, j, plot_type, base)
+			print('Plotting...')
+			for plot_type in ['cmd', 'vmd']:
+				if plot_type=='cmd': density_plot = density_cmd
+				elif plot_type=='vmd': density_plot = density_vsini
+				plot(density_plot, cmap_hot, textstr, j, plot_type, base)
 	it += 1
 
 ## plot the minimum-error density at maximum-likelihood cluster age parameters

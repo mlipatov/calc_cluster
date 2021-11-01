@@ -1,3 +1,6 @@
+!data/ngc1846_full.txt
+!data/ngc1846_lowvsini.txt
+!data/ngc1846_vsini.txt
 data/*
 notebooks/*
 *.pyc

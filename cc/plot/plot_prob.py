@@ -17,18 +17,12 @@ cmap = plt.cm.get_cmap("Dark2")
 # level and corresponding color bar tick labels
 levels = [0.95, 0.65, 0.35]
 level_text = ['95%', '65%', '35%']
-if cf.mix:
-	like_dir = '../data/mix/likelihoods/'
-	t0_label = r'$\log_{10}{t_0}$'
-	t1_label = r'$a$'
-	t0_hat = r'$\log_{10}{\widehat{t}_0}$'
-	t1_hat = r'$\widehat{a}$'
-else:
-	like_dir = '../data/likelihoods/'
-	t0_label = r'$\mu_{\rm t}$'
-	t1_label = r'$\sigma_{\rm t}$'
-	t0_hat = r'$\widehat{\mu}_{\rm t}$'
-	t1_hat = r'$\widehat{\sigma}_{\rm t}$'
+
+like_dir = '../../data/likelihoods/'
+t0_label = r'$\mu_{\rm t}$'
+t1_label = r'$\sigma_{\rm t}$'
+t0_hat = r'$\widehat{\mu}_{\rm t}$'
+t1_hat = r'$\widehat{\sigma}_{\rm t}$'
 
 def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	## estimate the total probability outside the boundaries
@@ -127,8 +121,8 @@ for filepath in filelist:
 		r'$\widehat{b} = $' + cf.fstr(bm[t0m, t1m], 2) + \
 			r'$\in$[' + cf.fstr(np.nanmin(bm_4d), 2) + ', ' + cf.fstr(np.nanmax(bm_4d), 2) + ']'))
 
-	filename = like_dir + 'png/' + base + '_age_prob' + '.png'
+	filename = like_dir + 'png/' + base + '_age_prob' + '.pdf'
 	plot(t1_ar, t0_ar, p_age, t1_label, t0_label, textstr, filename)
 
-	filename = like_dir + 'png/' + base + '_rotation_prob' + '.png'
+	filename = like_dir + 'png/' + base + '_rotation_prob' + '.pdf'
 	plot(w1, w0, p_rot, r'$w_2$', r'$w_0$', textstr, filename)

@@ -72,11 +72,11 @@ def plot(lf, mask, cmap, textstr, plot_type, base):
 		ax.text(1.0, 1.0, textstr, transform=ax.transAxes, fontsize=12,
 		        verticalalignment='top', bbox=dict(facecolor='w', alpha=1.0, edgecolor='w'))
 
-		plt.savefig('../data/likelihoods/png/' + plot_type + '_' + base + '.png', dpi=300)
+		plt.savefig('../../data/likelihoods/png/' + plot_type + '_' + base + '.pdf', dpi=300)
 		plt.close()
 
 # ages
-filelist = list(np.sort(glob.glob('../data/likelihoods/pkl/lf*.pkl')))
+filelist = list(np.sort(glob.glob('../../data/likelihoods/pkl/lf*.pkl')))
 for filepath in filelist:
 	with open(filepath, 'rb') as f:
 		LF_max, qmax, bmax, tmax, smax, w0max, w1max, om_sigma = pickle.load(f)

@@ -5,10 +5,10 @@ def fstr(x, d):
 	return ('%.' + str(d) + 'f') % np.around(x, d)
 
 # directories
-dens_dir = 'data/densities/pkl/'
-obs_dir = 'data/observables/'
-points_dir = 'data/points/'
-like_dir = 'data/likelihoods/'
+dens_dir = '../data/densities/pkl/'
+obs_dir = '../data/observables/'
+points_dir = '../data/points/'
+like_dir = '../data/likelihoods/'
 
 # cluster parameters
 A_V = 0.26315789 # should be one of the A_V values on the PARS grid 

@@ -17,18 +17,11 @@ cmapBig = mpl.cm.get_cmap('Greys', 512)
 cmap = mpl.colors.ListedColormap(cmapBig(np.linspace(0, 1, 256)))
 norm = mpl.colors.Normalize(vmin=min_ll, vmax=max_ll, clip=True)
 
-if cf.mix:
-	like_dir = '../data/mix/likelihoods/'
-	t0_label = r'$\log_{10}{t_0}$'
-	t1_label = r'$a$'
-	t0_hat = r'$\log_{10}{\widehat{t}_0}$'
-	t1_hat = r'$\widehat{a}$'
-else:
-	like_dir = '../data/likelihoods/'
-	t0_label = r'$\mu_{\log_{10}{t}}$'
-	t1_label = r'$\sigma_{\log_{10}{t}}$'
-	t0_hat = r'$\widehat{\mu}_{\log_{10}{t}}$'
-	t1_hat = r'$\widehat{\sigma}_{\log_{10}{t}}$'
+like_dir = '../../data/likelihoods/'
+t0_label = r'$\mu_{\log_{10}{t}}$'
+t1_label = r'$\sigma_{\log_{10}{t}}$'
+t0_hat = r'$\widehat{\mu}_{\log_{10}{t}}$'
+t1_hat = r'$\widehat{\sigma}_{\log_{10}{t}}$'
 
 def plot(x, y, qm, bm, ll, xlabel, ylabel, textstr, filename):
 	fig, [ax, ax1] = plt.subplots(ncols=2, gridspec_kw={'width_ratios': [8, 3]})
@@ -97,7 +90,7 @@ for filepath in filelist: # for each combination of age and metallicity
 	    r'' + t1_label + ' = ' + t1_hat + ' = ' + '%.4f' % t1_ar[t1m],
 		r'$\widehat{q} = $' + '%.3f' % qm[w0m, w2m],
 		r'$\widehat{b} = $' + '%.2f' % bm[w0m, w2m]))
-	filename = like_dir + 'png/' + base + '_rotation' + '.png'
+	filename = like_dir + 'png/' + base + '_rotation' + '.pdf'
 	plot(cf.w2, cf.w0, qm, bm, ll, r'$w_2$', r'$w_0$', textstr, filename)
 
 	# plot likelihood vs. age priors, 
@@ -116,5 +109,5 @@ for filepath in filelist: # for each combination of age and metallicity
 	    t1_hat + ' = ' + '%.4f' % t1_ar[t1m],
 		r'$\widehat{q} = $' + '%.3f' % qm[t0m, t1m],
 		r'$\widehat{b} = $' + '%.2f' % bm[t0m, t1m]))
-	filename = like_dir + 'png/' + base + '_age' + '.png'
+	filename = like_dir + 'png/' + base + '_age' + '.pdf'
 	plot(t1_ar, t0_ar, qm, bm, ll, t1_label, t0_label, textstr, filename)

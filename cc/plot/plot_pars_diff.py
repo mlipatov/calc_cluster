@@ -15,7 +15,7 @@ plt.rcParams.update({
 
 print('Loading PARS...', end='', flush=True)
 start = time.time()
-with open('../data/pars_grid_ZM' + str(cf.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'rb') as f: 
+with open('../../data/pars_grid_ZM' + str(cf.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'rb') as f: 
 	pars = pickle.load(f)
 print('%.2f' % (time.time() - start) + ' seconds.' + '\n', flush=True)
 
@@ -37,5 +37,5 @@ ax.legend((r'$\tau$', r'$\omega$', r'$i$', r'$\gamma$'))
 ax.set_xlabel(r'$\Delta m / \sigma_m$')
 ax.set_xticks(bins)
 plt.tight_layout()
-plt.savefig('../data/pars_diff.pdf', dpi=300)
+plt.savefig('../../data/pars_diff.pdf', dpi=300)
 plt.close()

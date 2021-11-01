@@ -55,7 +55,7 @@ for it in range(len(filelist)):
 		obs, age, Mini, r, omega0, inc = pickle.load(f)
 	t_str = '_t' + ('%.4f' % age).replace('.', 'p')
 	# plot maximum differences versus model parameter
-	plot_diff(0, Mini, obs, '../data/model_grids/png/diff_vs_Mini' + t_str + cf.z_str + '.png')
-	plot_diff(1, r, obs, '../data/model_grids/png/diff_vs_r' + t_str + cf.z_str + '.png')
-	plot_diff(2, omega0, obs, '../data/model_grids/png/diff_vs_omega0' + t_str + cf.z_str + '.png')
-	plot_diff(3, inc, obs, '../data/model_grids/png/diff_vs_inc' + t_str + cf.z_str + '.png')
+	plot_diff(0, Mini, obs, '../../data/model_grids/png/diff_vs_Mini' + t_str + cf.z_str + '.pdf')
+	plot_diff(1, r, obs, '../../data/model_grids/png/diff_vs_r' + t_str + cf.z_str + '.pdf')
+	plot_diff(2, omega0, obs, '../../data/model_grids/png/diff_vs_omega0' + t_str + cf.z_str + '.pdf')
+	plot_diff(3, inc, obs, '../../data/model_grids/png/diff_vs_inc' + t_str + cf.z_str + '.pdf')
