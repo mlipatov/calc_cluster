@@ -36,7 +36,7 @@ cd ../..
 mv data/pars_grid.pkl ../calc_cluster/data/
 ```
 
-### Set Up
+## Set Up
 
 Go to the web page with the [latest release of this repository](https://github.com/mlipatov/calc_cluster/releases/latest), download the source code as a tar.gz file, put the file in the directory where you want to un-compress it.
 
@@ -47,13 +47,13 @@ tar -xf calc_cluster-x.x.x.tar.gz
 cd calc_cluster-x.x.x/cc/
 ```
 
-### Main Analysis
+## Main Analysis
 
 File `pseudo-code.txt` contains the pseudo-code for scripts `calc_obs.py`, `calc_dens.py`, and `calc_like.py` below. Additionally, the file lists the runtimes and memory output requirements for each script.
 
 File `config.py` contains variables that are constant throughout the analysis. File `load_data.py` loads the cluster data `../data/ngc1846*.txt` and filters it. A number of scripts in this repository access variables in `config.py` and `load_data.py`.
 
-## PARS at one metallicity
+### PARS at one metallicity
 
 From the above grid of PARS magnitudes, compute a smaller grid at one metallicity, e.g., `../data/pars_grid_ZMm0p45.pkl`.
 
@@ -61,7 +61,7 @@ From the above grid of PARS magnitudes, compute a smaller grid at one metallicit
 python mist_met_convert.py
 ```
 
-## Calculate Observables on Model Grids
+### Calculate Observables on Model Grids
 
 *Caution:* run the following command only if you have 100 GB of space on the hard drive for the output.
 Compute magnitude, color, and vsini, a.k.a. the observables, on the MIST model grid. Refine the grid to make observable spacing between the models comparable to minimum instrument error. This uses file `lib/mist_util.py` and places files such as `obs_t9p0537.pkl` into `../data/observables/`.
@@ -70,7 +70,7 @@ Compute magnitude, color, and vsini, a.k.a. the observables, on the MIST model g
 python calc_obs.py
 ```
 
-## Calculate Probability Densities in Observable Space
+### Calculate Probability Densities in Observable Space
 
 Next, compute the probability densities. This places minimum-error densities across observable space, such as `density_t9p0537.pkl`, into `../data/densities/pkl/`. The script also produces the individual data point densities, evaluated at each data point's observables, such as `../data/points/points_os060_005_015_t9p0537_9p2550.pkl`.
 
@@ -78,7 +78,7 @@ Next, compute the probability densities. This places minimum-error densities acr
 python calc_dens.py
 ```
 
-## Calculate Likelihoods of Cluster Parameters
+### Calculate Likelihoods of Cluster Parameters
 
 Finally, compute cluster likelihoods. This places the log-likelihoods on a grid of cluster parameters, such as `ll_m0p45_os060_005_015.pkl`, into `../data/likelihoods/pkl/`. The script also places the likelihood factors for individual data points at maximum-likelihood parameters, such as `lf_m0p45_os060_005_015.pkl`, into the same directory.
 
@@ -86,7 +86,7 @@ Finally, compute cluster likelihoods. This places the log-likelihoods on a grid 
 python calc_like.py
 ```
 
-### Plots
+## Plots
 
 ## Acknowledgements
 
