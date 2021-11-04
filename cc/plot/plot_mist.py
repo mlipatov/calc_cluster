@@ -4,8 +4,8 @@
 import sys, os, time, pickle
 import numpy as np
 import gc 
+sys.path.append(os.path.join(os.path.dirname(__file__),'../'))
 # PARS imports
-sys.path.append(os.path.abspath(os.path.join('../..', 'paint_atmospheres')))
 from pa.lib import surface as sf
 from pa.lib import util as ut
 from pa.opt import grid as gd
@@ -71,14 +71,6 @@ def plot(texstr, x, y, xlabel, ylabel, filename):
 	second_legend = ax.legend(title='Inclination', loc='upper left', bbox_to_anchor=(1.05, 0.75), markerscale=5, \
 		frameon=False, handles=[poleon[0], sideon[0]], labels=[str(0), r'$\pi / 2$'])
 	second_legend._legend_box.align = "left"
-	# # sample error bars: these are rather small
-	# if 'v' in xlabel: 
-	# 	x = 200
-	# 	xerr = cf.std[2]
-	# else: 
-	# 	x = 0.9
-	# 	xerr = cf.std[1]
-	# ax.errorbar(x, 19.7, xerr=xerr, yerr=cf.std[0], ecolor='k')
 
 	plot_region(ax, ROI, ROI_kwargs)
 	ax.spines["top"].set_visible(False)
@@ -88,7 +80,7 @@ def plot(texstr, x, y, xlabel, ylabel, filename):
 	ax.text(1.0, 1.0, textstr, transform=ax.transAxes, fontsize=12,
 	        verticalalignment='top', bbox=dict(facecolor='w', alpha=1.0, edgecolor='w'))
 
-	plt.savefig('data/model_grids/cvmd/' + filename, dpi=300)
+	plt.savefig('../../data/model_grids/cvmd/' + filename, dpi=300)
 	plt.close()
 
 # pre-compute Roche model volume versus PARS's omega
@@ -99,7 +91,7 @@ sf.calcom()
 # Load and filter MIST models
 print('Loading MIST...', end='')
 start = time.time()
-st = mu.Set('data/mist_grid.npy')
+st = mu.Set('../../data/mist_grid.npy')
 print('%.2f' % (time.time() - start) + ' seconds.')
 
 st.select_MS() # select main sequence
@@ -113,7 +105,7 @@ st.select_age(t)
 
 print('Loading PARS...', end='', flush=True)
 start = time.time()
-with open('data/pars_grid_ZM' + str(cf.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'rb') as f: 
+with open('../../data/pars_grid_ZM' + str(cf.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'rb') as f: 
 	pars = pickle.load(f)
 print('%.2f' % (time.time() - start) + ' seconds.', flush=True)
 mu.Grid.pars = pars # give a PARS grid reference to the grid class
@@ -143,7 +135,7 @@ textstr = '\n'.join((
 	r'$\log{\,t}=' + '%.4f' % t + '$',
 	r'$\sigma_{\rm m} = ' + '%.3f' % cf.std[0] + '$',
 	r'$\sigma_{\rm c} = ' + '%.3f' % cf.std[1] + '$'))
-filename = 'mist_cmd_t' + ('%.4f' % t).replace('.', 'p') + '.png'
+filename = 'mist_cmd_t' + ('%.4f' % t).replace('.', 'p') + '.pdf'
 plot(textstr, col,  mag, 'c = F435W - F814W', r'$m = {\rm F555W}$', filename)
 
 textstr = '\n'.join((
@@ -152,5 +144,5 @@ textstr = '\n'.join((
 	r'$\log{\,t}=' + '%.4f' % t + '$',
 	r'$\sigma_{\rm m} = ' + '%.3f' % cf.std[0] + '$',
 	r'$\sigma_{\rm v} = ' + '%.0f' % cf.std[2] + '$ km/s'))
-filename = 'mist_vmd_t' + ('%.4f' % t).replace('.', 'p') + '.png'
+filename = 'mist_vmd_t' + ('%.4f' % t).replace('.', 'p') + '.pdf'
 plot(textstr, vsini, mag, r'v = $v_{\rm e}\,\sin{i}$, km/s', r'$m = {\rm F555W}$', filename)

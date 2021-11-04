@@ -110,7 +110,7 @@ for filepath in filelist:
 	# text box text
 	textstr = '\n'.join((		
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
-		r'${\rm [M/H]}_{\rm MIST}=' + str(cf.Z) + '$',	
+		r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',	
 	    t0_hat + ' = ' + '%.3f' % t0_ar[t0m],
 	    t1_hat + ' = ' + '%.3f' % t1_ar[t1m],
 		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
