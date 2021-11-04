@@ -1,6 +1,6 @@
 # Calculate Likelihoods of Cluster Parameters
 
-These computer programs compute continuous probability densities in 3D observable space and likelihoods of cluster parameters, based on a set of stellar models in multi-dimensional space. The following instructions re-produce a published version of this analysis for magnitude and vsini data in NGC 1846.
+These computer programs compute continuous probability densities in 3D observable space and corresponding likelihoods of cluster parameters, based on a set of stellar models in multi-dimensional space. The following instructions re-produce a published version of this analysis for magnitude and vsini data in NGC 1846.
 
 ## Preliminaries
 
