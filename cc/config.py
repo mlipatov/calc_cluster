@@ -16,9 +16,6 @@ modulus = 18.45
 Z = -0.45 # -0.37 # MIST metallicity 
 z_str = '_Z' + str(Z).replace('-', 'm').replace('.', 'p') # metallicity string for printing
 
-## parameters for the point density calculations
-mix = False # True if mixing grids of different ages, False if implementing a Gaussian age prior
-
 # minimum standard deviations of the observables:
 # magnitude F555W, color F435W - F814W and vsini in km/s
 std = np.array([0.01, 0.01*np.sqrt(2.), 10.])
@@ -57,27 +54,27 @@ denorm_err = 9
 # number of coarse vsini grid steps in the standard deviation of kernels assumed for plotting
 plot_err = 1
 
-if mix: # if enhanced rotational longevity analysis
-	# implement a single rotational population, with a flat prior
-	om_mean = np.array([1.])
-	om_sigma = np.array([np.inf])
-	om_str = ''
-else: # implement three rotational populations 
-	# slowest rotational population is centered on omega = 0, fastest on omega = 1
-	# standard deviations of the rotational populations
-	s_slow = 0.6 
-	s_middle = 0.05
-	s_fast = 0.15 
-	a = s_fast / s_slow
-	# medium rotating population: 
-	# mean is the location where the slow and fast distributions are equal
-	if a == 1:
-		om_middle = 1./2
-	else:
-		om_middle = ( 1 - a * np.sqrt(1 - 2*(1 - a**2)*np.log(a)*s_slow**2) ) / (1 - a**2)
-	om_mean = np.array([0, om_middle, 1])
-	om_sigma = np.array([s_slow, s_middle, s_fast])
-	om_str = '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma])
+# if mix: # if enhanced rotational longevity analysis
+# 	# implement a single rotational population, with a flat prior
+# 	om_mean = np.array([1.])
+# 	om_sigma = np.array([np.inf])
+# 	om_str = ''
+# else: # implement three rotational populations 
+# slowest rotational population is centered on omega = 0, fastest on omega = 1
+# standard deviations of the rotational populations
+s_slow = 0.6 
+s_middle = 0.05
+s_fast = 0.15 
+a = s_fast / s_slow
+# medium rotating population: 
+# mean is the location where the slow and fast distributions are equal
+if a == 1:
+	om_middle = 1./2
+else:
+	om_middle = ( 1 - a * np.sqrt(1 - 2*(1 - a**2)*np.log(a)*s_slow**2) ) / (1 - a**2)
+om_mean = np.array([0, om_middle, 1])
+om_sigma = np.array([s_slow, s_middle, s_fast])
+om_str = '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma])
 
 # multiplicity populations
 mult = ['unary', 'binary']
@@ -86,28 +83,28 @@ mult = ['unary', 'binary']
 rot_pop = ['Slow', 'Intermediate', 'Fast']
 mul_pop = ['Unaries', 'Binaries']
 
-# boundaries between vsini values roughly corresponding to boundaries between rotational populations
-vsini_bins = [0, 25, 75, np.inf]
+# # boundaries between vsini values roughly corresponding to boundaries between rotational populations
+# vsini_bins = [0, 25, 75, np.inf]
 
 ## parameters for the likelihood calculations
 overflow = 'root' # 'root' or 'log': strategy for dealing with product overflow, 'log' takes about twice the time of 'root'
 
 ## target ranges
-if mix: # the enhanced mixing analysis
-	n = 11 # number of steps in each dimension
-	t0min, t0max = [9.224, 9.284]
-	amin, amax = [0.2, 0.4]
-	a_ar = np.linspace(amin, amax, n)
-else: # the MIST analysis
-	n = 21 # number of steps in each dimension
-	tmin, tmax = [9.156, 9.165] # age
-	smin, smax = [0.018, 0.027] # sigma_age
-	w0min, w0max = [0, 0.2] # slow proportion
-	w2min, w2max = [0.3, 0.5] # fast proportion
-	# tmin, tmax = [9.154, 9.165] # age
-	# smin, smax = [0.036, 0.047] # sigma_age
-	# w0min, w0max = [0.025, 0.225] # slow proportion
-	# w2min, w2max = [0.4, 0.9] # fast proportion
-	# rotational proportion grids (age parameter grids determined elsewhere)
-	w0 = np.linspace(w0min, w0max, n, dtype=float) 
-	w2 = np.linspace(w2min, w2max, n, dtype=float)
+# if mix: # the enhanced mixing analysis
+# 	n = 11 # number of steps in each dimension
+# 	t0min, t0max = [9.224, 9.284]
+# 	amin, amax = [0.2, 0.4]
+# 	a_ar = np.linspace(amin, amax, n)
+# else: # the MIST analysis
+n = 21 # number of steps in each dimension
+tmin, tmax = [9.156, 9.165] # age
+smin, smax = [0.018, 0.027] # sigma_age
+w0min, w0max = [0, 0.2] # slow proportion
+w2min, w2max = [0.3, 0.5] # fast proportion
+# tmin, tmax = [9.154, 9.165] # age
+# smin, smax = [0.036, 0.047] # sigma_age
+# w0min, w0max = [0.025, 0.225] # slow proportion
+# w2min, w2max = [0.4, 0.9] # fast proportion
+# rotational proportion grids (age parameter grids determined elsewhere)
+w0 = np.linspace(w0min, w0max, n, dtype=float) 
+w2 = np.linspace(w2min, w2max, n, dtype=float)

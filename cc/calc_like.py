@@ -18,16 +18,9 @@ nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
 npts = ld.obs.shape[0] # number of data points
 ndim = ld.obs.shape[1] # number of observable dimensions
 
-if cf.mix: 
-	points_dir = 'data/mix/points/'
-	like_dir = 'data/mix/likelihoods/'
-else:
-	points_dir = cf.points_dir
-	like_dir = cf.like_dir
-
 # load the data point densities
 # dimensions: age, multiplicity population, rotational population, data point
-filelist = list(np.sort(glob.glob(points_dir + '*.pkl')))
+filelist = list(np.sort(glob.glob(cf.points_dir + '*.pkl')))
 t = None
 for filepath in filelist:
 	with open(filepath, 'rb') as f: 
@@ -53,53 +46,54 @@ back[m0] = cf.v0err * cf.std[-1] / (np.sqrt(2 * np.pi) * cf.volume)
 # everywhere else
 back[mv] = ( 1 + erf(ld.obs[mv, -1] / (np.sqrt(2) * ld.std[mv, -1])) ) / (2 * cf.volume)
 
-if cf.mix:
-	m = (t >= cf.t0min) & (t <= cf.t0max)
-	ft = points[m] # the points are already on a grid of age parameters
-	t0_ar = t[m] # the first age-related parameter is the age intercept 
-	t1_ar = cf.a_ar # the second age-related parameter is related to the slope
-else:
-	## compute likelihoods on a grid of age, metallicity, 
-	## rotational population and multiplicity population proportions
-	## a range of age priors
-	# smaller of the two distances between range boundaries and available age grid boundaries,
-	# divided by the number of standard deviations in half the Gaussian age prior;
-	# this is the largest possible standard deviation of this prior
-	sigma_max = np.minimum( cf.tmin - t[0], t[-1] - cf.tmax ) / nsig
-	# means of the priors
-	if t[-1] <= cf.tmin: # if the largest age is below the target range
-		t_mean = np.array([t[-1]]) # compute for the largest age only
-	elif t[0] >= cf.tmax: # if the smallest age is above the target range
-		t_mean = np.array([t[0]]) # compute for the smallest age only
-	else: # else, compute on the intersection of the target range and allowed range
-		t_mean = np.linspace(np.maximum(cf.tmin, t[0]), np.minimum(cf.tmax, t[-1]), cf.n, dtype=float)
-	# standard deviations of the priors
-	if sigma_max <= cf.smin: # if maximum sigma is below the target sigma range
-		t_sigma = np.array([sigma_max]) # compute for the one value of maximum sigma
-	else: # else, compute on the intersection of the target range and allowed range
-		t_sigma = np.linspace(cf.smin, np.minimum(sigma_max, cf.smax), cf.n)
+# if cf.mix:
+# 	m = (t >= cf.t0min) & (t <= cf.t0max)
+# 	ft = points[m] # the points are already on a grid of age parameters
+# 	t0_ar = t[m] # the first age-related parameter is the age intercept 
+# 	t1_ar = cf.a_ar # the second age-related parameter is related to the slope
+# else:
 
-	print( 'age means: ' + ', '.join(['%.4f' % t for t in t_mean]) )
-	print( 'age standard deviations: ' + ', '.join(['%.4f' % t for t in t_sigma]) )
-	print( 'average age grid step: ' + '%.5f' % np.mean(delta_t) )
-	print( 'means grid step: ' + '%.5f' % (t_mean[1] - t_mean[0]) )
-	print( 'deviations grid step: ' + '%.5f' % (t_sigma[1] - t_sigma[0]) )
-	print( 'slow rotator proportion step: ' + '%.5f' % (cf.w0[1] - cf.w0[0]) )
-	print( 'fast rotator proportion step: ' + '%.5f' % (cf.w2[1] - cf.w2[0]) )
+## compute likelihoods on a grid of age, metallicity, 
+## rotational population and multiplicity population proportions
+## a range of age priors
+# smaller of the two distances between range boundaries and available age grid boundaries,
+# divided by the number of standard deviations in half the Gaussian age prior;
+# this is the largest possible standard deviation of this prior
+sigma_max = np.minimum( cf.tmin - t[0], t[-1] - cf.tmax ) / nsig
+# means of the priors
+if t[-1] <= cf.tmin: # if the largest age is below the target range
+	t_mean = np.array([t[-1]]) # compute for the largest age only
+elif t[0] >= cf.tmax: # if the smallest age is above the target range
+	t_mean = np.array([t[0]]) # compute for the smallest age only
+else: # else, compute on the intersection of the target range and allowed range
+	t_mean = np.linspace(np.maximum(cf.tmin, t[0]), np.minimum(cf.tmax, t[-1]), cf.n, dtype=float)
+# standard deviations of the priors
+if sigma_max <= cf.smin: # if maximum sigma is below the target sigma range
+	t_sigma = np.array([sigma_max]) # compute for the one value of maximum sigma
+else: # else, compute on the intersection of the target range and allowed range
+	t_sigma = np.linspace(cf.smin, np.minimum(sigma_max, cf.smax), cf.n)
 
-	# construct the normalized age priors
-	# dimensions: age, prior mean, prior sigma
-	t_pr = np.exp( -0.5 * (t[:, np.newaxis, np.newaxis] - t_mean[np.newaxis, :, np.newaxis])**2 \
-							 / t_sigma[np.newaxis, np.newaxis, :]**2 )
-	# assume integration is Riemann, with the given delta ages; multiply by the deltas
-	t_pr *= delta_t[:, np.newaxis, np.newaxis]
-	# normalize so that the sum is equal to 1
-	t_pr /= np.sum(t_pr, axis=0)
-	# marginalize probability densities at data point locations by the age prior,
-	# dimensions of output: age prior mean, age prior sigma, multiplicity, rotational population, data point 
-	ft = np.sum(t_pr[..., np.newaxis, np.newaxis, np.newaxis] * points[:, np.newaxis, np.newaxis, ...], axis=0)
-	t0_ar = t_mean # the first age-related parameter is the mean of the distribution
-	t1_ar = t_sigma # the second parameter is the standard deviation
+print( 'age means: ' + ', '.join(['%.4f' % t for t in t_mean]) )
+print( 'age standard deviations: ' + ', '.join(['%.4f' % t for t in t_sigma]) )
+print( 'average age grid step: ' + '%.5f' % np.mean(delta_t) )
+print( 'means grid step: ' + '%.5f' % (t_mean[1] - t_mean[0]) )
+print( 'deviations grid step: ' + '%.5f' % (t_sigma[1] - t_sigma[0]) )
+print( 'slow rotator proportion step: ' + '%.5f' % (cf.w0[1] - cf.w0[0]) )
+print( 'fast rotator proportion step: ' + '%.5f' % (cf.w2[1] - cf.w2[0]) )
+
+# construct the normalized age priors
+# dimensions: age, prior mean, prior sigma
+t_pr = np.exp( -0.5 * (t[:, np.newaxis, np.newaxis] - t_mean[np.newaxis, :, np.newaxis])**2 \
+						 / t_sigma[np.newaxis, np.newaxis, :]**2 )
+# assume integration is Riemann, with the given delta ages; multiply by the deltas
+t_pr *= delta_t[:, np.newaxis, np.newaxis]
+# normalize so that the sum is equal to 1
+t_pr /= np.sum(t_pr, axis=0)
+# marginalize probability densities at data point locations by the age prior,
+# dimensions of output: age prior mean, age prior sigma, multiplicity, rotational population, data point 
+ft = np.sum(t_pr[..., np.newaxis, np.newaxis, np.newaxis] * points[:, np.newaxis, np.newaxis, ...], axis=0)
+t0_ar = t_mean # the first age-related parameter is the mean of the distribution
+t1_ar = t_sigma # the second parameter is the standard deviation
 
 # derivatives of log likelihood w.r.t. q and w.r.t. b at (q, b) = x
 # likelihood is the product of (1 + Ai * q + Bi * q * b) over i
@@ -364,11 +358,11 @@ suffix = str(cf.Z).replace('-', 'm').replace('.', 'p') + \
 	# '_os' + '_'.join([('%.2f' % n).replace('.','') for n in om_sigma]) + '.pkl', 'wb') as f:
 
 # package the likelihoods, the ML q values and the rotational distribution standard deviations
-with open(like_dir + 'pkl/ll_' + suffix, 'wb') as f:
+with open(cf.like_dir + 'pkl/ll_' + suffix, 'wb') as f:
 	pickle.dump([ll, qm, bm, t0_ar, t1_ar, cf.w0, cf.w2, om_sigma], f)
 
 # package the likelihood factors of individual data points with the corresponding cluster model parameters
-with open(like_dir + 'pkl/lf_' + suffix, 'wb') as f:
+with open(cf.like_dir + 'pkl/lf_' + suffix, 'wb') as f:
 	pickle.dump([LF_max, \
 		qm[w0i, w2i, t0i, t1i], bm[w0i, w2i, t0i, t1i], \
 		t0_ar[t0i], t1_ar[t1i], cf.w0[w0i], cf.w2[w2i], om_sigma], f)

@@ -6,13 +6,9 @@ These computer programs compute continuous probability densities in 3D observabl
 
 Install git and Python, then complete the following preliminary steps to obtain the files that serve as input to the programs in this repository.
 
-### Cluster Data
-
-
-
 ### MIST (MESA Isochrones and Stellar Tracks)
 
-To filter the information you need from the MIST model library, first copy `parse_mist_iso.py` and `mist_txt_npy.py` into directory `mist/`, which should contain directories such as `feh_m0.15_afe_p0.0_vvcrit0.0_TP`. Then run these scripts, to obtain text file `mist_isochrones.txt` and a corresponding numpy array file `mist_grid.npy`. Move the numpy array into the `data/` directory.
+To filter the information you need from the MIST model library, first copy `parse_mist_iso.py` and `mist_txt_npy.py` into directory `mist/`, which should contain directories such as `feh_m0.15_afe_p0.0_vvcrit0.0_TP`. Then run these Python scripts, to obtain text file `mist_isochrones.txt` and a corresponding numpy array file `mist_grid.npy`. Move the numpy array into the `data/` directory.
 
 ```
 cp prelim/parse_mist_iso.py mist/
@@ -40,24 +36,62 @@ cd ../..
 mv data/pars_grid.pkl ../calc_cluster/data/
 ```
 
-## Main Analysis
-
 ### Set Up
 
-Go to the web page with the [latest release](https://github.com/mlipatov/calc_cluster/releases/latest), download the source code as a tar.gz file, put the file in the directory where you want to un-compress it.
+Go to the web page with the [latest release of this repository](https://github.com/mlipatov/calc_cluster/releases/latest), download the source code as a tar.gz file, put the file in the directory where you want to un-compress it.
 
-Un-compress the file and go to the software's top directory.
+Un-compress the file and go to the directory with executables.
 
 ```
 tar -xf calc_cluster-x.x.x.tar.gz
-cd calc_cluster-x.x.x
+cd calc_cluster-x.x.x/cc/
 ```
 
-`cc/config.py`
+### Main Analysis
 
-### 
+File `pseudo-code.txt` contains the pseudo-code for scripts `calc_obs.py`, `calc_dens.py`, and `calc_like.py` below. Additionally, the file lists the runtimes and memory output requirements for each script.
 
-To compute probability densities and cluster likelihoods, run the following series of scripts.
+File `config.py` contains variables that are constant throughout the analysis. File `load_data.py` loads the cluster data `../data/ngc1846*.txt` and filters it. A number of scripts in this repository access variables in `config.py` and `load_data.py`.
+
+## PARS at one metallicity
+
+From the above grid of PARS magnitudes, compute a smaller grid at one metallicity, e.g., `../data/pars_grid_ZMm0p45.pkl`.
+
+```
+python mist_met_convert.py
+```
+
+## Calculate Observables on Model Grids
+
+*Caution:* run the following command only if you have 100 GB of space on the hard drive for the output.
+Compute magnitude, color, and vsini, a.k.a. the observables, on the MIST model grid. Refine the grid to make observable spacing between the models comparable to minimum instrument error. This uses file `lib/mist_util.py` and places files such as `obs_t9p0537.pkl` into `../data/observables/`.
+
+```
+python calc_obs.py
+```
+
+## Calculate Probability Densities in Observable Space
+
+Next, compute the probability densities. This places minimum-error densities across observable space, such as `density_t9p0537.pkl`, into `../data/densities/pkl/`. The script also produces the individual data point densities, evaluated at each data point's observables, such as `../data/points/points_os060_005_015_t9p0537_9p2550.pkl`.
+
+```
+python calc_dens.py
+```
+
+## Calculate Likelihoods of Cluster Parameters
+
+Finally, compute cluster likelihoods. This places the log-likelihoods on a grid of cluster parameters, such as `ll_m0p45_os060_005_015.pkl`, into `../data/likelihoods/pkl/`. The script also places the likelihood factors for individual data points at maximum-likelihood parameters, such as `lf_m0p45_os060_005_015.pkl`, into the same directory.
+
+```
+python calc_like.py
+```
+
+### Plots
+
+## Acknowledgements
+
+[Aaron Dotter](https://github.com/aarondotter) and [Seth Gossage](https://sgossage.github.io/) kindly provided the MIST model library with ten rotation rates that were earlier utilized in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract). 
+Nate Bastian and Sebastian Kamann graciously provided the magnitude and vsini data for NGC 1846 that are described in [Kamann et al 2020](https://ui.adsabs.harvard.edu/abs/2020MNRAS.492.2177K/abstract).
 
 
 ## Authors

@@ -122,19 +122,6 @@ for i in range(len(nobs)):
 	ogrid = np.linspace(obs0[i], obs1[i], nobs[i]) # grid for this observable
 	obs_grids.append(ogrid)
 	step[i] = ogrid[1] - ogrid[0]
-# resvar = (err/cf.std)**2 - 1 # residual relative variance
-# resvar[np.less(resvar, 0, where=~np.isnan(resvar))] = 0 # correct for round-off error
-# margin = cf.nsig * cf.std * (1 + np.sqrt(resvar))
-# # minimum boundaries needed for individual stars
-# obmax = np.nanmax(obs + margin, axis=0)
-# obmin = np.nanmin(obs - margin, axis=0)
-# minimum boundaries needed for the initial convolution and probability leakage checks
-# obmax_conv = 
-# obmin_conv = 
-# # boundaries that determine which models are computed;
-# # these are the minimum needed for individual stars, initial convolution and probability checks
-# obmax = np.maximum(obmax, obmax_conv)
-# obmin = np.minimum(obmin, obmin_conv)
 # plotting boundaries - these are inside the area where minimum-error density is defined
 obmax_plot = cf.ROI[:, 1] + cf.plot_err * cf.nsig * cf.std
 obmin_plot = cf.ROI[:, 0] - cf.plot_err * cf.nsig * cf.std

@@ -33,6 +33,9 @@ ll = log likelihood
 
 n = ~2300 data points, i.e. observed stars in the ROI
 
+
+### calc_obs.py
+
 ## observables at star parameters
 for every t:
 	refine primary magnitudes and vsini on (M, omega, i)
@@ -47,6 +50,9 @@ save observables on (t, M, r, omega, i)
 
 for every data point:
 	get the residual error kernel for this data point and map it on (m, c, v)
+
+
+### calc_dens.py
 
 # function to compute minimum-error densities 
 def minimum_error_densities(prior_obs):
@@ -90,6 +96,9 @@ for every t:
 save density on (t, rotation, multiplicity, datum)
 => hard disk space: 8 Mb
 => time: 60 ages * 1 minute = 1 hour
+
+
+### calc_like.py
 
 ## L at cluster parameters
 compute background probabilities on (datum, )

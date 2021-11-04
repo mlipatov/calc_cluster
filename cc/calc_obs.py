@@ -30,7 +30,7 @@ sf.calcom()
 # Load and filter MIST models
 print('Loading MIST...', end='')
 start = time.time()
-st = mu.Set('data/mist_grid.npy')
+st = mu.Set('../data/mist_grid.npy')
 
 st.select_MS() # select main sequence
 st.select_Z(cf.Z) # select metallicity
@@ -54,7 +54,7 @@ t = np.unique(np.concatenate(ts)) # refined ages
 is_tM = np.isin(t, tM) # whether the refined age is an original MIST age
 
 # use something along the following lines if the program stalls
-ages = 2 # 1 or 2
+ages = 1 # 1 or 2
 ind = np.where(is_tM)[0] # indices of MIST ages
 i = ind[int(len(ind)/2)] # middle MIST index
 if ages == 1: t = t[:i+1]
@@ -77,7 +77,7 @@ stc = st.copy(); stc.select(stc.omega0 == 0)
 
 print('Loading PARS...', end='', flush=True)
 start = time.time()
-with open('data/pars_grid_ZM' + str(cf.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'rb') as f: 
+with open('../data/pars_grid_ZM' + str(cf.Z).replace('-', 'm').replace('.', 'p') + '.pkl', 'rb') as f: 
 	pars = pickle.load(f)
 print('%.2f' % (time.time() - start) + ' seconds.' + '\n', flush=True)
 mu.Grid.pars = pars # give a PARS grid reference to the grid class
