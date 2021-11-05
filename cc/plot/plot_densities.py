@@ -117,13 +117,6 @@ for filepath in filelist:
 			densities_vsini[j][k][it] = density_vsini
 
 			## text 
-			# text for scatter that depends on rotational population
-			if np.isinf(cf.vsini_bins[j+1]): 
-				upper_bound_text = '\infty'
-			else:
-				upper_bound_text = str(cf.vsini_bins[j+1])
-			vsini_text = r'$v_{\rm e}\,\sin{i}\, \in \,[' + str(cf.vsini_bins[j]) + ',' + \
-				upper_bound_text + ')\,$' + 'km/s'
 
 			textstr = '\n'.join((
 				r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
@@ -131,11 +124,8 @@ for filepath in filelist:
 			    r'$\log{\,t}=' + base.split('_')[1].replace('p','.')[1:] + '$',
 				str(cf.rot_pop[j]) + r' rotation',
 				r'$\sigma_{\rm \omega} = ' + '%.2f' % cf.om_sigma[j] + '$',
-				str(cf.mul_pop[k]) #,
-				# vsini_text
+				str(cf.mul_pop[k]) 
 				))
-				#, $\omega = $' + str(densities[k][3])))
-			    # r'$A_V=%.2f$' % (cf.A_V, )))
 
 			print('Plotting...')
 			for plot_type in ['cmd', 'vmd']:
