@@ -95,7 +95,7 @@ Go to the directory with plot scripts.
 Each entry below consists of brief figure description, the figure's number in the published work, the script call that produces it, and the resulting figure file.
 
 * PARS grid magnitude differences, Figure 2:\
->`python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`.
+<div style="margin-left: 10px"> `python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`. </div>
 
 * Original MIST models in observable space, Figure 4:\
 &emsp; `python plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.\
