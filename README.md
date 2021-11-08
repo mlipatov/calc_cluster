@@ -63,7 +63,7 @@ python mist_met_convert.py
 
 ### Observables on Model Grids
 
-<span style="color:red">Caution:</span> run the following command only if you have 100 GB of space on the hard drive for the output.
+==**Caution:**== run the following command only if you have 100 GB of space on the hard drive for the output.
 Compute magnitude, color, and vsini, a.k.a. the observables, on the MIST model grid. Refine the grid to make observable spacing between the models comparable to minimum instrument error. This uses file `lib/mist_util.py` and places files such as `obs_t9p0537.pkl` into `../data/observables/`.
 
 ```
