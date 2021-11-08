@@ -112,8 +112,8 @@ Each entry below consists of brief figure description, the figure's number in th
 * De-normalization due to convolution, Figure 11:\
 &emsp; `python plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.\
 
-* Likelihood factors of individual data points, Figure 12:\
-&emsp; `python plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.\
+Likelihood factors of individual data points, Figure 12:
+>`python plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.
 
 Cluster parameter confidence regions, Figure 13:
 >`python plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.
