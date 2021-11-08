@@ -94,32 +94,40 @@ Go to the directory with plot scripts.
 
 Each entry below consists of brief figure description, the figure's number in the published work, the script call that produces it, and the resulting figure file.
 
-* PARS grid magnitude differences, Figure 2:\
->`python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`.
+&nbsp;
+#### PARS grid magnitude differences, Figure 2:
+`python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`.
 
-* Original MIST models in observable space, Figure 4:\
-&emsp; `python plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.\
+&nbsp;
+#### Original MIST models in observable space, Figure 4:
+`python plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.
 
-* Observable distances in a refined model grid at one age, Figure 5:\
-&emsp; `python plot_diff.py` &rarr; `../../data/model_grids/png/diff_vs_Mini_t9p1544_Zm0p45.pdf`.\
+&nbsp;
+#### Observable distances in a refined model grid at one age, Figure 5:
+`python plot_diff.py` &rarr; `../../data/model_grids/png/diff_vs_Mini_t9p1544_Zm0p45.pdf`.
 
-* Observable distances between model grids at different ages, Figures 6 & 7:\
-&emsp; `python plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`.\
+&nbsp;
+#### Observable distances between model grids at different ages, Figures 6 & 7:
+`python plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`.
 
-* Probability densities in observable space, Figures 8, 9 & 10:\
-&emsp; `python plot_densities.py` &rarr; `../../data/densities/cmd/density_t9p1594_*.pdf`, `../../data/densities/vmd/density_t9p1594_*.pdf`, and `density_dist_*.pdf`.\
+#### Probability densities in observable space, Figures 8, 9 & 10:
+`python plot_densities.py` &rarr; `../../data/densities/cmd/density_t9p1594_*.pdf`, `../../data/densities/vmd/density_t9p1594_*.pdf`, and `density_dist_*.pdf`.
 
-* De-normalization due to convolution, Figure 11:\
-&emsp; `python plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.\
+&nbsp;
+#### De-normalization due to convolution, Figure 11:
+`python plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.
 
-Likelihood factors of individual data points, Figure 12:
->`python plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.
+&nbsp;
+#### Likelihood factors of individual data points, Figure 12:
+`python plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.
 
-Cluster parameter confidence regions, Figure 13:
->`python plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.
+&nbsp;
+#### Cluster parameter confidence regions, Figure 13:
+`python plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.
 
-* Cluster parameter likelihoods, not a Figure in the publication:\
-&emsp; `python plot_ll.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation).pdf`.
+&nbsp;
+#### Cluster parameter likelihoods, not a figure in the publication:
+`python plot_ll.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation).pdf`.
 
 ## Acknowledgements
 
