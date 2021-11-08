@@ -95,7 +95,7 @@ Go to the directory with plot scripts.
 Each entry below consists of brief figure description, the figure's number in the published work, the script call that produces it, and the resulting figure file.
 
 * PARS grid magnitude differences, Figure 2:\
-<div style="margin-left: 10px"> `python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`. </div>
+>`python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`.
 
 * Original MIST models in observable space, Figure 4:\
 &emsp; `python plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.\
@@ -115,8 +115,8 @@ Each entry below consists of brief figure description, the figure's number in th
 * Likelihood factors of individual data points, Figure 12:\
 &emsp; `python plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.\
 
-* Cluster parameter confidence regions, Figure 13:\
-&emsp; `python plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.\
+Cluster parameter confidence regions, Figure 13:
+>`python plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.
 
 * Cluster parameter likelihoods, not a Figure in the publication:\
 &emsp; `python plot_ll.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation).pdf`.
