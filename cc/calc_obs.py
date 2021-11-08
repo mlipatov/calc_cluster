@@ -198,8 +198,3 @@ for it in range(it_0, len(t)):
 	del mag_binary
 	del obs_binary
 	gc.collect() # collect garbage / free up memory    
-	# # look at the sizes of the largest variables
-	# for name, size in sorted(((name, sys.getsizeof(value)) for name, value in locals().items()),
-	# 						 key= lambda x: -x[1])[:10]:
-	# 	print("{:>30}: {:>8}".format(name, mu.sizeof_fmt(size)))
-

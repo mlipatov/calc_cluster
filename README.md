@@ -1,6 +1,6 @@
 # Calculate Likelihoods of Cluster Parameters
 
-These computer programs compute continuous probability densities in 3D observable space and corresponding likelihoods of cluster parameters, based on a set of stellar models in multi-dimensional space. The following instructions re-produce a published version of this analysis for magnitude and vsini data in NGC 1846. Each set of instructions in English corresponds to the immediately following Python code.
+These computer programs compute continuous probability densities in 3D observable space and corresponding likelihoods of cluster parameters, based on a set of stellar models in multi-dimensional space. Follow the instructions below to re-produce the analysis for magnitude and vsini data in NGC 1846 in **Lipatov, Brandt, and Gossage (2021)**. Each set of instructions in English corresponds to the immediately following Python code.
 
 ## Preliminaries
 
@@ -36,7 +36,7 @@ cd ../..
 mv data/pars_grid.pkl ../calc_cluster/data/
 ```
 
-## Set Up
+## Setup
 
 Go to the web page with the [latest release of this repository](https://github.com/mlipatov/calc_cluster/releases/latest), download the source code as a tar.gz file, put the file in the directory where you want to un-compress it.
 
@@ -53,7 +53,7 @@ File `pseudo-code.txt` contains the pseudo-code for scripts `calc_obs.py`, `calc
 
 File `config.py` contains variables that are constant throughout the analysis. File `load_data.py` loads the cluster data `../data/ngc1846*.txt` and filters it. A number of scripts in this repository access variables in `config.py` and `load_data.py`.
 
-### PARS at one metallicity
+### PARS Grid at One Metallicity
 
 From the above grid of PARS magnitudes, compute a smaller grid at one metallicity, e.g., `../data/pars_grid_ZMm0p45.pkl`.
 
@@ -63,7 +63,7 @@ python mist_met_convert.py
 
 ### Observables on Model Grids
 
-*Caution:* run the following command only if you have 100 GB of space on the hard drive for the output.
+<span style="color:red">Caution:</span> run the following command only if you have 100 GB of space on the hard drive for the output.
 Compute magnitude, color, and vsini, a.k.a. the observables, on the MIST model grid. Refine the grid to make observable spacing between the models comparable to minimum instrument error. This uses file `lib/mist_util.py` and places files such as `obs_t9p0537.pkl` into `../data/observables/`.
 
 ```
@@ -92,16 +92,34 @@ Go to the directory with plot scripts.
 
 ```cd plot```
 
-Each entry below consists of brief figure description, its number in the published work, the script call that produces it, and the resulting figure file.
+Each entry below consists of brief figure description, the figure's number in the published work, the script call that produces it, and the resulting figure file.
 
-* PARS grid magnitude differences, Figure 2: `python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`.
-* Original MIST models in observable space, Figure 4: `python plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.
-* Observable distances in a refined model grid at one age, Figure 5: `python plot_diff.py` &rarr; `../../data/model_grids/png/diff_vs_Mini_t9p1544_Zm0p45.pdf`
-* Observable distances between model grids at different ages, Figures 6 & 7: `python plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`
-* Probability densities in observable space, Figures 8, 9 & 10: `python plot_densities.py` &rarr; `../../data/densities/cmd/density_t9p1594_*.pdf`, `../../data/densities/vmd/density_t9p1594_*.pdf`, and `density_dist_*.pdf`
-* De-normalization due to convolution, Figure 11: `python plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`
-* Likelihood factors of individual data points, Figure 12: `python plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`
-* Cluster parameter confidence regions, Figure 13: `python plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`
+* PARS grid magnitude differences, Figure 2:\
+&emsp; `python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`.\
+
+* Original MIST models in observable space, Figure 4:\
+&emsp; `python plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.\
+
+* Observable distances in a refined model grid at one age, Figure 5:\
+&emsp; `python plot_diff.py` &rarr; `../../data/model_grids/png/diff_vs_Mini_t9p1544_Zm0p45.pdf`.\
+
+* Observable distances between model grids at different ages, Figures 6 & 7:\
+&emsp; `python plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`.\
+
+* Probability densities in observable space, Figures 8, 9 & 10:\
+&emsp; `python plot_densities.py` &rarr; `../../data/densities/cmd/density_t9p1594_*.pdf`, `../../data/densities/vmd/density_t9p1594_*.pdf`, and `density_dist_*.pdf`.\
+
+* De-normalization due to convolution, Figure 11:\
+&emsp; `python plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.\
+
+* Likelihood factors of individual data points, Figure 12:\
+&emsp; `python plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.\
+
+* Cluster parameter confidence regions, Figure 13:\
+&emsp; `python plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.\
+
+* Cluster parameter likelihoods, not a Figure in the publication:\
+&emsp; `python plot_ll.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation).pdf`\
 
 ## Acknowledgements
 
