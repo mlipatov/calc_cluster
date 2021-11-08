@@ -91,6 +91,7 @@ nsig = cf.nsig - 1 # number of standard deviations to extend Gaussian kernels
 npts = ld.obs.shape[0] # number of data points
 ndim = ld.obs.shape[1] # number of observable dimensions
 
+diff_ages = [] # initialize the differences between ages in observable space
 it_0 = 0 # first age index
 for it in range(it_0, len(t)):
 	### refinement of (M, omega, i) grids at r = 0 and different t
@@ -178,10 +179,12 @@ for it in range(it_0, len(t)):
 		numbers = np.array(numbers)
 		diff = np.array(diff)
 		d = np.nansum(diff * numbers[:, np.newaxis], axis=0) / np.nansum(numbers)
-		print('magnitude, color, vsini minimum-error distances from the previous isochrone: ' +\
-			', '.join('%.4f' % x for x in d/cf.std))
-		print('EEPs: ' + np.array2string(EEPrange))
-		print('distances from the previous isochrone at all EEPs: ' + np.array2string(diff/cf.std[np.newaxis, :]))
+		diff_age = {'prev': t[it - 1], 'curr': t[it], 'mean_dist': d/cf.std, 'dist': diff/cf.std[np.newaxis, :]}
+		diff_ages.append(diff_age)
+		# print('magnitude, color, vsini minimum-error distances from the previous isochrone: ' +\
+		# 	', '.join('%.4f' % x for x in d/cf.std))
+		# print('EEPs: ' + np.array2string(EEPrange))
+		# print('distances from the previous isochrone at all EEPs: ' + np.array2string(diff/cf.std[np.newaxis, :]))
 
 	# make copies of observables and EEPs for the next iteration
 	if it > it_0: del obs_binary_prev # mark the old version of previous observables for garbage collection
@@ -198,3 +201,7 @@ for it in range(it_0, len(t)):
 	del mag_binary
 	del obs_binary
 	gc.collect() # collect garbage / free up memory    
+
+# save the distances between isochrones in observable space
+with open(cf.obs_dir + 'dist' + str(ages) + '.pkl', 'wb') as f:
+	pickle.dump(diff_ages, f)
