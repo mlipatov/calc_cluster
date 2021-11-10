@@ -64,7 +64,7 @@ python mist_met_convert.py
 ### Observables on Model Grids
 
 **CAUTION:** run the following command only if you have 100 GB of space on the hard drive for the output.
-Compute magnitude, color, and vsini, a.k.a. the observables, on the MIST model grid. Refine the grid to make observable spacing between the models comparable to minimum instrument error. This uses file `lib/mist_util.py` and places files such as `obs_t9p0537.pkl` into `../data/observables/`.
+Compute magnitude, color, and vsini, a.k.a. the observables, on the MIST model grid. Refine the grid to make observable spacing between the models comparable to minimum instrument error. This uses file `lib/mist_util.py` and places files such as `obs_t9p0537.pkl` into `../data/observables/`. Re-run with `ages = 2` in the script for the second half of the ages.
 
 ```
 python calc_obs.py
@@ -94,37 +94,40 @@ Go to the directory with plot scripts.
 
 Each entry below consists of brief figure description, the figure's number in the published work, the script call that produces it, and the resulting figure file.
 
+#### PARS and MIST dimensionless rotational velocities, Figure 1:
+`python 01_plot_omega.py` &rarr; `../../data/omega_plot.pdf` 
+
 #### PARS grid magnitude differences, Figure 2:
-`python plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`.
+`python 02_plot_pars_diff.py` &rarr; `../../data/pars_diff.pdf`.
 
 #### Original MIST models in observable space, Figure 4:
-`python plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.
+`python 04_plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.
 
 #### Observable distances in a refined model grid at one age, Figure 5:
-`python plot_diff.py` &rarr; `../../data/model_grids/png/diff_vs_Mini_t9p1544_Zm0p45.pdf`.
+`python 05_plot_diff.py` &rarr; `../../data/model_grids/png/diff_vs_Mini_t9p1544_Zm0p45.pdf`.
 
 #### Observable distances between model grids at different ages, Figures 6 & 7:
-`python plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`.
+`python 06_plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`.
 
 #### Probability densities in observable space, Figures 8, 9 & 10:
-`python plot_densities.py` &rarr; `../../data/densities/cmd/density_t9p1594_*.pdf`, `../../data/densities/vmd/density_t9p1594_*.pdf`, and `density_dist_*.pdf`.
+`python 08_plot_densities.py` &rarr; `../../data/densities/cmd/density_t9p1594_*.pdf`, `../../data/densities/vmd/density_t9p1594_*.pdf`, and `density_dist_*.pdf`.
 
 #### De-normalization due to convolution, Figure 11:
-`python plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.
+`python 11_plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.
 
 #### Likelihood factors of individual data points, Figure 12:
-`python plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.
+`python 12_plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.
 
 #### Cluster parameter confidence regions, Figure 13:
-`python plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.
+`python 13_plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.
 
 #### Cluster parameter likelihoods, not a figure in the publication:
-`python plot_ll.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation).pdf`.
+`python 14_plot_ll.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation).pdf`.
 
 ## Acknowledgements
 
-[Aaron Dotter](https://github.com/aarondotter) and [Seth Gossage](https://sgossage.github.io/) kindly provided the MIST model library with ten rotation rates that were earlier utilized in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract). 
-Nate Bastian and Sebastian Kamann graciously provided the magnitude and vsini data for NGC 1846 that are described in [Kamann et al 2020](https://ui.adsabs.harvard.edu/abs/2020MNRAS.492.2177K/abstract).
+[Aaron Dotter](https://github.com/aarondotter) and [Seth Gossage](https://sgossage.github.io/) provided the MIST model library with ten rotation rates that were earlier utilized in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract). 
+Nate Bastian and Sebastian Kamann provided the magnitude and vsini data for NGC 1846 that are described in [Kamann et al 2020](https://ui.adsabs.harvard.edu/abs/2020MNRAS.492.2177K/abstract).
 
 
 ## Authors

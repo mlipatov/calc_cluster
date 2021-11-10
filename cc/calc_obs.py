@@ -7,8 +7,8 @@
 # 	checking that observable differences between neighboring models are small enough in the r dimension,
 #	checking that the differences between neighboring isochrones are small enough.
 
-# PARS imports
 import sys, os, time, pickle
+# PARS imports
 sys.path.append(os.path.abspath(os.path.join('..', 'paint_atmospheres')))
 from pa.lib import surface as sf
 from pa.lib import util as ut
