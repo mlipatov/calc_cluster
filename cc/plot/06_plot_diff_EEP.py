@@ -34,6 +34,8 @@ minorLocator = MultipleLocator(0.5)
 plt.hist(diff, bins=bins, \
     label=['magnitude', 'color', r'$v_{\rm e}\sin{i}$'], alpha=0.8)
 plt.legend(loc='upper left', frameon=False)
+plt.axvline(-3.0, color='grey')
+plt.axvline(3.0, color='grey')
 ax = plt.gca()
 ax.xaxis.set_major_locator(majorLocator)
 ax.xaxis.set_major_formatter(majorFormatter)

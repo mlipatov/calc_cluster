@@ -15,7 +15,7 @@ plt.rcParams.update({
 })
 
 # labels of the independent variables
-xlabels = [r'M_{\rm i}', 'r', r'\omega_{\rm i}', r'i']
+xlabels = [r'M_{\rm i}, M_\odot', 'r', r'\omega_{\rm i}', r'i, {\rm rad}']
 
 # Get the maximum (observable difference / std) in a focal model dimension 
 def get_maxdiff(axis, obs):
@@ -43,13 +43,14 @@ def plot_diff(axis, x, obs, filename):
 	# difference with maximum modulus in sigmas along the axis
 	maxdiff = get_maxdiff(axis, obs)
 	plt.scatter(x, maxdiff, s=6)
+	plt.axhline(3.0, color='grey', linestyle='--')
 	plt.xlabel(r'$' + xlabel + r'$')
 	plt.ylabel(r'$\max{\left|\,\Delta x / \sigma_x\,\right|}$')
 	plt.tight_layout()
 	plt.savefig(filename, dpi=200)
 	plt.close()
 
-filelist = list(np.sort(glob.glob('../' + cf.obs_dir + '*.pkl'))) # observables 
+filelist = list(np.sort(glob.glob('../' + cf.obs_dir + 'obs*.pkl'))) # observables 
 for it in range(len(filelist)):
 	with open(filelist[it], 'rb') as f: 
 		obs, age, Mini, r, omega0, inc = pickle.load(f)

@@ -38,7 +38,7 @@ mv data/pars_grid.pkl ../calc_cluster/data/
 
 ## Setup
 
-Go to the web page with the [latest release of this repository](https://github.com/mlipatov/calc_cluster/releases/latest), download the source code as a tar.gz file, put the file in the directory where you want to un-compress it.
+Go to the web page with the [release of this repository that produces the published analysis](https://github.com/mlipatov/calc_cluster/releases/), download the source code as a tar.gz file, put the file in the directory where you want to un-compress it.
 
 Un-compress the file and go to the directory with executables.
 
@@ -116,7 +116,7 @@ Each entry below consists of brief figure description, the figure's number in th
 `python 11_plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.
 
 #### Likelihood factors of individual data points, Figure 12:
-`python 12_plot_lf.py` &rarr; `../../data/likelihoods/png/[vc]md_lf_m0p45_os060_005_015.pdf`.
+`python 12_plot_lf.py` &rarr; `../../data/likelihoods/png/*_lf_m0p45_os060_005_015.pdf`.
 
 #### Cluster parameter confidence regions, Figure 13:
 `python 13_plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.

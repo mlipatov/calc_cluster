@@ -124,13 +124,17 @@ class Set:
 	def select_age(self, age):
 		self.age = age
 		if age in self.t:
-			m = (self.t == age)
-			self.select(m)
+			self.select(self.t == age)
 		else: # interpolate in age, keeping EEP and omega0 constant
+			## remove all ages other than the immediate neighbors of the target
+			t = np.unique(self.t)
+			i = np.searchsorted(t, age)
+			self.select(np.isin(self.t, np.array([t[i - 1], t[i]])))
+			## interpolate
 			EEP = np.unique(self.EEP)
 			oM0 = np.unique(self.oM0)
-			points = [ self.EEP, self.t ]
-			xi = [ EEP, [age] ]
+			points = [ self.EEP, self.t ] 	# points from which to interpolate
+			xi = [ EEP, [age] ]				# points at which to interpolate
 			if oM0.shape[0] > 1: # if omega is an interpolation variable
 				points.insert(1, self.oM0)
 				xi.insert(1, oM0)
