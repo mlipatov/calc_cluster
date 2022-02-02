@@ -33,7 +33,7 @@ minorLocator = MultipleLocator(0.5)
 
 plt.hist(diff, bins=bins, \
     label=['magnitude', 'color', r'$v_{\rm e}\sin{i}$'], alpha=0.8)
-plt.legend(loc='upper left', frameon=False, facecolor='white')
+plt.legend(loc=(0.07, 0.6), frameon=False)
 plt.axvline(-3.0, color='grey', linestyle='--')
 plt.axvline(3.0, color='grey', linestyle='--')
 ax = plt.gca()

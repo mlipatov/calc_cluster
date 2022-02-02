@@ -33,7 +33,7 @@ res = ld.std**2 - cf.std[np.newaxis, :]**2
 res[ np.less(res, 0, where=~np.isnan(res)) ] = 0 # correct for round-off
 sigma = np.sqrt(res) / (ld.step[np.newaxis, :] * cf.downsample)
 
-filelist = list(np.sort(glob.glob(cf.obs_dir + '*.pkl'))) # observables 
+filelist = list(np.sort(glob.glob(cf.obs_dir + 'obs*.pkl'))) # observables 
 t = np.full(len(filelist), np.nan)
 # probability densities at data point locations
 # dimensions: age, multiplicity population, rotational population, data point
