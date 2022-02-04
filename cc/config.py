@@ -97,10 +97,10 @@ overflow = 'root' # 'root' or 'log': strategy for dealing with product overflow,
 # 	a_ar = np.linspace(amin, amax, n)
 # else: # the MIST analysis
 n = 21 # number of steps in each dimension
-tmin, tmax = [9.156, 9.165] # age
+tmin, tmax = [9.156, 9.164] # age
 smin, smax = [0.018, 0.027] # sigma_age
-w0min, w0max = [0, 0.2] # slow proportion
-w2min, w2max = [0.3, 0.5] # fast proportion
+w0min, w0max = [0, 0.25] # slow proportion
+w2min, w2max = [0.15, 0.7] # fast proportion
 # tmin, tmax = [9.154, 9.165] # age
 # smin, smax = [0.036, 0.047] # sigma_age
 # w0min, w0max = [0.025, 0.225] # slow proportion

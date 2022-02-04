@@ -156,13 +156,13 @@ for j in range(len(densities_cmd)):
 		density_vsini = du.add(densities_vsini[j][k])
 		
 		## text
-		# text for scatter that depends on rotational population
-		if np.isinf(cf.vsini_bins[j+1]): 
-			upper_bound_text = '\infty'
-		else:
-			upper_bound_text = str(cf.vsini_bins[j+1])
-		vsini_text = r'$v_{\rm e}\,\sin{i}\, \in \,[' + str(cf.vsini_bins[j]) + ',' + \
-			upper_bound_text + ')\,$' + 'km/s'
+		# # text for scatter that depends on rotational population
+		# if np.isinf(cf.vsini_bins[j+1]): 
+		# 	upper_bound_text = '\infty'
+		# else:
+		# 	upper_bound_text = str(cf.vsini_bins[j+1])
+		# vsini_text = r'$v_{\rm e}\,\sin{i}\, \in \,[' + str(cf.vsini_bins[j]) + ',' + \
+		# 	upper_bound_text + ')\,$' + 'km/s'
 
 		textstr = '\n'.join((
 		    r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',

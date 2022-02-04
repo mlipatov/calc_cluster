@@ -24,7 +24,7 @@ t1_label = r'$\sigma_{\rm t}$'
 t0_hat = r'$\widehat{\mu}_{\rm t}$'
 t1_hat = r'$\widehat{\sigma}_{\rm t}$'
 
-def plot(x, y, p, xlabel, ylabel, textstr, filename):
+def plot(x, y, p, xlabel, ylabel, text, filename):
 	## estimate the total probability outside the boundaries
 	s = 0; c = 0 # sum and count of elements along the edges
 	for i in range(len(p.shape)):
@@ -43,18 +43,28 @@ def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	fig.set_figwidth(8)
 	plt.subplots_adjust(left=0.13, right=0.9, bottom=0.13, top=0.95)
 	cs = ax.contourf(x, y, p, [f(l) for l in levels], cmap=cmap, extend='max')
+	## append the bounds of the 95% confidence intervals to the parameter estimates
+	p1_min = cs.allsegs[0][0][:,1].min()
+	p1_max = cs.allsegs[0][0][:,1].max()
+	p2_min = cs.allsegs[0][0][:,0].min()
+	p2_max = cs.allsegs[0][0][:,0].max()
+	# update parameter text
+	if ('w_' in xlabel): sigfig = 2
+	else: sigfig = 3
+	text[2] = text[2] + r'$\in$[' + cf.fstr(p1_min, sigfig) + ', ' + cf.fstr(p1_max, sigfig) + ']'
+	text[3] = text[3] + r'$\in$[' + cf.fstr(p2_min, sigfig) + ', ' + cf.fstr(p2_max, sigfig) + ']'
 	
 	# plot the region of normalization
 	ax.autoscale(False)
-	if ('w_' in xlabel):
-		eps = 0.005
-		xh_max = 1 - y.max()
-		yv_max = 1 - x.max()
-		ax.plot([1, 0], [0, 1], 'k--', lw=1)
-	elif ('t' in xlabel):
-		eps = 0.0001
-		xh_max = x.max()
-		yv_max = y.max()
+	# if ('w_' in xlabel):
+	# 	eps = 0.005
+	# 	xh_max = 1 - y.max()
+	# 	yv_max = 1 - x.max()
+	# 	ax.plot([1, 0], [0, 1], 'k--', lw=1)
+	# elif ('t' in xlabel):
+	eps = 0.0001
+	xh_max = x.max()
+	yv_max = y.max()
 	line = ax.plot([x.min() + eps, xh_max], [y.max(), y.max()], 'k--', lw=1)[0]
 	line.set_clip_on(False)
 	line = ax.plot([x.max(), x.max()], [y.min() + eps, yv_max], 'k--', lw=1)[0]
@@ -74,6 +84,7 @@ def plot(x, y, p, xlabel, ylabel, textstr, filename):
 	cb.ax.invert_yaxis()
 
 	# text box
+	textstr = '\n'.join(text)
 	ax.text(1.05, 1.0, textstr, transform=ax.transAxes, fontsize=13,
 			verticalalignment='top', bbox=dict(facecolor='w', alpha=1.0, edgecolor='w'))
 
@@ -107,22 +118,36 @@ for filepath in filelist:
 	# at maximum-likelihood binaries proportion and rotational population proportions
 	qm = qm_4d[w0m, w1m, ...] # maximum q
 	bm = bm_4d[w0m, w1m, ...] # maximum b
-	# text box text
-	textstr = '\n'.join((		
+
+	# box text
+	text = [
 		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
 		r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',	
-	    t0_hat + ' = ' + '%.3f' % t0_ar[t0m],
-	    t1_hat + ' = ' + '%.3f' % t1_ar[t1m],
+	    t0_hat + ' = ' + cf.fstr(t0_ar[t0m], 3),
+	    t1_hat + ' = ' + cf.fstr(t1_ar[t1m], 3),
 		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
 		r'$\widehat{w} = \{' + cf.fstr(w0[w0m], 2) + ', ' + cf.fstr(1 - w0[w0m] - w1[w1m], 2) +\
 			', ' + cf.fstr(w1[w1m], 2) + '\}$',
 		r'$\widehat{q} = $' + cf.fstr(qm[t0m, t1m], 2) + \
 			r'$\in$[' + cf.fstr(np.nanmin(qm_4d), 3) + ', ' + cf.fstr(np.nanmax(qm_4d), 3) + ']',
 		r'$\widehat{b} = $' + cf.fstr(bm[t0m, t1m], 2) + \
-			r'$\in$[' + cf.fstr(np.nanmin(bm_4d), 2) + ', ' + cf.fstr(np.nanmax(bm_4d), 2) + ']'))
-
+			r'$\in$[' + cf.fstr(np.nanmin(bm_4d), 2) + ', ' + cf.fstr(np.nanmax(bm_4d), 2) + ']'
+		]
 	filename = like_dir + 'png/' + base + '_age_prob' + '.pdf'
-	plot(t1_ar, t0_ar, p_age, t1_label, t0_label, textstr, filename)
+	plot(t1_ar, t0_ar, p_age, t1_label, t0_label, text, filename)
 
+	text = [
+		r'$A_{\rm V}=' + '%.2f' % cf.A_V + '$',
+		r'${\rm [M/H]}_{\rm M}=' + str(cf.Z) + '$',
+		r'$\widehat{w}_0 = $' + cf.fstr(w0[w0m], 2),
+		r'$\widehat{w}_2 = $' + cf.fstr(w1[w1m], 2),
+		r'$\sigma_{\rm \omega} = \{' + ', '.join(['%.2f' % n for n in om_sigma]) + '\}$',
+	    t0_hat + ' = ' + cf.fstr(t0_ar[t0m], 3),
+	    t1_hat + ' = ' + cf.fstr(t1_ar[t1m], 3),
+		r'$\widehat{q} = $' + cf.fstr(qm[t0m, t1m], 2) + \
+			r'$\in$[' + cf.fstr(np.nanmin(qm_4d), 3) + ', ' + cf.fstr(np.nanmax(qm_4d), 3) + ']',
+		r'$\widehat{b} = $' + cf.fstr(bm[t0m, t1m], 2) + \
+			r'$\in$[' + cf.fstr(np.nanmin(bm_4d), 2) + ', ' + cf.fstr(np.nanmax(bm_4d), 2) + ']'
+		]
 	filename = like_dir + 'png/' + base + '_rotation_prob' + '.pdf'
-	plot(w1, w0, p_rot, r'$w_2$', r'$w_0$', textstr, filename)
+	plot(w1, w0, p_rot, r'$w_2$', r'$w_0$', text, filename)
