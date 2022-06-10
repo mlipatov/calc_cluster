@@ -1,12 +1,14 @@
 # Calculate Likelihoods of Cluster Parameters
 
-These computer programs compute continuous probability densities in 3D observable space and corresponding likelihoods of cluster parameters, based on a set of stellar models in multi-dimensional space. Follow the instructions below to re-produce the analysis for magnitude and vsini data in NGC 1846 in **Lipatov, Brandt, and Gossage (2022)**. The MIST model library we utilize has ten distinct rotation rates. It formed the basis for earlier work in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract) Below, each set of instructions in English corresponds to the immediately following Python code.
+These computer programs compute continuous probability densities in 3D observable space and corresponding likelihoods of cluster parameters, based on a set of stellar models in multi-dimensional space. Follow the instructions below to populate the `data` directory and thus re-produce the analysis for magnitude and vsini data in NGC 1846 in **Lipatov, Brandt, and Gossage (2022)**. Each set of instructions in English corresponds to the immediately following Python code. The file `data_populated.zip` is a compressed version of the populated data directory. 
 
 ## Preliminaries
 
 Install git and Python, then complete the following preliminary steps to obtain the files that serve as input to the programs in this repository.
 
 ### MIST (MESA Isochrones and Stellar Tracks)
+
+The MIST model library we utilize has ten distinct rotation rates. It formed the basis for earlier work in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract) 
 
 To filter the requisite information from the MIST model library, first copy `parse_mist_iso.py` and `mist_txt_npy.py` into directory `mist/`, which should contain directories such as `feh_m0.15_afe_p0.0_vvcrit0.0_TP`. Then run these Python scripts, to obtain text file `mist_isochrones.txt` and a corresponding numpy array file `mist_grid.npy`. Move the numpy array into the `data/` directory.
 
