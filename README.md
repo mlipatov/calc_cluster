@@ -123,6 +123,7 @@ Each entry below consists of brief figure description, the figure's number in th
 #### Observable distances between model grids at different ages, Figure 12:
 `python 12_plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`.
 
+#### Accuracy of stellar parameter interpolation between isochrones, Figure 13:
 `python 13_plot_interp_age.py` &rarr; `../../data/plots/(L|R)_EEP_interp_age.pdf`
 
 #### Cluster parameter likelihoods, not a figure in the publication:
