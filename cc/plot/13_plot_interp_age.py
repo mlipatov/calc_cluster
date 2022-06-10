@@ -122,7 +122,7 @@ textstr = '\n'.join((
 for i in range(len(eeps)):
 	plt.scatter(eeps[i], ldiffs[i])
 plt.xlabel("EEP")
-plt.ylabel(r"$2(L_{\rm orig} - L_{\rm interp})/(L_{\rm orig} + L_{\rm interp})$")
+plt.ylabel(r"$(L_{\rm orig} - L_{\rm interp})\,/\,L_{\rm avg}$")
 plt.text(0.25, 0.25, textstr, transform=plt.gca().transAxes, horizontalalignment='left',
         verticalalignment='top', bbox=dict(facecolor='w', alpha=0.0, edgecolor='w'))
 plt.tight_layout()
@@ -132,7 +132,7 @@ plt.close()
 for i in range(len(eeps)):
 	plt.scatter(eeps[i], rdiffs[i])
 plt.xlabel("EEP")
-plt.ylabel(r'$2(R_{\rm orig} - R_{\rm interp})/(R_{\rm orig} + R_{\rm interp})$')
+plt.ylabel(r'$(R_{\rm orig} - R_{\rm interp})\,/\,R_{\rm avg}}$')
 plt.text(0.25, 0.25 , textstr, transform=plt.gca().transAxes, horizontalalignment='left',
         verticalalignment='top', bbox=dict(facecolor='w', alpha=0.0, edgecolor='w'))
 plt.tight_layout()

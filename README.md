@@ -1,6 +1,6 @@
 # Calculate Likelihoods of Cluster Parameters
 
-These computer programs compute continuous probability densities in 3D observable space and corresponding likelihoods of cluster parameters, based on a set of stellar models in multi-dimensional space. Follow the instructions below to re-produce the analysis for magnitude and vsini data in NGC 1846 in **Lipatov, Brandt, and Gossage (2021)**. Each set of instructions in English corresponds to the immediately following Python code.
+These computer programs compute continuous probability densities in 3D observable space and corresponding likelihoods of cluster parameters, based on a set of stellar models in multi-dimensional space. Follow the instructions below to re-produce the analysis for magnitude and vsini data in NGC 1846 in **Lipatov, Brandt, and Gossage (2022)**. The MIST model library we utilize has ten distinct rotation rates. It formed the basis for earlier work in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract) Below, each set of instructions in English corresponds to the immediately following Python code.
 
 ## Preliminaries
 
@@ -21,7 +21,7 @@ mv mist_txt_npy.py ../data
 
 ### PARS (Paint the Atmospheres of Rotating Stars)
 
-First, install [PARS](https://github.com/mlipatov/paint_atmospheres). Make sure `paint_atmospheres/data` contains the `filter/` directory with the three filter files from the [SVO Filter Profile Service](http://svo2.cab.inta-csic.es/theory/fps/), such as HST_ACS_WFC.F435W.dat (and the same for F555W and F814W). Also make sure that `paint_atmospheres/data` contains `limbdark/` with the intensity files for different metallicities from [Dr. R. Kurucz's website](http://kurucz.harvard.edu/grids.html), such as `im01k2.pck`, `ip00k2.pck19`, and `ip02k2.pck`. Now run the program that produces `data/ldlist.pkl`, a list of corresponding limb darkening information files.
+Install [PARS](https://github.com/mlipatov/paint_atmospheres). Make sure `paint_atmospheres/data` contains the `filter/` directory with the three filter files from the [SVO Filter Profile Service](http://svo2.cab.inta-csic.es/theory/fps/), such as HST_ACS_WFC.F435W.dat (and the same for F555W and F814W). Also make sure that `paint_atmospheres/data` contains `limbdark/` with the intensity files for different metallicities from [Dr. R. Kurucz's website](http://kurucz.harvard.edu/grids.html), such as `im01k2.pck`, `ip00k2.pck19`, and `ip02k2.pck`. Now run the program that produces `data/ldlist.pkl`, a list of corresponding limb darkening information files.
 
 ```
 cd paint_atmospheres/pa/opt
@@ -103,34 +103,36 @@ Each entry below consists of brief figure description, the figure's number in th
 #### Original MIST models in observable space, Figure 4:
 `python 04_plot_mist.py` &rarr; `../../data/model_grids/cvmd/mist_[cv]md_t9p1544.pdf`.
 
-#### Observable distances in a refined model grid at one age, Figure 5:
-`python 05_plot_diff.py` &rarr; `../../data/model_grids/png/diff_vs_Mini_t9p1544_Zm0p45.pdf`.
+#### Probability densities in observable space, Figures 5, 6 & 7:
+`python 05_plot_densities.py` &rarr; `../../data/densities/cmd/density_t9p1594_*.pdf`, `../../data/densities/vmd/density_t9p1594_*.pdf`, and `density_dist_*.pdf`.
 
-#### Observable distances between model grids at different ages, Figures 6 & 7:
-`python 06_plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`.
+#### De-normalization due to convolution, Figure 8:
+`python 08_plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.
 
-#### Probability densities in observable space, Figures 8, 9 & 10:
-`python 08_plot_densities.py` &rarr; `../../data/densities/cmd/density_t9p1594_*.pdf`, `../../data/densities/vmd/density_t9p1594_*.pdf`, and `density_dist_*.pdf`.
+#### Likelihood factors of individual data points, Figure 9:
+`python 09_plot_lf.py` &rarr; `../../data/likelihoods/png/*_lf_m0p45_os060_005_015.pdf`.
 
-#### De-normalization due to convolution, Figure 11:
-`python 11_plot_dP.py` &rarr; `../../data/normalization/(mag|col)/dP91594_om2_mul1.pdf`.
+#### Cluster parameter confidence regions, Figure 10:
+`python 10_plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.
 
-#### Likelihood factors of individual data points, Figure 12:
-`python 12_plot_lf.py` &rarr; `../../data/likelihoods/png/*_lf_m0p45_os060_005_015.pdf`.
+#### Observable distances in a refined model grid at one age, Figure 11:
+`python 11_plot_diff.py` &rarr; `../../data/model_grids/png/diff_vs_Mini_t9p1544_Zm0p45.pdf`.
 
-#### Cluster parameter confidence regions, Figure 13:
-`python 13_plot_prob.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation)_prob.pdf`.
+#### Observable distances between model grids at different ages, Figure 12:
+`python 12_plot_diff_EEP.py` &rarr; `../../data/diff_EEP.pdf` & `../../data/delta_m_delta_t.pdf`.
+
+`python 13_plot_interp_age.py` &rarr; `../../data/plots/(L|R)_EEP_interp_age.pdf`
 
 #### Cluster parameter likelihoods, not a figure in the publication:
 `python 14_plot_ll.py` &rarr; `../../data/likelihoods/png/ll_m0p45_os060_005_015_(age|rotation).pdf`.
 
 ## Acknowledgements
 
-[Aaron Dotter](https://github.com/aarondotter) and [Seth Gossage](https://sgossage.github.io/) provided the MIST model library with ten rotation rates that were earlier utilized in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract). 
-Nate Bastian and Sebastian Kamann provided the magnitude and vsini data for NGC 1846 that are described in [Kamann et al 2020](https://ui.adsabs.harvard.edu/abs/2020MNRAS.492.2177K/abstract).
+[Aaron Dotter](https://github.com/aarondotter) helped us understand and work with the MIST stellar evolution models. Nate Bastian and Sebastian Kamann provided the magnitude and vsini data for NGC 1846 that are described in [Kamann et al 2020](https://ui.adsabs.harvard.edu/abs/2020MNRAS.492.2177K/abstract).
 
 
 ## Authors
 
 * [Mikhail Lipatov](https://github.com/mlipatov/)
 * [Timothy D. Brandt](https://github.com/t-brandt)
+* [Seth Gossage](https://sgossage.github.io/)
