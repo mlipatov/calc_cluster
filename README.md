@@ -8,7 +8,7 @@ Install git and Python, then complete the following preliminary steps to obtain 
 
 ### MIST (MESA Isochrones and Stellar Tracks)
 
-The MIST model library we utilize has ten distinct rotation rates. It formed the basis for earlier work in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract) 
+The MIST model library we utilize has ten distinct rotation rates. It formed the basis for earlier work in [Gossage et al 2019](https://ui.adsabs.harvard.edu/abs/2019ApJ...887..199G/abstract).
 
 To filter the requisite information from the MIST model library, first copy `parse_mist_iso.py` and `mist_txt_npy.py` into directory `mist/`, which should contain directories such as `feh_m0.15_afe_p0.0_vvcrit0.0_TP`. Then run these Python scripts, to obtain text file `mist_isochrones.txt` and a corresponding numpy array file `mist_grid.npy`. Move the numpy array into the `data/` directory.
 
